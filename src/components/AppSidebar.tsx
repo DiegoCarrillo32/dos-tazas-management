@@ -1,6 +1,6 @@
 'use client'
 
-import { Coffee, Settings, BarChart3, Users, Home, LogOut } from "lucide-react"
+import { Coffee, Settings, BarChart3, Users, Home, LogOut, History, Package } from "lucide-react"
 
 import {
   Sidebar,
@@ -29,6 +29,11 @@ const items = [
     icon: BarChart3,
   },
   {
+    title: "History",
+    url: "/history",
+    icon: History,
+  },
+  {
     title: "Customers",
     url: "/customers",
     icon: Users,
@@ -36,7 +41,7 @@ const items = [
   {
     title: "Inventory",
     url: "/inventory",
-    icon: Coffee,
+    icon: Package,
   },
   {
     title: "Settings",

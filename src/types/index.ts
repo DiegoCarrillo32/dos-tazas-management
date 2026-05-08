@@ -15,6 +15,10 @@ export type CustomerRecord = {
   created_at: string
 }
 
+export type CustomerWithLastPurchase = CustomerRecord & {
+  last_purchase_date: string | null
+}
+
 export type OrderRecord = {
   id: string
   user_id: string
@@ -26,6 +30,7 @@ export type OrderRecord = {
   fulfillment_status: FulfillmentStatus
   payment_status: PaymentStatus
   origin_notes: string | null
+  inventory_id: string | null
   order_date: string
 }
 
@@ -45,13 +50,18 @@ export type OrderInsertParams = {
   amount_grams: number
   total_price: number
   origin_notes?: string | null
+  inventory_id?: string | null
 }
+
+export type OrderUpdateParams = Partial<OrderInsertParams>
 
 export type CustomerInsertParams = {
   full_name: string
   phone?: string | null
   address?: string | null
 }
+
+export type CustomerUpdateParams = Partial<CustomerInsertParams>
 
 // Analytics types
 export type AnalyticsFilters = {
@@ -77,4 +87,42 @@ export type BreakdownItem = {
   name: string
   value: number
   count: number
+}
+
+// Inventory types
+export type InventoryRecord = {
+  id: string
+  user_id: string
+  item_name: string
+  category: string
+  stock_grams: number
+  cost_per_kg: number | null
+  notes: string | null
+  created_at: string
+}
+
+export type InventoryInsertParams = {
+  item_name: string
+  category?: string
+  stock_grams: number
+  cost_per_kg?: number | null
+  notes?: string | null
+}
+
+export type InventoryUpdateParams = Partial<InventoryInsertParams>
+
+// --- Settings ---
+export type UserSettingsRecord = {
+  id: string
+  user_id: string
+  business_name: string | null
+  roast_loss_percentage: number
+  currency_symbol: string
+  updated_at: string
+}
+
+export type UserSettingsUpdateParams = {
+  business_name?: string | null
+  roast_loss_percentage?: number
+  currency_symbol?: string
 }

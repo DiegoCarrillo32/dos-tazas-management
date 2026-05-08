@@ -5,22 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { createCustomer } from '@/actions/customers'
+import { createCustomer, updateCustomer } from '@/actions/customers'
 import type { CustomerRecord } from '@/types'
 
 interface CustomerFormProps {
+  initialData?: CustomerRecord
   onSuccess?: (customer: CustomerRecord) => void
   onCancel?: () => void
   inline?: boolean
 }
 
-export function CustomerForm({ onSuccess, onCancel, inline = false }: CustomerFormProps) {
+export function CustomerForm({ initialData, onSuccess, onCancel, inline = false }: CustomerFormProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
+  const [fullName, setFullName] = useState(initialData?.full_name || '')
+  const [phone, setPhone] = useState(initialData?.phone || '')
+  const [address, setAddress] = useState(initialData?.address || '')
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
@@ -33,13 +34,21 @@ export function CustomerForm({ onSuccess, onCancel, inline = false }: CustomerFo
 
     startTransition(async () => {
       try {
-        const newCustomer = await createCustomer({
+        const customerData = {
           full_name: fullName,
           phone: phone || null,
           address: address || null
-        })
+        }
+        
+        let savedCustomer: CustomerRecord
+        
+        if (initialData?.id) {
+          savedCustomer = await updateCustomer(initialData.id, customerData)
+        } else {
+          savedCustomer = await createCustomer(customerData)
+        }
 
-        if (onSuccess) onSuccess(newCustomer)
+        if (onSuccess) onSuccess(savedCustomer)
         
         if (!onSuccess) {
           setFullName('')
@@ -61,7 +70,7 @@ export function CustomerForm({ onSuccess, onCancel, inline = false }: CustomerFo
     <Wrapper className={inline ? "space-y-4 p-4 border border-dashed border-warm-roast/30 rounded-lg bg-expresso/5" : "w-full shadow-lg border-warm-roast/20"}>
       <HeaderWrapper className={inline ? "pb-2 border-b border-warm-roast/10 mb-4" : "bg-white-pergamino border-b border-warm-roast/10 px-6 py-5 m-0"}>
         <CardTitle className={`${inline ? "text-lg" : "text-xl"} font-heading text-expresso`}>
-          New Customer
+          {initialData?.id ? 'Edit Customer' : 'New Customer'}
         </CardTitle>
       </HeaderWrapper>
       
@@ -117,7 +126,7 @@ export function CustomerForm({ onSuccess, onCancel, inline = false }: CustomerFo
               </Button>
             )}
             <Button type="button" onClick={handleSubmit} size="sm" disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-              {isPending ? 'Saving...' : 'Save Customer'}
+              {isPending ? 'Saving...' : initialData?.id ? 'Update Customer' : 'Save Customer'}
             </Button>
           </FooterWrapper>
         </div>
@@ -168,7 +177,7 @@ export function CustomerForm({ onSuccess, onCancel, inline = false }: CustomerFo
               </Button>
             )}
             <Button type="submit" disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-              {isPending ? 'Saving...' : 'Save Customer'}
+              {isPending ? 'Saving...' : initialData?.id ? 'Update Customer' : 'Save Customer'}
             </Button>
           </FooterWrapper>
         </form>

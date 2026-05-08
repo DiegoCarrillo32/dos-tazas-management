@@ -18,12 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createOrder } from "@/actions/orders";
+import { createOrder, updateOrder } from "@/actions/orders";
 import { CustomerForm } from "@/components/CustomerForm";
-import type { CustomerRecord, OrderInsertParams } from "@/types";
+import type { CustomerRecord, OrderInsertParams, InventoryRecord, UserSettingsRecord } from "@/types";
 
 interface OrderFormProps {
   customers: CustomerRecord[];
+  inventoryItems?: InventoryRecord[];
+  settings?: UserSettingsRecord;
   initialData?: OrderInsertParams & { id?: string };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -41,6 +43,8 @@ const ROAST_LEVELS = ["Light", "Medium-Light", "Medium", "Medium-Dark", "Dark"];
 
 export function OrderForm({
   customers: initialCustomers,
+  inventoryItems = [],
+  settings,
   initialData,
   onSuccess,
   onCancel,
@@ -52,6 +56,7 @@ export function OrderForm({
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   const [customerId, setCustomerId] = useState(initialData?.customer_id || "");
+  const [inventoryId, setInventoryId] = useState(initialData?.inventory_id || "");
   const [prepMethod, setPrepMethod] = useState(
     initialData?.preparation_method || "",
   );
@@ -65,6 +70,8 @@ export function OrderForm({
   const [originNotes, setOriginNotes] = useState(
     initialData?.origin_notes || "",
   );
+
+  const roastLossPercentage = settings?.roast_loss_percentage ?? 20;
 
   const handleCustomerCreated = (newCustomer: CustomerRecord) => {
     setCustomersList((prev) => [...prev, newCustomer]);
@@ -89,14 +96,21 @@ export function OrderForm({
 
     startTransition(async () => {
       try {
-        await createOrder({
+        const orderData = {
           customer_id: customerId,
           preparation_method: prepMethod,
           roast_level: roastLevel,
           amount_grams: Number(amountGrams),
           total_price: Number(totalPrice),
           origin_notes: originNotes || null,
-        });
+          inventory_id: inventoryId || null,
+        }
+
+        if (initialData?.id) {
+          await updateOrder(initialData.id, orderData)
+        } else {
+          await createOrder(orderData)
+        }
 
         if (onSuccess) onSuccess();
 
@@ -175,6 +189,39 @@ export function OrderForm({
                 No customers yet. Click &quot;+ Add New Customer&quot; to create
                 one.
               </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="inventory_id" className="text-expresso">
+              Coffee Bean (Inventory) <span className="text-expresso/50 font-normal text-xs ml-1">(Optional)</span>
+            </Label>
+            <Select
+              value={inventoryId}
+              onValueChange={(val) => setInventoryId(val === "none" || !val ? "" : val)}
+              disabled={!!initialData?.id}
+            >
+              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
+                <SelectValue placeholder="Select coffee bean to deduct from inventory" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (Manual Entry)</SelectItem>
+                {inventoryItems.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.item_name} — {(item.stock_grams / 1000).toFixed(2)}kg raw stock
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!initialData?.id && (
+              <p className="text-xs text-expresso/60">
+                If selected, the amount of grams will be automatically deducted from your raw stock (including {roastLossPercentage}% roasting loss) upon creation.
+              </p>
+            )}
+            {initialData?.id && (
+              <p className="text-xs text-orange-600/80">
+                Inventory source cannot be changed after order creation.
+              </p>
             )}
           </div>
 

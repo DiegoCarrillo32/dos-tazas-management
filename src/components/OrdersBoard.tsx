@@ -2,15 +2,18 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OrderCard } from '@/components/OrderCard'
-import type { OrderWithCustomer } from '@/types'
+import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from '@/types'
 
 interface KanbanColumnProps {
   title: string
   items: OrderWithCustomer[]
+  customers: CustomerRecord[]
+  inventoryItems: InventoryRecord[]
+  settings?: UserSettingsRecord
   color: string
 }
 
-const KanbanColumn = ({ title, items, color }: KanbanColumnProps) => (
+const KanbanColumn = ({ title, items, customers, inventoryItems, settings, color }: KanbanColumnProps) => (
   <div className={`flex flex-col gap-4 p-4 rounded-xl border border-warm-roast/10 shadow-inner min-h-[500px] ${color}`}>
     <h2 className="font-heading text-xl text-expresso mb-2 flex justify-between items-center">
       {title} 
@@ -19,7 +22,7 @@ const KanbanColumn = ({ title, items, color }: KanbanColumnProps) => (
       </span>
     </h2>
     <div className="flex flex-col gap-4">
-      {items.map(order => <OrderCard key={order.id} order={order} />)}
+      {items.map(order => <OrderCard key={order.id} order={order} customers={customers} inventoryItems={inventoryItems} settings={settings} />)}
       {items.length === 0 && (
         <div className="text-sm text-expresso/50 text-center py-12 border-2 border-dashed border-warm-roast/20 rounded-lg bg-white/50">
           No orders in this stage.
@@ -29,7 +32,7 @@ const KanbanColumn = ({ title, items, color }: KanbanColumnProps) => (
   </div>
 )
 
-export function OrdersBoard({ orders }: { orders: OrderWithCustomer[] }) {
+export function OrdersBoard({ orders, customers, inventoryItems, settings }: { orders: OrderWithCustomer[], customers: CustomerRecord[], inventoryItems: InventoryRecord[], settings?: UserSettingsRecord }) {
   const pending = orders.filter(o => o.fulfillment_status === 'pending')
   const roasted = orders.filter(o => o.fulfillment_status === 'roasted')
   const delivered = orders.filter(o => o.fulfillment_status === 'delivered')
@@ -45,22 +48,22 @@ export function OrdersBoard({ orders }: { orders: OrderWithCustomer[] }) {
             <TabsTrigger value="delivered" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-900 rounded-lg transition-all">Delivered</TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="mt-0 outline-none">
-            <KanbanColumn title="Pending" items={pending} color="bg-yellow-50/50" />
+            <KanbanColumn title="Pending" items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50" />
           </TabsContent>
           <TabsContent value="roasted" className="mt-0 outline-none">
-            <KanbanColumn title="Roasted" items={roasted} color="bg-orange-50/50" />
+            <KanbanColumn title="Roasted" items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50" />
           </TabsContent>
           <TabsContent value="delivered" className="mt-0 outline-none">
-            <KanbanColumn title="Delivered" items={delivered} color="bg-green-50/50" />
+            <KanbanColumn title="Delivered" items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50" />
           </TabsContent>
         </Tabs>
       </div>
 
       {/* Desktop View: Kanban */}
       <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        <KanbanColumn title="Pending" items={pending} color="bg-yellow-50/50" />
-        <KanbanColumn title="Roasted" items={roasted} color="bg-orange-50/50" />
-        <KanbanColumn title="Delivered" items={delivered} color="bg-green-50/50" />
+        <KanbanColumn title="Pending" items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50" />
+        <KanbanColumn title="Roasted" items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50" />
+        <KanbanColumn title="Delivered" items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50" />
       </div>
     </>
   )

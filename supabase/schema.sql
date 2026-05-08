@@ -39,6 +39,7 @@ CREATE TABLE orders (
   fulfillment_status fulfillment_status_type NOT NULL DEFAULT 'pending',
   payment_status payment_status_type NOT NULL DEFAULT 'pending',
   origin_notes TEXT,
+  inventory_id UUID REFERENCES inventory(id) ON DELETE SET NULL,
   order_date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -60,6 +61,50 @@ CREATE POLICY "Users can manage their own customers"
 
 CREATE POLICY "Users can manage their own orders"
   ON orders
+  FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================
+-- Inventory Module
+-- ============================================================
+
+CREATE TABLE inventory (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  item_name TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'green_coffee',
+  stock_grams INTEGER NOT NULL DEFAULT 0,
+  cost_per_kg NUMERIC(10, 2),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_inventory_user_id ON inventory(user_id);
+
+ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own inventory"
+  ON inventory
+  FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE TABLE user_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_name TEXT,
+  roast_loss_percentage INTEGER NOT NULL DEFAULT 20,
+  currency_symbol TEXT NOT NULL DEFAULT '$',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own settings"
+  ON user_settings
   FOR ALL
   TO authenticated
   USING (auth.uid() = user_id)

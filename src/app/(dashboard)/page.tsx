@@ -1,5 +1,7 @@
 import { fetchOrders } from '@/actions/orders'
 import { fetchCustomers } from '@/actions/customers'
+import { fetchInventory } from '@/actions/inventory'
+import { fetchSettings } from '@/actions/settings'
 import { OrdersBoard } from '@/components/OrdersBoard'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -9,10 +11,15 @@ import { OrderForm } from '@/components/OrderForm'
 export const dynamic = 'force-dynamic';
 
 export default async function OrdersPage() {
-  const [orders, customers] = await Promise.all([
+  const [orders, customers, inventoryItems, settings] = await Promise.all([
     fetchOrders(),
-    fetchCustomers()
+    fetchCustomers(),
+    fetchInventory(),
+    fetchSettings()
   ])
+
+  // Filter only green coffee for orders
+  const coffeeInventory = inventoryItems.filter(item => item.category === 'green_coffee')
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -29,12 +36,12 @@ export default async function OrdersPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="new-order-form">
             <DialogTitle className="sr-only">Create New Order</DialogTitle>
-            <OrderForm customers={customers} />
+            <OrderForm customers={customers} inventoryItems={coffeeInventory} settings={settings} />
           </DialogContent>
         </Dialog>
       </div>
 
-      <OrdersBoard orders={orders} />
+      <OrdersBoard orders={orders} customers={customers} inventoryItems={coffeeInventory} settings={settings} />
     </div>
   )
 }

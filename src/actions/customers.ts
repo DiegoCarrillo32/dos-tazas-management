@@ -2,14 +2,14 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CustomerRecord, CustomerInsertParams } from '@/types'
+import type { CustomerRecord, CustomerInsertParams, CustomerWithLastPurchase, CustomerUpdateParams } from '@/types'
 
-export async function fetchCustomers(): Promise<CustomerRecord[]> {
+export async function fetchCustomers(): Promise<CustomerWithLastPurchase[]> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('customers')
-    .select('*')
+    .select('*, orders(order_date)')
     .order('full_name', { ascending: true })
 
   if (error) {
@@ -17,7 +17,20 @@ export async function fetchCustomers(): Promise<CustomerRecord[]> {
     return []
   }
 
-  return (data || []) as CustomerRecord[]
+  return (data || []).map(c => {
+    // Supabase returns an array for one-to-many joins
+    const orders = Array.isArray(c.orders) ? c.orders : []
+    const dates = orders.map((o: { order_date: string }) => o.order_date).filter(Boolean) as string[]
+    dates.sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime())
+    
+    // Remove the nested orders array to match the type cleanly, adding last_purchase_date
+    const rest = { ...c }
+    delete rest.orders
+    return {
+      ...rest,
+      last_purchase_date: dates.length > 0 ? dates[0] : null
+    }
+  }) as CustomerWithLastPurchase[]
 }
 
 export async function createCustomer(params: CustomerInsertParams): Promise<CustomerRecord> {
@@ -39,6 +52,25 @@ export async function createCustomer(params: CustomerInsertParams): Promise<Cust
 
   if (error) {
     console.error('Error creating customer:', error)
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/', 'layout')
+  return data as CustomerRecord
+}
+
+export async function updateCustomer(customerId: string, params: CustomerUpdateParams): Promise<CustomerRecord> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('customers')
+    .update(params)
+    .eq('id', customerId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating customer:', error)
     throw new Error(error.message)
   }
 
