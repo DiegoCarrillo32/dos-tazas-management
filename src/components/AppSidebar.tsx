@@ -50,7 +50,7 @@ const items = [
   },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({ businessName = "Dos Tazas" }: { businessName?: string }) {
   return (
     <Sidebar className="border-r border-warm-roast/10 shadow-sm" variant="sidebar">
       <SidebarHeader className="p-4 flex flex-row items-center gap-3">
@@ -58,7 +58,7 @@ export function AppSidebar() {
           <Coffee className="h-6 w-6" />
         </div>
         <div className="flex flex-col">
-          <span className="font-heading text-lg text-expresso leading-none">Dos Tazas</span>
+          <span className="font-heading text-lg text-expresso leading-none">{businessName}</span>
           <span className="text-xs text-expresso/60 font-medium">Order Management</span>
         </div>
       </SidebarHeader>

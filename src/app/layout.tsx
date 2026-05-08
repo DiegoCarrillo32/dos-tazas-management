@@ -5,6 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 export const metadata: Metadata = {
   title: "Dos Tazas Management",
   description: "POS and Order Management for Dos Tazas",
+  icons: {
+    icon: "/assets/LOGO-05.svg",
+  },
 };
 
 export default function RootLayout({
