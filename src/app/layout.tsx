@@ -1,14 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { LanguageProvider } from "@/i18n/LanguageProvider"
 import { QueryProvider } from "@/providers/QueryProvider"
 
+export const viewport: Viewport = {
+  themeColor: "#FCF9F2",
+};
+
 export const metadata: Metadata = {
   title: "Dos Tazas Management",
   description: "POS and Order Management for Dos Tazas",
   manifest: "/manifest.json",
-  themeColor: "#FCF9F2",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
