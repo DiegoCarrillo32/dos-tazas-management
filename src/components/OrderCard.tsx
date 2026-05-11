@@ -3,11 +3,12 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
-import { updateFulfillmentStatus, updatePaymentStatus } from '@/actions/orders'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { Coffee, Phone, User, Calendar, DollarSign, Maximize2 } from 'lucide-react'
 import type { FulfillmentStatus, PaymentStatus, OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from '@/types'
 import { OrderDetailsModal } from './OrderDetailsModal'
+import { useTranslation } from '@/i18n/LanguageProvider'
+import { useUpdateFulfillment, useUpdatePayment } from '@/hooks/queries'
 
 interface OrderCardProps {
   order: OrderWithCustomer
@@ -17,9 +18,12 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, customers, inventoryItems, settings }: OrderCardProps) {
-  const [isPending, startTransition] = useTransition()
+  const { t } = useTranslation()
   const [fulfillment, setFulfillment] = useState<FulfillmentStatus>(order.fulfillment_status)
   const [payment, setPayment] = useState<PaymentStatus>(order.payment_status)
+
+  const fulfillmentMutation = useUpdateFulfillment()
+  const paymentMutation = useUpdatePayment()
 
   const handleFulfillmentToggle = () => {
     const nextStatus: Record<FulfillmentStatus, FulfillmentStatus> = {
@@ -29,17 +33,13 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
     }
     const newStatus = nextStatus[fulfillment]
     setFulfillment(newStatus)
-    startTransition(async () => {
-      await updateFulfillmentStatus(order.id, newStatus)
-    })
+    fulfillmentMutation.mutate({ id: order.id, status: newStatus })
   }
 
   const handlePaymentToggle = () => {
     const newStatus = payment === 'pending' ? 'paid' : 'pending'
     setPayment(newStatus)
-    startTransition(async () => {
-      await updatePaymentStatus(order.id, newStatus)
-    })
+    paymentMutation.mutate({ id: order.id, status: newStatus })
   }
 
   const fulfillmentColors: Record<FulfillmentStatus, string> = {
@@ -65,7 +65,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
               <div>
                 <CardTitle className="text-lg font-heading text-expresso flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  {order.customers?.full_name || 'Unknown Customer'}
+                  {order.customers?.full_name || t('order_unknown_customer')}
                 </CardTitle>
                 <p className="text-sm text-expresso/70 flex items-center gap-2 mt-1">
                   <Calendar className="h-3.5 w-3.5" />
@@ -111,20 +111,20 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
           variant="outline" 
           size="sm" 
           onClick={handleFulfillmentToggle}
-          disabled={isPending}
+          disabled={fulfillmentMutation.isPending}
           className={`flex-1 transition-colors border-transparent ${fulfillmentColors[fulfillment]}`}
         >
-          {fulfillment.charAt(0).toUpperCase() + fulfillment.slice(1)}
+          {fulfillment === 'pending' ? t('orders_pending') : fulfillment === 'roasted' ? t('orders_roasted') : t('orders_delivered')}
         </Button>
         <Button 
           variant="outline" 
           size="sm" 
           onClick={handlePaymentToggle}
-          disabled={isPending}
+          disabled={paymentMutation.isPending}
           className={`flex-1 transition-colors border-transparent ${paymentColors[payment]}`}
         >
           <DollarSign className="h-3.5 w-3.5 mr-1" />
-          {payment === 'pending' ? 'Unpaid' : 'Paid'}
+          {payment === 'pending' ? t('order_unpaid') : t('order_paid')}
         </Button>
       </CardFooter>
 

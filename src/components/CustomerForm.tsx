@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { createCustomer, updateCustomer } from '@/actions/customers'
 import type { CustomerRecord } from '@/types'
+import { useTranslation } from '@/i18n/LanguageProvider'
+import { useCreateCustomer, useUpdateCustomer } from '@/hooks/queries'
 
 interface CustomerFormProps {
   initialData?: CustomerRecord
@@ -16,12 +17,16 @@ interface CustomerFormProps {
 }
 
 export function CustomerForm({ initialData, onSuccess, onCancel, inline = false }: CustomerFormProps) {
-  const [isPending, startTransition] = useTransition()
+  const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
   
   const [fullName, setFullName] = useState(initialData?.full_name || '')
   const [phone, setPhone] = useState(initialData?.phone || '')
   const [address, setAddress] = useState(initialData?.address || '')
+
+  const createMutation = useCreateCustomer()
+  const updateMutation = useUpdateCustomer()
+  const isPending = createMutation.isPending || updateMutation.isPending
 
   const handleSubmit = (e: React.SyntheticEvent) => {
     e.preventDefault()
@@ -32,33 +37,36 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
       return
     }
 
-    startTransition(async () => {
-      try {
-        const customerData = {
-          full_name: fullName,
-          phone: phone || null,
-          address: address || null
-        }
-        
-        let savedCustomer: CustomerRecord
-        
-        if (initialData?.id) {
-          savedCustomer = await updateCustomer(initialData.id, customerData)
-        } else {
-          savedCustomer = await createCustomer(customerData)
-        }
+    const customerData = {
+      full_name: fullName,
+      phone: phone || null,
+      address: address || null
+    }
 
-        if (onSuccess) onSuccess(savedCustomer)
-        
-        if (!onSuccess) {
-          setFullName('')
-          setPhone('')
-          setAddress('')
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save customer')
+    const onMutationSuccess = (savedCustomer: CustomerRecord) => {
+      if (onSuccess) onSuccess(savedCustomer)
+      if (!onSuccess) {
+        setFullName('')
+        setPhone('')
+        setAddress('')
       }
-    })
+    }
+
+    const onMutationError = (err: Error) => {
+      setError(err.message || 'Failed to save customer')
+    }
+
+    if (initialData?.id) {
+      updateMutation.mutate(
+        { id: initialData.id, params: customerData },
+        { onSuccess: onMutationSuccess, onError: onMutationError }
+      )
+    } else {
+      createMutation.mutate(customerData, {
+        onSuccess: onMutationSuccess,
+        onError: onMutationError,
+      })
+    }
   }
 
   const Wrapper = inline ? 'div' : Card
@@ -70,7 +78,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
     <Wrapper className={inline ? "space-y-4 p-4 border border-dashed border-warm-roast/30 rounded-lg bg-expresso/5" : "w-full shadow-lg border-warm-roast/20"}>
       <HeaderWrapper className={inline ? "pb-2 border-b border-warm-roast/10 mb-4" : "bg-white-pergamino border-b border-warm-roast/10 px-6 py-5 m-0"}>
         <CardTitle className={`${inline ? "text-lg" : "text-xl"} font-heading text-expresso`}>
-          {initialData?.id ? 'Edit Customer' : 'New Customer'}
+          {initialData?.id ? t('cust_form_edit') : t('cust_form_add')}
         </CardTitle>
       </HeaderWrapper>
       
@@ -85,7 +93,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
             
             <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-expresso">Full Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="full_name" className="text-expresso">{t('cust_form_full_name')} <span className="text-red-500">*</span></Label>
               <Input 
                 id="full_name" 
                 placeholder="e.g. John Doe" 
@@ -97,7 +105,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-expresso">Phone Number</Label>
+              <Label htmlFor="phone" className="text-expresso">{t('cust_form_phone')}</Label>
               <Input 
                 id="phone" 
                 placeholder="e.g. +1 234 567 8900" 
@@ -108,7 +116,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address" className="text-expresso">Address</Label>
+              <Label htmlFor="address" className="text-expresso">{t('cust_form_address')}</Label>
               <Input 
                 id="address" 
                 placeholder="e.g. 123 Coffee St, Bean City" 
@@ -122,11 +130,11 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
           <FooterWrapper className="flex justify-end gap-2 mt-4">
             {onCancel && (
               <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isPending} className="text-expresso">
-                Cancel
+                {t('cancel')}
               </Button>
             )}
             <Button type="button" onClick={handleSubmit} size="sm" disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-              {isPending ? 'Saving...' : initialData?.id ? 'Update Customer' : 'Save Customer'}
+              {isPending ? t('loading') : t('cust_form_save')}
             </Button>
           </FooterWrapper>
         </div>
@@ -136,7 +144,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
             
             <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-expresso">Full Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="full_name" className="text-expresso">{t('cust_form_full_name')} <span className="text-red-500">*</span></Label>
               <Input 
                 id="full_name" 
                 placeholder="e.g. John Doe" 
@@ -148,7 +156,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-expresso">Phone Number</Label>
+              <Label htmlFor="phone" className="text-expresso">{t('cust_form_phone')}</Label>
               <Input 
                 id="phone" 
                 placeholder="e.g. +1 234 567 8900" 
@@ -159,7 +167,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address" className="text-expresso">Address</Label>
+              <Label htmlFor="address" className="text-expresso">{t('cust_form_address')}</Label>
               <Input 
                 id="address" 
                 placeholder="e.g. 123 Coffee St, Bean City" 
@@ -173,11 +181,11 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
           <FooterWrapper className="flex justify-end gap-3 border-t border-warm-roast/10 bg-expresso/5 p-4 m-0">
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel} disabled={isPending} className="text-expresso">
-                Cancel
+                {t('cancel')}
               </Button>
             )}
             <Button type="submit" disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-              {isPending ? 'Saving...' : initialData?.id ? 'Update Customer' : 'Save Customer'}
+              {isPending ? t('loading') : t('cust_form_save')}
             </Button>
           </FooterWrapper>
         </form>

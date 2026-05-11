@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { OrderForm } from "@/components/OrderForm";
 import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from "@/types";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 interface OrderDetailsModalProps {
   order: OrderWithCustomer;
@@ -31,6 +32,7 @@ export function OrderDetailsModal({
   settings,
   onClose,
 }: OrderDetailsModalProps) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
 
   if (isEditing) {
@@ -79,7 +81,7 @@ export function OrderDetailsModal({
             ${Number(order.total_price).toFixed(2)}
           </div>
           <div className="text-sm text-white/70">
-            {order.amount_grams}g Total
+            {order.amount_grams}g {t('order_total')}
           </div>
         </div>
       </div>
@@ -97,7 +99,9 @@ export function OrderDetailsModal({
             }`}
           >
             {fulfillmentIcons[order.fulfillment_status]}
-            <span className="capitalize">{order.fulfillment_status}</span>
+            <span className="capitalize">
+              {order.fulfillment_status === 'pending' ? t('orders_pending') : order.fulfillment_status === 'roasted' ? t('orders_roasted') : t('orders_delivered')}
+            </span>
           </div>
           <div
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
@@ -108,7 +112,7 @@ export function OrderDetailsModal({
           >
             <DollarSign className="h-4 w-4" />
             <span className="capitalize">
-              {order.payment_status === "pending" ? "Unpaid" : "Paid"}
+              {order.payment_status === "pending" ? t('order_unpaid') : t('order_paid')}
             </span>
           </div>
         </div>
@@ -117,7 +121,7 @@ export function OrderDetailsModal({
         <div className="bg-warm-roast/5 rounded-lg p-4 border border-warm-roast/10 grid grid-cols-2 gap-4">
           <div>
             <div className="text-xs text-expresso/50 font-bold uppercase tracking-wider mb-1">
-              Roast Level
+              {t('order_form_roast_level')}
             </div>
             <div className="flex items-center gap-2 text-expresso font-semibold">
               <Coffee className="h-4 w-4 text-warm-roast" />
@@ -126,7 +130,7 @@ export function OrderDetailsModal({
           </div>
           <div>
             <div className="text-xs text-expresso/50 font-bold uppercase tracking-wider mb-1">
-              Preparation
+              {t('order_form_preparation')}
             </div>
             <div className="flex items-center gap-2 text-expresso font-semibold">
               <span className="text-warm-roast font-bold leading-none">♨</span>
@@ -139,7 +143,7 @@ export function OrderDetailsModal({
         {order.origin_notes && (
           <div>
             <div className="text-xs text-expresso/50 font-bold uppercase tracking-wider mb-1">
-              Origin Notes
+              {t('order_form_origin_notes').replace(' (Farmer Recognition)', '')}
             </div>
             <div className="bg-white p-3 rounded-lg border border-warm-roast/10 text-sm text-expresso italic">
               &quot;{order.origin_notes}&quot;
@@ -162,14 +166,14 @@ export function OrderDetailsModal({
 
         <div className="flex justify-end gap-2 pt-4 border-t border-warm-roast/10">
           <Button variant="outline" onClick={onClose} className="text-expresso">
-            Close
+            {t('order_close')}
           </Button>
           <Button
             onClick={() => setIsEditing(true)}
             className="bg-coffee-fruit hover:bg-warm-roast text-white gap-2"
           >
             <Edit className="h-4 w-4" />
-            Edit Order
+            {t('order_form_edit')}
           </Button>
         </div>
       </div>

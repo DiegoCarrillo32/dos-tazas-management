@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createInventoryItem, updateInventoryItem } from '@/actions/inventory'
 import type { InventoryRecord, UserSettingsRecord } from '@/types'
+import { useTranslation } from '@/i18n/LanguageProvider'
+import { useCreateInventoryItem, useUpdateInventoryItem } from '@/hooks/queries'
 
 interface InventoryFormProps {
   initialData?: InventoryRecord
@@ -18,7 +19,7 @@ interface InventoryFormProps {
 }
 
 export function InventoryForm({ initialData, settings, onSuccess, onCancel, inline = false }: InventoryFormProps) {
-  const [isPending, startTransition] = useTransition()
+  const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
   
   const [itemName, setItemName] = useState(initialData?.item_name || '')
@@ -26,6 +27,10 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
   const [stockGrams, setStockGrams] = useState<number | ''>(initialData?.stock_grams || '')
   const [costPerKg, setCostPerKg] = useState<number | ''>(initialData?.cost_per_kg || '')
   const [notes, setNotes] = useState(initialData?.notes || '')
+
+  const createMutation = useCreateInventoryItem()
+  const updateMutation = useUpdateInventoryItem()
+  const isPending = createMutation.isPending || updateMutation.isPending
 
   const roastLossPercentage = settings?.roast_loss_percentage ?? 20
   const lossRatio = 1 - (roastLossPercentage / 100)
@@ -43,35 +48,40 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
       return
     }
 
-    startTransition(async () => {
-      try {
-        const payload = {
-          item_name: itemName,
-          category,
-          stock_grams: Number(stockGrams),
-          cost_per_kg: costPerKg ? Number(costPerKg) : null,
-          notes: notes || null
-        }
+    const payload = {
+      item_name: itemName,
+      category,
+      stock_grams: Number(stockGrams),
+      cost_per_kg: costPerKg ? Number(costPerKg) : null,
+      notes: notes || null
+    }
 
-        if (initialData?.id) {
-          await updateInventoryItem(initialData.id, payload)
-        } else {
-          await createInventoryItem(payload)
-        }
-
-        if (onSuccess) onSuccess()
-        
-        if (!onSuccess && !initialData) {
-          setItemName('')
-          setCategory('green_coffee')
-          setStockGrams('')
-          setCostPerKg('')
-          setNotes('')
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to save inventory item')
+    const onMutationSuccess = () => {
+      if (onSuccess) onSuccess()
+      if (!onSuccess && !initialData) {
+        setItemName('')
+        setCategory('green_coffee')
+        setStockGrams('')
+        setCostPerKg('')
+        setNotes('')
       }
-    })
+    }
+
+    const onMutationError = (err: Error) => {
+      setError(err.message || 'Failed to save inventory item')
+    }
+
+    if (initialData?.id) {
+      updateMutation.mutate(
+        { id: initialData.id, params: payload },
+        { onSuccess: onMutationSuccess, onError: onMutationError }
+      )
+    } else {
+      createMutation.mutate(payload, {
+        onSuccess: onMutationSuccess,
+        onError: onMutationError,
+      })
+    }
   }
 
   const Wrapper = inline ? 'div' : Card
@@ -83,7 +93,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
     <Wrapper className={inline ? "space-y-4 p-4 border border-dashed border-warm-roast/30 rounded-lg bg-expresso/5" : "w-full shadow-lg border-warm-roast/20"}>
       <HeaderWrapper className={inline ? "pb-2 border-b border-warm-roast/10 mb-4" : "bg-white-pergamino border-b border-warm-roast/10 px-6 py-5 m-0"}>
         <CardTitle className={`${inline ? "text-lg" : "text-xl"} font-heading text-expresso`}>
-          {initialData ? 'Edit Inventory Item' : 'Add Inventory Item'}
+          {initialData ? t('inv_form_edit') : t('inv_form_add')}
         </CardTitle>
       </HeaderWrapper>
       
@@ -158,15 +168,16 @@ function FormContent({
   error, itemName, setItemName, category, setCategory, stockGrams, setStockGrams, 
   costPerKg, setCostPerKg, notes, setNotes, estimatedRoastedYield, roastLossPercentage, ContentWrapper, inline
 }: FormContentProps) {
+  const { t } = useTranslation()
   return (
     <ContentWrapper className={inline ? "space-y-3" : "space-y-4 px-6 pb-6 pt-4 m-0"}>
       {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
       
       <div className="space-y-2">
-        <Label htmlFor="item_name" className="text-expresso">Item Name / Origin <span className="text-red-500">*</span></Label>
+        <Label htmlFor="item_name" className="text-expresso">{t('inv_form_name')} <span className="text-red-500">*</span></Label>
         <Input 
           id="item_name" 
-          placeholder="e.g. Green Beans - Finca El Paraiso" 
+          placeholder={t('inv_form_name_placeholder')} 
           value={itemName} 
           onChange={(e) => setItemName(e.target.value)}
           className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
@@ -176,21 +187,21 @@ function FormContent({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="category" className="text-expresso">Category</Label>
+          <Label htmlFor="category" className="text-expresso">{t('inv_form_category')}</Label>
           <Select value={category} onValueChange={(val) => setCategory(val || 'green_coffee')}>
             <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
-              <SelectValue placeholder="Select category" />
+              <SelectValue placeholder={t('inv_form_select_cat')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="green_coffee">Green Coffee</SelectItem>
-              <SelectItem value="merch">Merchandise</SelectItem>
-              <SelectItem value="equipment">Equipment</SelectItem>
+              <SelectItem value="green_coffee">{t('inv_form_cat_green')}</SelectItem>
+              <SelectItem value="merch">{t('inv_form_cat_merch')}</SelectItem>
+              <SelectItem value="equipment">{t('inv_form_cat_equipment')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="cost_per_kg" className="text-expresso">Cost per kg ($)</Label>
+          <Label htmlFor="cost_per_kg" className="text-expresso">{t('inv_form_cost')}</Label>
           <Input 
             id="cost_per_kg" 
             type="number"
@@ -205,7 +216,7 @@ function FormContent({
 
       <div className="space-y-2">
         <Label htmlFor="stock_grams" className="text-expresso">
-          {category === 'green_coffee' ? 'Raw Stock (grams)' : 'Quantity'} <span className="text-red-500">*</span>
+          {category === 'green_coffee' ? t('inv_form_raw_stock') : t('inv_form_quantity')} <span className="text-red-500">*</span>
         </Label>
         <Input 
           id="stock_grams" 
@@ -218,16 +229,16 @@ function FormContent({
         />
         {category === 'green_coffee' && stockGrams !== '' && (
           <p className="text-xs text-expresso/70 font-medium">
-            Estimated Roasted Yield (-{roastLossPercentage}% loss): <span className="text-coffee-fruit font-bold">{(estimatedRoastedYield / 1000).toFixed(2)} kg</span>
+            {t('inv_form_yield_est').replace('{loss}', roastLossPercentage.toString())} <span className="text-coffee-fruit font-bold">{(estimatedRoastedYield / 1000).toFixed(2)} kg</span>
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes" className="text-expresso">Notes (Origin details, etc.)</Label>
+        <Label htmlFor="notes" className="text-expresso">{t('inv_form_notes')}</Label>
         <Input 
           id="notes" 
-          placeholder="e.g. Washed process, harvest 2026" 
+          placeholder={t('inv_form_notes_placeholder')} 
           value={notes} 
           onChange={(e) => setNotes(e.target.value)}
           className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
@@ -247,20 +258,21 @@ interface FormFooterProps {
 }
 
 function FormFooter({ onCancel, isPending, handleSubmit, inline, FooterWrapper, isNativeForm = false }: FormFooterProps) {
+  const { t } = useTranslation()
   return (
     <FooterWrapper className={inline ? "flex justify-end gap-2 mt-4" : "flex justify-end gap-3 border-t border-warm-roast/10 bg-expresso/5 p-4 m-0"}>
       {onCancel && (
         <Button type="button" variant="outline" size={inline ? "sm" : "default"} onClick={onCancel} disabled={isPending} className="text-expresso">
-          Cancel
+          {t('cancel')}
         </Button>
       )}
       {isNativeForm ? (
         <Button type="submit" size={inline ? "sm" : "default"} disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-          {isPending ? 'Saving...' : 'Save Item'}
+          {isPending ? t('loading') : t('inv_form_save')}
         </Button>
       ) : (
         <Button type="button" onClick={handleSubmit} size={inline ? "sm" : "default"} disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-          {isPending ? 'Saving...' : 'Save Item'}
+          {isPending ? t('loading') : t('inv_form_save')}
         </Button>
       )}
     </FooterWrapper>
