@@ -75,6 +75,14 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
               <div className="text-right mr-6">
                 <div className="text-lg font-bold text-expresso">{settings?.currency_symbol || '$'}{Number(order.total_price).toFixed(2)}</div>
                 <div className="text-xs text-expresso/60">{order.amount_grams}g</div>
+                {order.total_cost != null && (
+                  <div className="mt-1 flex items-center gap-1.5 justify-end">
+                    <span className="text-[10px] font-bold text-expresso/50">{t('order_cost')}: {settings?.currency_symbol || '$'}{Number(order.total_cost).toFixed(2)}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${Number(order.total_price) - Number(order.total_cost) >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                      {Number(order.total_price) - Number(order.total_cost) >= 0 ? '+' : ''}{settings?.currency_symbol || '$'}{(Number(order.total_price) - Number(order.total_cost)).toFixed(2)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </CardHeader>

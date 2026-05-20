@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { updateSettings } from '@/actions/settings'
 import type { UserSettingsRecord } from '@/types'
-import { Save, Building2, Percent, DollarSign, Globe } from 'lucide-react'
+import { Save, Building2, Percent, DollarSign, Globe, Coins } from 'lucide-react'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { Language } from '@/i18n/dictionaries'
 
@@ -20,6 +20,11 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
   const [businessName, setBusinessName] = useState(initialData.business_name || '')
   const [roastLossPercentage, setRoastLossPercentage] = useState(initialData.roast_loss_percentage)
   const [currencySymbol, setCurrencySymbol] = useState(initialData.currency_symbol || '$')
+  const [costPerBag, setCostPerBag] = useState(initialData.cost_per_bag || 0)
+  const [costPerSticker, setCostPerSticker] = useState(initialData.cost_per_sticker || 0)
+  const [costElectricity, setCostElectricity] = useState(initialData.cost_electricity_per_order || 0)
+  const [costFuel, setCostFuel] = useState(initialData.cost_fuel_per_order || 0)
+  const [costRoastingTime, setCostRoastingTime] = useState(initialData.cost_roasting_time_per_order || 0)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +36,12 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
         await updateSettings({
           business_name: businessName || null,
           roast_loss_percentage: Number(roastLossPercentage),
-          currency_symbol: currencySymbol || '$'
+          currency_symbol: currencySymbol || '$',
+          cost_per_bag: Number(costPerBag),
+          cost_per_sticker: Number(costPerSticker),
+          cost_electricity_per_order: Number(costElectricity),
+          cost_fuel_per_order: Number(costFuel),
+          cost_roasting_time_per_order: Number(costRoastingTime)
         })
         setSuccess(true)
         
@@ -131,6 +141,101 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
               <p className="text-xs text-expresso/60">
                 {t('settings_language_hint')}
               </p>
+            </div>
+          </div>
+
+          <div className="border-t border-warm-roast/10 pt-6 mt-6">
+            <h3 className="text-lg font-heading text-expresso flex items-center gap-2">
+              <Coins className="h-5 w-5 text-warm-roast" />
+              {t('settings_costs_title')}
+            </h3>
+            <p className="text-xs text-expresso/60 mb-4">{t('settings_costs_subtitle')}</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="cost_per_bag" className="text-expresso flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-warm-roast" />
+                  {t('settings_cost_per_bag')}
+                </Label>
+                <Input
+                  id="cost_per_bag"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costPerBag}
+                  onChange={(e) => setCostPerBag(Number(e.target.value))}
+                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                />
+                <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_per_sticker" className="text-expresso flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-warm-roast" />
+                  {t('settings_cost_per_sticker')}
+                </Label>
+                <Input
+                  id="cost_per_sticker"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costPerSticker}
+                  onChange={(e) => setCostPerSticker(Number(e.target.value))}
+                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                />
+                <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_electricity" className="text-expresso flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-warm-roast" />
+                  {t('settings_cost_electricity')}
+                </Label>
+                <Input
+                  id="cost_electricity"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costElectricity}
+                  onChange={(e) => setCostElectricity(Number(e.target.value))}
+                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                />
+                <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_fuel" className="text-expresso flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-warm-roast" />
+                  {t('settings_cost_fuel')}
+                </Label>
+                <Input
+                  id="cost_fuel"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costFuel}
+                  onChange={(e) => setCostFuel(Number(e.target.value))}
+                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                />
+                <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_roasting_time" className="text-expresso flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-warm-roast" />
+                  {t('settings_cost_roasting_time')}
+                </Label>
+                <Input
+                  id="cost_roasting_time"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costRoastingTime}
+                  onChange={(e) => setCostRoastingTime(Number(e.target.value))}
+                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                />
+                <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
+              </div>
             </div>
           </div>
         </CardContent>

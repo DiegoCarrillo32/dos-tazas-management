@@ -7,7 +7,12 @@ import type { UserSettingsRecord, UserSettingsUpdateParams } from '@/types'
 const DEFAULT_SETTINGS: Omit<UserSettingsRecord, 'id' | 'user_id' | 'updated_at'> = {
   business_name: null,
   roast_loss_percentage: 20,
-  currency_symbol: '$'
+  currency_symbol: '$',
+  cost_per_bag: 0,
+  cost_per_sticker: 0,
+  cost_electricity_per_order: 0,
+  cost_fuel_per_order: 0,
+  cost_roasting_time_per_order: 0
 }
 
 export async function fetchSettings(): Promise<UserSettingsRecord> {
@@ -80,7 +85,12 @@ export async function updateSettings(params: UserSettingsUpdateParams) {
         user_id: user.id,
         business_name: params.business_name || null,
         roast_loss_percentage: params.roast_loss_percentage ?? 20,
-        currency_symbol: params.currency_symbol || '$'
+        currency_symbol: params.currency_symbol || '$',
+        cost_per_bag: params.cost_per_bag ?? 0,
+        cost_per_sticker: params.cost_per_sticker ?? 0,
+        cost_electricity_per_order: params.cost_electricity_per_order ?? 0,
+        cost_fuel_per_order: params.cost_fuel_per_order ?? 0,
+        cost_roasting_time_per_order: params.cost_roasting_time_per_order ?? 0
       }])
       .select()
       .single()

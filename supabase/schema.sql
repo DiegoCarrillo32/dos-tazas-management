@@ -109,3 +109,20 @@ CREATE POLICY "Users can manage their own settings"
   TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================
+-- Cost & Revenue Tracking
+-- ============================================================
+
+-- Overhead cost rates in user_settings
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_per_bag NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_per_sticker NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_electricity_per_order NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_fuel_per_order NUMERIC(10,2) NOT NULL DEFAULT 0;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_roasting_time_per_order NUMERIC(10,2) NOT NULL DEFAULT 0;
+
+-- Per-order cost tracking
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS bag_count INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cost_breakdown JSONB;
+

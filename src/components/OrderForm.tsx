@@ -70,6 +70,9 @@ export function OrderForm({
   const [originNotes, setOriginNotes] = useState(
     initialData?.origin_notes || "",
   );
+  const [bagCount, setBagCount] = useState<number>(
+    initialData?.bag_count ?? 1
+  );
 
   const createMutation = useCreateOrder();
   const updateMutation = useUpdateOrder();
@@ -106,6 +109,7 @@ export function OrderForm({
       total_price: Number(totalPrice),
       origin_notes: originNotes || null,
       inventory_id: inventoryId || null,
+      bag_count: Number(bagCount),
     };
 
     const onMutationSuccess = () => {
@@ -117,6 +121,7 @@ export function OrderForm({
         setAmountGrams("");
         setTotalPrice("");
         setOriginNotes("");
+        setBagCount(1);
       }
     };
 
@@ -279,7 +284,7 @@ export function OrderForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="amount_grams" className="text-expresso">
                 {t('order_form_amount')}
@@ -291,6 +296,24 @@ export function OrderForm({
                 value={amountGrams}
                 onChange={(e) =>
                   setAmountGrams(e.target.value ? Number(e.target.value) : "")
+                }
+                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bag_count" className="text-expresso">
+                {t('order_bag_count')}
+              </Label>
+              <Input
+                id="bag_count"
+                type="number"
+                min="1"
+                step="1"
+                value={bagCount}
+                onChange={(e) =>
+                  setBagCount(e.target.value ? Number(e.target.value) : 1)
                 }
                 className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
                 required

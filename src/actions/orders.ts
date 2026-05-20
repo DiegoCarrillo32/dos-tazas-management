@@ -43,13 +43,61 @@ export async function createOrder(params: OrderInsertParams) {
     throw new Error('You must be logged in to create an order.')
   }
 
+  // Fetch settings for roasting loss and cost rates
+  const { fetchSettings } = await import('./settings')
+  const settings = await fetchSettings()
+  const lossRatio = 1 - (settings.roast_loss_percentage / 100)
+  const bagCount = params.bag_count ?? 1
+
+  // Compute cost breakdown
+  let coffeeCost = 0
+  let rawGramsUsed = 0
+
+  if (params.inventory_id && params.amount_grams) {
+    const { data: invItem } = await supabase
+      .from('inventory')
+      .select('stock_grams, cost_per_kg')
+      .eq('id', params.inventory_id)
+      .single()
+
+    if (invItem) {
+      rawGramsUsed = Math.ceil(params.amount_grams / lossRatio)
+      coffeeCost = invItem.cost_per_kg
+        ? Math.round((rawGramsUsed / 1000) * Number(invItem.cost_per_kg) * 100) / 100
+        : 0
+
+      // Deduct from inventory
+      const newStock = invItem.stock_grams - rawGramsUsed
+      await supabase
+        .from('inventory')
+        .update({ stock_grams: newStock })
+        .eq('id', params.inventory_id)
+    }
+  }
+
+  const costBreakdown = {
+    coffee: coffeeCost,
+    bag: Math.round(bagCount * Number(settings.cost_per_bag) * 100) / 100,
+    sticker: Math.round(bagCount * Number(settings.cost_per_sticker) * 100) / 100,
+    electricity: Number(settings.cost_electricity_per_order),
+    fuel: Number(settings.cost_fuel_per_order),
+    roasting_time: Number(settings.cost_roasting_time_per_order)
+  }
+
+  const totalCost = Math.round(
+    Object.values(costBreakdown).reduce((sum, v) => sum + v, 0) * 100
+  ) / 100
+
   const { data, error } = await supabase
     .from('orders')
     .insert([{
       ...params,
+      bag_count: bagCount,
       user_id: user.id,
       fulfillment_status: 'pending',
-      payment_status: 'pending'
+      payment_status: 'pending',
+      total_cost: totalCost,
+      cost_breakdown: costBreakdown
     }])
     .select()
     .single()
@@ -57,32 +105,6 @@ export async function createOrder(params: OrderInsertParams) {
   if (error) {
     console.error('Error creating order:', error)
     throw new Error(error.message)
-  }
-
-  // Deduct from inventory if provided
-  if (params.inventory_id && params.amount_grams) {
-    const { data: invItem } = await supabase
-      .from('inventory')
-      .select('stock_grams')
-      .eq('id', params.inventory_id)
-      .single()
-      
-    if (invItem) {
-      // Fetch user settings for roasting loss
-      const { fetchSettings } = await import('./settings')
-      const settings = await fetchSettings()
-      
-      const lossRatio = 1 - (settings.roast_loss_percentage / 100)
-      
-      // Apply dynamic roasting loss to find raw grams used
-      const rawGramsUsed = Math.ceil(params.amount_grams / lossRatio)
-      const newStock = invItem.stock_grams - rawGramsUsed
-      
-      await supabase
-        .from('inventory')
-        .update({ stock_grams: newStock })
-        .eq('id', params.inventory_id)
-    }
   }
 
   revalidatePath('/', 'layout')
@@ -164,7 +186,7 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
   // 1. Fetch original order details to reconcile inventory
   const { data: oldOrder, error: fetchError } = await supabase
     .from('orders')
-    .select('inventory_id, amount_grams')
+    .select('inventory_id, amount_grams, bag_count')
     .eq('id', orderId)
     .single()
 
@@ -173,28 +195,16 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
     throw new Error('Failed to retrieve original order details for inventory reconciliation.')
   }
 
-  // 2. Perform database update
-  const { data, error } = await supabase
-    .from('orders')
-    .update(params)
-    .eq('id', orderId)
-    .select()
-    .single()
+  // Fetch settings for roasting loss and cost rates
+  const { fetchSettings } = await import('./settings')
+  const settings = await fetchSettings()
+  const lossRatio = 1 - (settings.roast_loss_percentage / 100)
 
-  if (error) {
-    console.error('Error updating order:', error)
-    throw new Error(error.message)
-  }
-
-  // 3. Reconcile inventory if inventory_id or amount_grams is updated
+  // 2. Reconcile inventory if inventory_id or amount_grams is updated
   const inventoryChanged = params.inventory_id !== undefined || params.amount_grams !== undefined
 
   if (inventoryChanged) {
     try {
-      const { fetchSettings } = await import('./settings')
-      const settings = await fetchSettings()
-      const lossRatio = 1 - (settings.roast_loss_percentage / 100)
-
       // Step A: Revert old inventory deduction
       if (oldOrder.inventory_id && oldOrder.amount_grams) {
         const { data: oldInvItem } = await supabase
@@ -234,6 +244,61 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
     } catch (invErr) {
       console.error('Failed to reconcile inventory after order update:', invErr)
     }
+  }
+
+  // 3. Recompute cost breakdown if cost-relevant fields changed
+  const costRelevantChange = params.inventory_id !== undefined ||
+    params.amount_grams !== undefined ||
+    params.bag_count !== undefined
+
+  let costUpdate: Record<string, unknown> = {}
+
+  if (costRelevantChange) {
+    const finalInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
+    const finalAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
+    const finalBagCount = params.bag_count !== undefined ? params.bag_count : (oldOrder.bag_count ?? 1)
+
+    let coffeeCost = 0
+    if (finalInventoryId && finalAmountGrams) {
+      const { data: invItem } = await supabase
+        .from('inventory')
+        .select('cost_per_kg')
+        .eq('id', finalInventoryId)
+        .single()
+
+      if (invItem?.cost_per_kg) {
+        const rawGrams = Math.ceil(finalAmountGrams / lossRatio)
+        coffeeCost = Math.round((rawGrams / 1000) * Number(invItem.cost_per_kg) * 100) / 100
+      }
+    }
+
+    const costBreakdown = {
+      coffee: coffeeCost,
+      bag: Math.round(finalBagCount * Number(settings.cost_per_bag) * 100) / 100,
+      sticker: Math.round(finalBagCount * Number(settings.cost_per_sticker) * 100) / 100,
+      electricity: Number(settings.cost_electricity_per_order),
+      fuel: Number(settings.cost_fuel_per_order),
+      roasting_time: Number(settings.cost_roasting_time_per_order)
+    }
+
+    const totalCost = Math.round(
+      Object.values(costBreakdown).reduce((sum, v) => sum + v, 0) * 100
+    ) / 100
+
+    costUpdate = { total_cost: totalCost, cost_breakdown: costBreakdown }
+  }
+
+  // 4. Perform database update
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ ...params, ...costUpdate })
+    .eq('id', orderId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating order:', error)
+    throw new Error(error.message)
   }
 
   revalidatePath('/', 'layout')

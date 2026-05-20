@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { DollarSign, Package, Coffee } from 'lucide-react'
+import { DollarSign, Package, Coffee, Coins } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/analytics/StatCard'
 import { RevenueChart } from '@/components/analytics/RevenueChart'
 import { BreakdownCharts } from '@/components/analytics/BreakdownCharts'
+import { useTranslation } from '@/i18n/LanguageProvider'
 import {
   fetchAnalyticsSummary,
   fetchRevenueTimeSeries,
@@ -21,7 +22,8 @@ import type {
   BreakdownItem,
   AnalyticsFilters,
   FulfillmentStatus,
-  PaymentStatus
+  PaymentStatus,
+  UserSettingsRecord
 } from '@/types'
 
 interface AnalyticsDashboardProps {
@@ -29,14 +31,18 @@ interface AnalyticsDashboardProps {
   initialRevenue: RevenueDataPoint[]
   initialRoast: BreakdownItem[]
   initialPrep: BreakdownItem[]
+  settings?: UserSettingsRecord
 }
 
 export function AnalyticsDashboard({
   initialSummary,
   initialRevenue,
   initialRoast,
-  initialPrep
+  initialPrep,
+  settings
 }: AnalyticsDashboardProps) {
+  const { t } = useTranslation()
+  const currencySymbol = settings?.currency_symbol || '$'
   const [isPending, startTransition] = useTransition()
   const [summary, setSummary] = useState(initialSummary)
   const [revenue, setRevenue] = useState(initialRevenue)
@@ -164,22 +170,40 @@ export function AnalyticsDashboard({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
-          title="Total Revenue"
-          value={`$${summary.totalRevenue.toFixed(2)}`}
+          title={t('analytics_total_revenue')}
+          value={`${currencySymbol}${summary.totalRevenue.toFixed(2)}`}
           icon={DollarSign}
           color="text-coffee-fruit"
         />
         <StatCard
-          title="Coffee Sold"
+          title={t('analytics_total_cost')}
+          value={`${currencySymbol}${summary.totalCost.toFixed(2)}`}
+          icon={Coins}
+          color="text-red-600"
+        />
+        <StatCard
+          title={t('analytics_total_profit')}
+          value={`${summary.totalProfit >= 0 ? '' : '-'}${currencySymbol}${Math.abs(summary.totalProfit).toFixed(2)}`}
+          icon={DollarSign}
+          color={summary.totalProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}
+        />
+        <StatCard
+          title={t('analytics_profit_margin')}
+          value={`${(summary.totalRevenue > 0 ? (summary.totalProfit / summary.totalRevenue) * 100 : 0).toFixed(1)}%`}
+          icon={Coins}
+          color={(summary.totalRevenue > 0 ? (summary.totalProfit / summary.totalRevenue) * 100 : 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}
+        />
+        <StatCard
+          title={t('analytics_coffee_sold')}
           value={`${(summary.totalCoffeeSoldGrams / 1000).toFixed(2)} kg`}
           subtitle={`${summary.totalCoffeeSoldGrams.toLocaleString()} grams`}
           icon={Coffee}
           color="text-warm-roast"
         />
         <StatCard
-          title="Total Orders"
+          title={t('analytics_total_orders')}
           value={summary.totalOrders.toString()}
           icon={Package}
           color="text-expresso"
@@ -187,7 +211,7 @@ export function AnalyticsDashboard({
       </div>
 
       {/* Revenue Chart */}
-      <RevenueChart data={revenue} />
+      <RevenueChart data={revenue} currencySymbol={currencySymbol} />
 
       {/* Breakdown Charts */}
       <BreakdownCharts roastData={roastData} prepData={prepData} />

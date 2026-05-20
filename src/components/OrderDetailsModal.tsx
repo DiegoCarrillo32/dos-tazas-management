@@ -91,7 +91,7 @@ export function OrderDetailsModal({
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold">
-            ${Number(order.total_price).toFixed(2)}
+            {settings?.currency_symbol || '$'}{Number(order.total_price).toFixed(2)}
           </div>
           <div className="text-sm text-white/70">
             {order.amount_grams}g {t('order_total')}
@@ -162,6 +162,90 @@ export function OrderDetailsModal({
             </div>
           </div>
         </div>
+
+        {/* Cost & Profit Breakdown */}
+        {order.total_cost != null && (
+          <div className="bg-white rounded-lg p-4 border border-warm-roast/10 space-y-3">
+            <div className="text-xs text-expresso/50 font-bold uppercase tracking-wider border-b border-warm-roast/10 pb-1.5 flex justify-between items-center">
+              <span>{t('order_cost_breakdown')}</span>
+              {order.bag_count != null && (
+                <span className="text-[10px] bg-coffee-fruit/10 text-coffee-fruit px-1.5 py-0.5 rounded font-bold">
+                  {order.bag_count} {t('order_bag_count')}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-expresso/60">{t('order_cost_coffee')}:</span>
+                <span className="font-semibold text-expresso">
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.coffee ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-expresso/60">{t('order_cost_bags')}:</span>
+                <span className="font-semibold text-expresso">
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.bag ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-expresso/60">{t('order_cost_stickers')}:</span>
+                <span className="font-semibold text-expresso">
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.sticker ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-expresso/60">{t('order_cost_electricity')}:</span>
+                <span className="font-semibold text-expresso">
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.electricity ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-expresso/60">{t('order_cost_fuel')}:</span>
+                <span className="font-semibold text-expresso">
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.fuel ?? 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-expresso/60">{t('order_cost_roasting')}:</span>
+                <span className="font-semibold text-expresso">
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.roasting_time ?? 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="border-t border-warm-roast/10 pt-2.5 mt-2 flex justify-between items-center text-sm">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-expresso/50 font-bold uppercase tracking-wider">{t('order_cost')}</span>
+                <span className="font-bold text-expresso">
+                  {settings?.currency_symbol || '$'}{Number(order.total_cost).toFixed(2)}
+                </span>
+              </div>
+              
+              {(() => {
+                const profit = Number(order.total_price) - Number(order.total_cost);
+                const margin = Number(order.total_price) > 0 ? (profit / Number(order.total_price)) * 100 : 0;
+                const isPositive = profit >= 0;
+                return (
+                  <div className="text-right flex gap-3 items-center">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-expresso/50 font-bold uppercase tracking-wider">{t('order_profit')}</span>
+                      <span className={`font-bold ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {isPositive ? '+' : ''}{settings?.currency_symbol || '$'}{profit.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-expresso/50 font-bold uppercase tracking-wider">{t('order_margin')}</span>
+                      <span className={`font-bold px-2 py-0.5 rounded text-xs ${isPositive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                        {margin.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
 
         {/* Notes */}
         {order.origin_notes && (

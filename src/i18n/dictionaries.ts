@@ -159,6 +159,40 @@ export const dictionaries = {
     settings_save_button: "Save Settings",
     settings_saving: "Saving...",
     settings_success: "Settings updated successfully!",
+
+    // Production Costs
+    settings_costs_title: "Production Costs",
+    settings_costs_subtitle: "Configure per-order overhead costs for profit calculation.",
+    settings_cost_per_bag: "Cost per Bag",
+    settings_cost_per_sticker: "Cost per Sticker",
+    settings_cost_electricity: "Electricity per Order",
+    settings_cost_fuel: "Fuel per Order",
+    settings_cost_roasting_time: "Roasting Time per Order",
+    settings_cost_hint: "Used to calculate order cost breakdown.",
+
+    // Order Cost/Revenue
+    order_bag_count: "Number of Bags",
+    order_cost: "Cost",
+    order_profit: "Profit",
+    order_margin: "Margin",
+    order_cost_breakdown: "Cost Breakdown",
+    order_cost_coffee: "Coffee",
+    order_cost_bags: "Bags",
+    order_cost_stickers: "Stickers",
+    order_cost_electricity: "Electricity",
+    order_cost_fuel: "Fuel",
+    order_cost_roasting: "Roasting Time",
+    order_cost_na: "N/A",
+
+    // Analytics Cost
+    analytics_total_cost: "Total Cost",
+    analytics_total_profit: "Total Profit",
+    analytics_profit_margin: "Profit Margin",
+    analytics_total_revenue: "Total Revenue",
+    analytics_coffee_sold: "Coffee Sold",
+    analytics_total_orders: "Total Orders",
+    analytics_revenue_profit: "Revenue & Profit Over Time",
+    analytics_no_data: "No data available for the selected period.",
   },
   es: {
     // Common
@@ -322,6 +356,40 @@ export const dictionaries = {
     settings_save_button: "Guardar Configuración",
     settings_saving: "Guardando...",
     settings_success: "¡Configuración actualizada exitosamente!",
+
+    // Production Costs
+    settings_costs_title: "Costos de Producción",
+    settings_costs_subtitle: "Configura los costos por pedido para cálculo de ganancia.",
+    settings_cost_per_bag: "Costo por Bolsa",
+    settings_cost_per_sticker: "Costo por Etiqueta",
+    settings_cost_electricity: "Electricidad por Pedido",
+    settings_cost_fuel: "Combustible por Pedido",
+    settings_cost_roasting_time: "Tiempo de Tueste por Pedido",
+    settings_cost_hint: "Usado para calcular el desglose de costos.",
+
+    // Order Cost/Revenue
+    order_bag_count: "Número de Bolsas",
+    order_cost: "Costo",
+    order_profit: "Ganancia",
+    order_margin: "Margen",
+    order_cost_breakdown: "Desglose de Costos",
+    order_cost_coffee: "Café",
+    order_cost_bags: "Bolsas",
+    order_cost_stickers: "Etiquetas",
+    order_cost_electricity: "Electricidad",
+    order_cost_fuel: "Combustible",
+    order_cost_roasting: "Tiempo de Tueste",
+    order_cost_na: "N/A",
+
+    // Analytics Cost
+    analytics_total_cost: "Costo Total",
+    analytics_total_profit: "Ganancia Total",
+    analytics_profit_margin: "Margen de Ganancia",
+    analytics_total_revenue: "Ingresos Totales",
+    analytics_coffee_sold: "Café Vendido",
+    analytics_total_orders: "Pedidos Totales",
+    analytics_revenue_profit: "Ingresos y Ganancias a lo Largo del Tiempo",
+    analytics_no_data: "No hay datos disponibles para el período seleccionado.",
   },
 };
 

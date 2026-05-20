@@ -4,16 +4,18 @@ import {
   fetchTopRoastLevels,
   fetchTopPrepMethods
 } from '@/actions/analytics'
+import { fetchSettings } from '@/actions/settings'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AnalyticsPage() {
-  const [summary, revenue, roastData, prepData] = await Promise.all([
+  const [summary, revenue, roastData, prepData, settings] = await Promise.all([
     fetchAnalyticsSummary(),
     fetchRevenueTimeSeries(),
     fetchTopRoastLevels(),
-    fetchTopPrepMethods()
+    fetchTopPrepMethods(),
+    fetchSettings()
   ])
 
   return (
@@ -28,6 +30,7 @@ export default async function AnalyticsPage() {
         initialRevenue={revenue}
         initialRoast={roastData}
         initialPrep={prepData}
+        settings={settings}
       />
     </div>
   )

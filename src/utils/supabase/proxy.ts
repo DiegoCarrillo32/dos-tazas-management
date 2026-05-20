@@ -37,12 +37,22 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Ignore internal Next.js requests and static assets that might slip through the matcher
+  // Ignore internal Next.js requests and static assets (PWA manifest, icons, etc.)
   const path = request.nextUrl.pathname
   if (
     path.startsWith('/_next') ||
     path.includes('turbopack') ||
-    path.endsWith('.js')
+    path.endsWith('.js') ||
+    path.endsWith('.json') ||
+    path.endsWith('.webmanifest') ||
+    path.endsWith('.png') ||
+    path.endsWith('.jpg') ||
+    path.endsWith('.jpeg') ||
+    path.endsWith('.svg') ||
+    path.endsWith('.ico') ||
+    path.endsWith('.css') ||
+    path.endsWith('.webp') ||
+    path.endsWith('.gif')
   ) {
     return supabaseResponse
   }

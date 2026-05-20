@@ -19,6 +19,15 @@ export type CustomerWithLastPurchase = CustomerRecord & {
   last_purchase_date: string | null
 }
 
+export type CostBreakdown = {
+  coffee: number
+  bag: number
+  sticker: number
+  electricity: number
+  fuel: number
+  roasting_time: number
+}
+
 export type OrderRecord = {
   id: string
   user_id: string
@@ -32,6 +41,9 @@ export type OrderRecord = {
   origin_notes: string | null
   inventory_id: string | null
   order_date: string
+  bag_count: number
+  total_cost: number | null
+  cost_breakdown: CostBreakdown | null
 }
 
 // Joined type for order + customer
@@ -54,6 +66,7 @@ export type OrderInsertParams = {
   total_price: number
   origin_notes?: string | null
   inventory_id?: string | null
+  bag_count?: number
 }
 
 export type OrderUpdateParams = Partial<OrderInsertParams>
@@ -78,12 +91,16 @@ export type AnalyticsSummary = {
   totalRevenue: number
   totalCoffeeSoldGrams: number
   totalOrders: number
+  totalCost: number
+  totalProfit: number
 }
 
 export type RevenueDataPoint = {
   date: string
   revenue: number
   orders: number
+  cost: number
+  profit: number
 }
 
 export type BreakdownItem = {
@@ -121,6 +138,11 @@ export type UserSettingsRecord = {
   business_name: string | null
   roast_loss_percentage: number
   currency_symbol: string
+  cost_per_bag: number
+  cost_per_sticker: number
+  cost_electricity_per_order: number
+  cost_fuel_per_order: number
+  cost_roasting_time_per_order: number
   updated_at: string
 }
 
@@ -128,4 +150,9 @@ export type UserSettingsUpdateParams = {
   business_name?: string | null
   roast_loss_percentage?: number
   currency_symbol?: string
+  cost_per_bag?: number
+  cost_per_sticker?: number
+  cost_electricity_per_order?: number
+  cost_fuel_per_order?: number
+  cost_roasting_time_per_order?: number
 }
