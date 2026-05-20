@@ -34,11 +34,10 @@ interface OrderFormProps {
 
 const PREPARATION_METHODS = [
   "Whole Bean",
-  "V60",
-  "French Press",
-  "Espresso",
-  "Aeropress",
-  "Moka Pot",
+  "Elec Perk",
+  "Drip",
+  "Auto-Drip",
+  "Coarse",
 ];
 const ROAST_LEVELS = ["Light", "Medium-Light", "Medium", "Medium-Dark", "Dark"];
 

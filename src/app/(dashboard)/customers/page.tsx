@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useCustomers } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Plus, Users, Edit } from 'lucide-react'
+import { Plus, Users, Edit, Search } from 'lucide-react'
 import { CustomerForm } from '@/components/CustomerForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
@@ -13,11 +14,37 @@ export default function CustomersPage() {
   const { t } = useTranslation()
   const { data: customers, isLoading } = useCustomers()
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
   if (isLoading) {
     return <TableSkeleton cols={6} rows={4} />
   }
 
   const items = customers || []
+
+  // Filter items
+  const filteredItems = items.filter(customer => {
+    const query = searchQuery.toLowerCase()
+    return (
+      customer.full_name?.toLowerCase().includes(query) ||
+      customer.phone?.toLowerCase().includes(query) ||
+      customer.address?.toLowerCase().includes(query)
+    )
+  })
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize))
+  const activePage = Math.min(currentPage, totalPages)
+  const startIndex = (activePage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedItems = filteredItems.slice(startIndex, endIndex)
+
+  const showingText = t('pag_showing')
+    .replace('{start}', String(filteredItems.length === 0 ? 0 : startIndex + 1))
+    .replace('{end}', String(Math.min(endIndex, filteredItems.length)))
+    .replace('{total}', String(filteredItems.length))
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -40,14 +67,54 @@ export default function CustomersPage() {
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
-        <CardHeader className="bg-white-pergamino border-b border-warm-roast/5">
-          <CardTitle className="text-xl font-heading text-expresso flex items-center gap-2">
-            <Users className="h-5 w-5 text-coffee-fruit" />
-            {t('customers_directory')}
-          </CardTitle>
-          <CardDescription className="text-expresso/60">
-            {items.length} total
-          </CardDescription>
+        <CardHeader className="bg-white-pergamino border-b border-warm-roast/5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <CardTitle className="text-xl font-heading text-expresso flex items-center gap-2">
+              <Users className="h-5 w-5 text-coffee-fruit" />
+              {t('customers_directory')}
+            </CardTitle>
+            <CardDescription className="text-expresso/60">
+              {filteredItems.length === items.length
+                ? `${items.length} total`
+                : `${filteredItems.length} ${t('orders_pending').toLowerCase()} (${items.length} total)`}
+            </CardDescription>
+          </div>
+
+          {/* Search and Page Size Controls */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
+              <input
+                type="text"
+                placeholder={t('pag_search')}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="w-full pl-9 pr-4 py-2 text-sm bg-warm-roast/5 border border-warm-roast/10 rounded-full focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso placeholder-expresso/40"
+              />
+            </div>
+            
+            {/* Page Size Select */}
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <span className="text-xs text-expresso/60 font-semibold">{t('pag_page_size')}:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value))
+                  setCurrentPage(1)
+                }}
+                className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-semibold"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -63,7 +130,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.length === 0 ? (
+                {paginatedItems.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-expresso/60 border-b border-warm-roast/10">
                       <div className="flex flex-col items-center justify-center gap-3">
@@ -74,7 +141,7 @@ export default function CustomersPage() {
                     </td>
                   </tr>
                 ) : (
-                  items.map((customer) => (
+                  paginatedItems.map((customer) => (
                     <tr key={customer.id} className="border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors group">
                       <td className="px-6 py-4 font-medium text-expresso">
                         {customer.full_name}
@@ -117,6 +184,69 @@ export default function CustomersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 border-t border-warm-roast/10 bg-warm-roast/5 rounded-b-lg">
+              <div className="text-xs text-expresso/60 font-semibold">
+                {showingText}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activePage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+                >
+                  {t('pag_previous')}
+                </Button>
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const page = idx + 1;
+                  // Show current page, first, last, and pages around current page
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - activePage) <= 1
+                  ) {
+                    return (
+                      <Button
+                        key={page}
+                        variant={activePage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className={`h-8 w-8 p-0 text-xs font-bold ${
+                          activePage === page
+                            ? "bg-warm-roast hover:bg-coffee-fruit text-white"
+                            : "text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  }
+                  if (
+                    page === 2 ||
+                    page === totalPages - 1
+                  ) {
+                    return (
+                      <span key={page} className="px-1 text-expresso/40 text-xs select-none">...</span>
+                    );
+                  }
+                  return null;
+                })}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activePage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+                >
+                  {t('pag_next')}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

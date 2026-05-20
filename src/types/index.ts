@@ -40,6 +40,9 @@ export type OrderWithCustomer = OrderRecord & {
     full_name: string
     phone: string | null
   }
+  inventory?: {
+    item_name: string
+  } | null
 }
 
 // Insert params (user_id is set server-side)

@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useInventory, useSettings } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Plus, PackageSearch, Coffee } from 'lucide-react'
+import { Plus, PackageSearch, Coffee, Edit, Search } from 'lucide-react'
 import { InventoryForm } from '@/components/InventoryForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
@@ -14,12 +15,42 @@ export default function InventoryPage() {
   const { data: inventoryItems, isLoading: loadingInventory } = useInventory()
   const { data: settings, isLoading: loadingSettings } = useSettings()
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
   if (loadingInventory || loadingSettings) {
-    return <TableSkeleton cols={5} rows={4} />
+    return <TableSkeleton cols={6} rows={4} />
   }
 
   const items = inventoryItems || []
   const lossRatio = 1 - ((settings?.roast_loss_percentage || 20) / 100)
+
+  // Filter items
+  const filteredItems = items.filter(item => {
+    const query = searchQuery.toLowerCase()
+    const matchesSearch =
+      item.item_name?.toLowerCase().includes(query) ||
+      item.notes?.toLowerCase().includes(query) ||
+      item.category?.toLowerCase().includes(query)
+    
+    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
+    
+    return matchesSearch && matchesCategory
+  })
+
+  // Pagination calculations
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize))
+  const activePage = Math.min(currentPage, totalPages)
+  const startIndex = (activePage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedItems = filteredItems.slice(startIndex, endIndex)
+
+  const showingText = t('pag_showing')
+    .replace('{start}', String(filteredItems.length === 0 ? 0 : startIndex + 1))
+    .replace('{end}', String(Math.min(endIndex, filteredItems.length)))
+    .replace('{total}', String(filteredItems.length))
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -42,14 +73,81 @@ export default function InventoryPage() {
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
-        <CardHeader className="bg-white-pergamino border-b border-warm-roast/5">
-          <CardTitle className="text-xl font-heading text-expresso flex items-center gap-2">
-            <PackageSearch className="h-5 w-5 text-coffee-fruit" />
-            {t('inventory_directory')}
-          </CardTitle>
-          <CardDescription className="text-expresso/60">
-            {items.length} items
-          </CardDescription>
+        <CardHeader className="bg-white-pergamino border-b border-warm-roast/5 flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl font-heading text-expresso flex items-center gap-2">
+                <PackageSearch className="h-5 w-5 text-coffee-fruit" />
+                {t('inventory_directory')}
+              </CardTitle>
+              <CardDescription className="text-expresso/60">
+                {filteredItems.length === items.length
+                  ? `${items.length} items`
+                  : `${filteredItems.length} found (${items.length} total)`}
+              </CardDescription>
+            </div>
+
+            {/* Controls Row */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              {/* Search input */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
+                <input
+                  type="text"
+                  placeholder={t('pag_search')}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-warm-roast/5 border border-warm-roast/10 rounded-full focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso placeholder-expresso/40"
+                />
+              </div>
+
+              {/* Page size select */}
+              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                <span className="text-xs text-expresso/60 font-semibold">{t('pag_page_size')}:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setCurrentPage(1)
+                  }}
+                  className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-semibold"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1.5 md:pb-0 scrollbar-none border-t border-warm-roast/5 pt-3">
+            {[
+              { id: 'all', label: t('pag_all') },
+              { id: 'green_coffee', label: t('inv_form_cat_green') },
+              { id: 'merchandise', label: t('inv_form_cat_merch') },
+              { id: 'equipment', label: t('inv_form_cat_equipment') }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setCategoryFilter(tab.id)
+                  setCurrentPage(1)
+                }}
+                className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all shrink-0 border cursor-pointer ${
+                  categoryFilter === tab.id
+                    ? 'bg-warm-roast text-white border-warm-roast shadow-sm'
+                    : 'bg-warm-roast/5 text-expresso/70 border-warm-roast/10 hover:bg-warm-roast/10'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -60,13 +158,14 @@ export default function InventoryPage() {
                   <th scope="col" className="px-6 py-4">{t('inventory_col_category')}</th>
                   <th scope="col" className="px-6 py-4">{t('inventory_col_raw')}</th>
                   <th scope="col" className="px-6 py-4">{t('inventory_col_yield').replace('{loss}', String(settings?.roast_loss_percentage || 20))}</th>
-                  <th scope="col" className="px-6 py-4 rounded-tr-lg">{t('inventory_col_cost')}</th>
+                  <th scope="col" className="px-6 py-4">{t('inventory_col_cost')}</th>
+                  <th scope="col" className="px-6 py-4 text-right rounded-tr-lg">{t('customers_col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {items.length === 0 ? (
+                {paginatedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-expresso/60 border-b border-warm-roast/10">
+                    <td colSpan={6} className="px-6 py-12 text-center text-expresso/60 border-b border-warm-roast/10">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <Coffee className="h-12 w-12 text-warm-roast/20" />
                         <p className="text-lg font-medium">{t('inventory_no_found')}</p>
@@ -75,7 +174,7 @@ export default function InventoryPage() {
                     </td>
                   </tr>
                 ) : (
-                  items.map((item) => {
+                  paginatedItems.map((item) => {
                     const isCoffee = item.category === 'green_coffee'
                     const roastedYield = isCoffee ? Math.floor(item.stock_grams * lossRatio) : null
                     const isLowStock = isCoffee && item.stock_grams < 5000
@@ -106,6 +205,18 @@ export default function InventoryPage() {
                         <td className="px-6 py-4 text-expresso/70">
                           {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic">N/A</span>}
                         </td>
+                        <td className="px-6 py-4 text-right">
+                          <Dialog>
+                            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
+                              <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
+                              <InventoryForm initialData={item} settings={settings} />
+                            </DialogContent>
+                          </Dialog>
+                        </td>
                       </tr>
                     )
                   })
@@ -113,6 +224,68 @@ export default function InventoryPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 border-t border-warm-roast/10 bg-warm-roast/5 rounded-b-lg">
+              <div className="text-xs text-expresso/60 font-semibold">
+                {showingText}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activePage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+                >
+                  {t('pag_previous')}
+                </Button>
+                {Array.from({ length: totalPages }).map((_, idx) => {
+                  const page = idx + 1;
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - activePage) <= 1
+                  ) {
+                    return (
+                      <Button
+                        key={page}
+                        variant={activePage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className={`h-8 w-8 p-0 text-xs font-bold ${
+                          activePage === page
+                            ? "bg-warm-roast hover:bg-coffee-fruit text-white"
+                            : "text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  }
+                  if (
+                    page === 2 ||
+                    page === totalPages - 1
+                  ) {
+                    return (
+                      <span key={page} className="px-1 text-expresso/40 text-xs select-none">...</span>
+                    );
+                  }
+                  return null;
+                })}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={activePage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+                >
+                  {t('pag_next')}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

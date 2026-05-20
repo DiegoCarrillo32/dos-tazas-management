@@ -11,6 +11,9 @@ export async function GET() {
       customers (
         full_name,
         phone
+      ),
+      inventory (
+        item_name
       )
     `)
     .eq('fulfillment_status', 'delivered')
@@ -23,7 +26,8 @@ export async function GET() {
 
   const mapped = (orders || []).map(order => ({
     ...order,
-    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers
+    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers,
+    inventory: Array.isArray(order.inventory) ? order.inventory[0] : order.inventory
   }))
 
   return NextResponse.json(mapped)

@@ -14,6 +14,9 @@ export async function fetchOrders(): Promise<OrderWithCustomer[]> {
       customers (
         full_name,
         phone
+      ),
+      inventory (
+        item_name
       )
     `)
     .or('fulfillment_status.neq.delivered,payment_status.neq.paid')
@@ -26,7 +29,8 @@ export async function fetchOrders(): Promise<OrderWithCustomer[]> {
 
   return (orders || []).map(order => ({
     ...order,
-    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers
+    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers,
+    inventory: Array.isArray(order.inventory) ? order.inventory[0] : order.inventory
   })) as OrderWithCustomer[]
 }
 
@@ -133,6 +137,9 @@ export async function fetchCompletedOrders(): Promise<OrderWithCustomer[]> {
       customers (
         full_name,
         phone
+      ),
+      inventory (
+        item_name
       )
     `)
     .eq('fulfillment_status', 'delivered')
@@ -146,13 +153,27 @@ export async function fetchCompletedOrders(): Promise<OrderWithCustomer[]> {
 
   return (orders || []).map(order => ({
     ...order,
-    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers
+    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers,
+    inventory: Array.isArray(order.inventory) ? order.inventory[0] : order.inventory
   })) as OrderWithCustomer[]
 }
 
 export async function updateOrder(orderId: string, params: OrderUpdateParams) {
   const supabase = await createClient()
 
+  // 1. Fetch original order details to reconcile inventory
+  const { data: oldOrder, error: fetchError } = await supabase
+    .from('orders')
+    .select('inventory_id, amount_grams')
+    .eq('id', orderId)
+    .single()
+
+  if (fetchError) {
+    console.error('Error fetching old order details:', fetchError)
+    throw new Error('Failed to retrieve original order details for inventory reconciliation.')
+  }
+
+  // 2. Perform database update
   const { data, error } = await supabase
     .from('orders')
     .update(params)
@@ -165,6 +186,111 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
     throw new Error(error.message)
   }
 
+  // 3. Reconcile inventory if inventory_id or amount_grams is updated
+  const inventoryChanged = params.inventory_id !== undefined || params.amount_grams !== undefined
+
+  if (inventoryChanged) {
+    try {
+      const { fetchSettings } = await import('./settings')
+      const settings = await fetchSettings()
+      const lossRatio = 1 - (settings.roast_loss_percentage / 100)
+
+      // Step A: Revert old inventory deduction
+      if (oldOrder.inventory_id && oldOrder.amount_grams) {
+        const { data: oldInvItem } = await supabase
+          .from('inventory')
+          .select('stock_grams')
+          .eq('id', oldOrder.inventory_id)
+          .single()
+
+        if (oldInvItem) {
+          const oldRawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
+          await supabase
+            .from('inventory')
+            .update({ stock_grams: oldInvItem.stock_grams + oldRawGrams })
+            .eq('id', oldOrder.inventory_id)
+        }
+      }
+
+      // Step B: Apply new inventory deduction
+      const newInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
+      const newAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
+
+      if (newInventoryId && newAmountGrams) {
+        const { data: newInvItem } = await supabase
+          .from('inventory')
+          .select('stock_grams')
+          .eq('id', newInventoryId)
+          .single()
+
+        if (newInvItem) {
+          const newRawGrams = Math.ceil(newAmountGrams / lossRatio)
+          await supabase
+            .from('inventory')
+            .update({ stock_grams: newInvItem.stock_grams - newRawGrams })
+            .eq('id', newInventoryId)
+        }
+      }
+    } catch (invErr) {
+      console.error('Failed to reconcile inventory after order update:', invErr)
+    }
+  }
+
   revalidatePath('/', 'layout')
   return data
+}
+
+export async function deleteOrder(orderId: string) {
+  const supabase = await createClient()
+
+  // 1. Fetch original order details to reconcile inventory
+  const { data: oldOrder, error: fetchError } = await supabase
+    .from('orders')
+    .select('inventory_id, amount_grams')
+    .eq('id', orderId)
+    .single()
+
+  if (fetchError) {
+    console.error('Error fetching old order details:', fetchError)
+    throw new Error('Failed to retrieve order details for deletion.')
+  }
+
+  // 2. Revert inventory deduction if applicable
+  if (oldOrder.inventory_id && oldOrder.amount_grams) {
+    try {
+      const { fetchSettings } = await import('./settings')
+      const settings = await fetchSettings()
+      const lossRatio = 1 - (settings.roast_loss_percentage / 100)
+
+      const { data: invItem } = await supabase
+        .from('inventory')
+        .select('stock_grams')
+        .eq('id', oldOrder.inventory_id)
+        .single()
+
+      if (invItem) {
+        const rawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
+        await supabase
+          .from('inventory')
+          .update({ stock_grams: invItem.stock_grams + rawGrams })
+          .eq('id', oldOrder.inventory_id)
+      }
+    } catch (invErr) {
+      console.error('Failed to restore inventory during order deletion:', invErr)
+    }
+  }
+
+  // 3. Delete order
+  const { error } = await supabase
+    .from('orders')
+    .delete()
+    .eq('id', orderId)
+
+  if (error) {
+    console.error('Error deleting order:', error)
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/', 'layout')
+  return { success: true }
 }

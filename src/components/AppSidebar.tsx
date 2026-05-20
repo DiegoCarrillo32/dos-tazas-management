@@ -24,6 +24,7 @@ import {
   SidebarHeader,
   SidebarFooter,
   useSidebar,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { logout } from "@/actions/auth";
 
@@ -31,6 +32,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import type { DictionaryKey } from "@/i18n/dictionaries";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 // Menu items
@@ -72,7 +74,6 @@ const items: {
     icon: Settings,
   },
 ];
-
 export function AppSidebar({
   businessName = "Dos Tazas",
 }: {
@@ -80,24 +81,29 @@ export function AppSidebar({
 }) {
   const { t } = useTranslation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const pathname = usePathname();
 
   return (
     <Sidebar
       className="border-r border-warm-roast/10 shadow-sm"
       variant="sidebar"
+      collapsible="icon"
     >
-      <SidebarHeader className="p-4 flex flex-row items-center gap-3">
-        <div className="bg-coffee-fruit text-white p-2 rounded-lg shadow-inner">
-          <Coffee className="h-6 w-6" />
+      <SidebarHeader className="p-3 border-b border-warm-roast/10 flex flex-row items-center justify-between min-h-[60px]">
+        <div className="flex items-center gap-3 group-data-[state=collapsed]:hidden overflow-hidden">
+          <div className="bg-coffee-fruit text-white p-2 rounded-lg shadow-inner shrink-0">
+            <Coffee className="h-6 w-6" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="font-heading text-lg text-expresso leading-none truncate">
+              {businessName}
+            </span>
+            <span className="text-xs text-expresso/60 font-medium truncate">
+              {t("sidebar_order_management")}
+            </span>
+          </div>
         </div>
-        <div className="flex flex-col">
-          <span className="font-heading text-lg text-expresso leading-none">
-            {businessName}
-          </span>
-          <span className="text-xs text-expresso/60 font-medium">
-            {t("sidebar_order_management")}
-          </span>
-        </div>
+        <SidebarTrigger className="hidden md:inline-flex text-expresso hover:bg-warm-roast/10 group-data-[state=collapsed]:mx-auto" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -109,6 +115,7 @@ export function AppSidebar({
               {items.map((item) => (
                 <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
+                    isActive={pathname === item.url}
                     render={
                       <Link
                         href={item.url}
@@ -117,9 +124,10 @@ export function AppSidebar({
                       />
                     }
                     className="hover:bg-warm-roast/10 hover:text-warm-roast transition-colors data-[active=true]:bg-warm-roast/15 data-[active=true]:text-expresso"
+                    tooltip={t(item.titleKey)}
                   >
                     <item.icon className="h-5 w-5" />
-                    <span className="font-medium text-sm">
+                    <span className="font-medium text-sm group-data-[state=collapsed]:hidden">
                       {t(item.titleKey)}
                     </span>
                   </SidebarMenuButton>
@@ -141,9 +149,10 @@ export function AppSidebar({
                   />
                 }
                 className="text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                tooltip={t("sidebar_logout")}
               >
                 <LogOut className="h-5 w-5" />
-                <span className="font-medium text-sm">
+                <span className="font-medium text-sm group-data-[state=collapsed]:hidden">
                   {t("sidebar_logout")}
                 </span>
               </SidebarMenuButton>

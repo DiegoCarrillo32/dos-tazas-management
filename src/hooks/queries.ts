@@ -19,6 +19,7 @@ import {
   updateOrder,
   updateFulfillmentStatus,
   updatePaymentStatus,
+  deleteOrder,
 } from '@/actions/orders'
 import { createCustomer, updateCustomer } from '@/actions/customers'
 import {
@@ -104,6 +105,19 @@ export function useUpdateOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
+      qc.invalidateQueries({ queryKey: queryKeys.inventory })
+    },
+  })
+}
+
+export function useDeleteOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteOrder(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.orders })
+      qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
+      qc.invalidateQueries({ queryKey: queryKeys.inventory })
     },
   })
 }

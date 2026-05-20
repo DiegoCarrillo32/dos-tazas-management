@@ -79,15 +79,24 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
             </div>
           </CardHeader>
           
-          <CardContent className="pt-4 grid gap-3">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2 text-expresso">
-                <Coffee className="h-4 w-4 text-warm-roast" />
-                <span className="font-semibold">{order.roast_level}</span>
+          <CardContent className="pt-4 grid gap-2.5">
+            {order.inventory?.item_name && (
+              <div className="flex items-center gap-2 text-sm text-expresso bg-coffee-fruit/5 px-2.5 py-1.5 rounded-lg border border-coffee-fruit/10">
+                <Coffee className="h-4 w-4 text-coffee-fruit" />
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xs text-expresso/60 font-semibold">{t('order_form_coffee_bean').split(' (')[0]}:</span>
+                  <span className="font-bold">{order.inventory.item_name}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-expresso">
-                <span className="text-warm-roast font-bold text-lg leading-none">♨</span>
-                <span className="font-semibold">{order.preparation_method}</span>
+            )}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-warm-roast/5 p-2 rounded-lg border border-warm-roast/10 flex flex-col justify-center">
+                <span className="text-expresso/50 font-bold uppercase tracking-wider text-[10px]">{t('order_form_roast_level')}</span>
+                <span className="font-semibold text-expresso mt-0.5">{order.roast_level}</span>
+              </div>
+              <div className="bg-warm-roast/5 p-2 rounded-lg border border-warm-roast/10 flex flex-col justify-center">
+                <span className="text-expresso/50 font-bold uppercase tracking-wider text-[10px]">{t('order_form_preparation')}</span>
+                <span className="font-semibold text-expresso mt-0.5">{order.preparation_method}</span>
               </div>
             </div>
 

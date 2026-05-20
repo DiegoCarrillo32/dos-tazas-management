@@ -11,11 +11,13 @@ import {
   CheckCircle,
   Package,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrderForm } from "@/components/OrderForm";
 import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import { useDeleteOrder } from "@/hooks/queries";
 
 interface OrderDetailsModalProps {
   order: OrderWithCustomer;
@@ -34,6 +36,17 @@ export function OrderDetailsModal({
 }: OrderDetailsModalProps) {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
+  const deleteMutation = useDeleteOrder();
+
+  const handleDelete = () => {
+    if (window.confirm(t('delete_confirm') || 'Are you sure you want to delete this order?')) {
+      deleteMutation.mutate(order.id, {
+        onSuccess: () => {
+          if (onClose) onClose();
+        },
+      });
+    }
+  };
 
   if (isEditing) {
     return (
@@ -118,7 +131,18 @@ export function OrderDetailsModal({
         </div>
 
         {/* Coffee Details */}
-        <div className="bg-warm-roast/5 rounded-lg p-4 border border-warm-roast/10 grid grid-cols-2 gap-4">
+        <div className="bg-warm-roast/5 rounded-lg p-4 border border-warm-roast/10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {order.inventory?.item_name && (
+            <div className="sm:col-span-2 border-b border-warm-roast/10 pb-3">
+              <div className="text-xs text-expresso/50 font-bold uppercase tracking-wider mb-1">
+                {t('order_form_coffee_bean').split(' (')[0]}
+              </div>
+              <div className="flex items-center gap-2 text-expresso font-bold text-base">
+                <Coffee className="h-5 w-5 text-coffee-fruit" />
+                {order.inventory.item_name}
+              </div>
+            </div>
+          )}
           <div>
             <div className="text-xs text-expresso/50 font-bold uppercase tracking-wider mb-1">
               {t('order_form_roast_level')}
@@ -165,6 +189,15 @@ export function OrderDetailsModal({
         )}
 
         <div className="flex justify-end gap-2 pt-4 border-t border-warm-roast/10">
+          <Button
+            variant="ghost"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2 mr-auto"
+          >
+            <Trash2 className="h-4 w-4" />
+            {t('delete')}
+          </Button>
           <Button variant="outline" onClick={onClose} className="text-expresso">
             {t('order_close')}
           </Button>

@@ -13,8 +13,8 @@ export const proxyConfig = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - assets (public assets)
-     * Feel free to modify this pattern to include more paths.
+     * - manifest.json / other static manifest or asset files
      */
-    '/((?!_next/static|_next/image|favicon.ico|assets/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js|css|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|assets/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|js|css|ico|json|webmanifest)$).*)',
   ],
 }
