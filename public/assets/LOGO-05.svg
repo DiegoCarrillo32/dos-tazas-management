@@ -4,6 +4,12 @@
     <style>
       .cls-1 {
         fill: #410505;
+        transition: fill 0.3s ease;
+      }
+      @media (prefers-color-scheme: dark) {
+        .cls-1 {
+          fill: #fff5e1;
+        }
       }
     </style>
   </defs>
