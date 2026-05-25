@@ -26,7 +26,7 @@ export default function OrdersPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-heading text-expresso">{t('orders_title')}</h1>
           <p className="text-expresso/70 font-medium text-sm">{t('orders_subtitle')}</p>
@@ -37,7 +37,7 @@ export default function OrdersPage() {
             <Plus className="h-5 w-5" />
             <span className="hidden sm:inline font-bold">{t('orders_new')}</span>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="new-order-form">
+          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto" aria-describedby="new-order-form">
             <DialogTitle className="sr-only">{t('orders_create_new')}</DialogTitle>
             <OrderForm customers={customers || []} inventoryItems={coffeeInventory} settings={settings} />
           </DialogContent>

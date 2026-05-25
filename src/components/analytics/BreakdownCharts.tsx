@@ -50,7 +50,7 @@ function BreakdownChart({ title, data, valueLabel = 'grams' }: BreakdownChartPro
               tick={{ fontSize: 12, fill: '#410505' }}
               tickLine={false}
               axisLine={false}
-              width={100}
+              width={120}
             />
             <Tooltip
               contentStyle={{

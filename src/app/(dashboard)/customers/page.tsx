@@ -117,7 +117,57 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="md:hidden">
+            {paginatedItems.length === 0 ? (
+              <div className="px-6 py-12 text-center text-expresso/60">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <Users className="h-12 w-12 text-warm-roast/20" />
+                  <p className="text-lg font-medium">{t('customers_no_found')}</p>
+                  <p className="text-sm">{t('customers_no_found_desc')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-warm-roast/10">
+                {paginatedItems.map((customer) => (
+                  <div key={customer.id} className="flex flex-col gap-3 p-4 bg-warm-roast/5 border-b border-warm-roast/10">
+                    <div className="flex items-start justify-between">
+                      <span className="font-bold text-expresso">{customer.full_name}</span>
+                      <Dialog>
+                        <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
+                          <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
+                          <CustomerForm initialData={customer} />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                    {customer.phone && (
+                      <div className="text-sm text-expresso/80">
+                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('customers_col_phone')}: </span>
+                        {customer.phone}
+                      </div>
+                    )}
+                    {customer.last_purchase_date && (
+                      <div className="text-sm text-expresso/80">
+                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('customers_col_last_purchase')}: </span>
+                        {new Date(customer.last_purchase_date).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs uppercase bg-warm-roast/5 text-expresso/70 font-bold border-b border-warm-roast/10">
                 <tr>

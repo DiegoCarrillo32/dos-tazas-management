@@ -19,6 +19,7 @@ interface OrderCardProps {
 
 export function OrderCard({ order, customers, inventoryItems, settings }: OrderCardProps) {
   const { t } = useTranslation()
+  const [isOpen, setIsOpen] = useState(false)
   const [fulfillment, setFulfillment] = useState<FulfillmentStatus>(order.fulfillment_status)
   const [payment, setPayment] = useState<PaymentStatus>(order.payment_status)
 
@@ -54,7 +55,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
   }
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <Card className="w-full shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group">
         <DialogTrigger render={<button type="button" className="cursor-pointer text-left w-full" />}>
           <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 pb-4 relative">
@@ -145,9 +146,12 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
         </Button>
       </CardFooter>
 
-      <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none">
+      <DialogContent 
+        className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+        closeButtonClassName="text-white/70 hover:text-white hover:bg-white/10"
+      >
         <DialogTitle className="sr-only">Order Details</DialogTitle>
-        <OrderDetailsModal order={order} customers={customers} inventoryItems={inventoryItems} settings={settings} />
+        <OrderDetailsModal order={order} customers={customers} inventoryItems={inventoryItems} settings={settings} onClose={() => setIsOpen(false)} />
       </DialogContent>
     </Card>
   </Dialog>

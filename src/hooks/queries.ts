@@ -56,10 +56,10 @@ export function useOrders() {
   })
 }
 
-export function useCompletedOrders() {
-  return useQuery<OrderWithCustomer[]>({
-    queryKey: queryKeys.completedOrders,
-    queryFn: () => fetchJson('/api/orders/completed'),
+export function useCompletedOrders(page: number = 1, limit: number = 10) {
+  return useQuery<{ data: OrderWithCustomer[]; total: number }>({
+    queryKey: [...queryKeys.completedOrders, page, limit],
+    queryFn: () => fetchJson(`/api/orders/completed?page=${page}&limit=${limit}`),
   })
 }
 
@@ -163,6 +163,8 @@ export function useUpdateCustomer() {
       updateCustomer(id, params),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.customers })
+      qc.invalidateQueries({ queryKey: queryKeys.orders })
+      qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
     },
   })
 }

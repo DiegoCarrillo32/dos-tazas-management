@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { updateSettings } from '@/actions/settings'
 import type { UserSettingsRecord } from '@/types'
 import { Save, Building2, Percent, DollarSign, Globe, Coins } from 'lucide-react'
@@ -129,15 +130,15 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                 <Globe className="h-4 w-4 text-warm-roast" />
                 {t('settings_language')}
               </Label>
-              <select
-                id="app_language"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-                className="flex h-10 w-full md:max-w-[150px] items-center justify-between rounded-md border border-warm-roast/30 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-coffee-fruit focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
+              <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
+                <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit w-full md:max-w-[150px]">
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="es">Español</SelectItem>
+                </SelectContent>
+              </Select>
               <p className="text-xs text-expresso/60">
                 {t('settings_language_hint')}
               </p>

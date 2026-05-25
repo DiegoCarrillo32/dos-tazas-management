@@ -150,7 +150,74 @@ export default function InventoryPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Mobile Card View */}
+          <div className="md:hidden">
+            {paginatedItems.length === 0 ? (
+              <div className="px-6 py-12 text-center text-expresso/60">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <Coffee className="h-12 w-12 text-warm-roast/20" />
+                  <p className="text-lg font-medium">{t('inventory_no_found')}</p>
+                  <p className="text-sm">{t('inventory_no_found_desc')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-warm-roast/10">
+                {paginatedItems.map((item) => {
+                  const isCoffee = item.category === 'green_coffee'
+                  const roastedYield = isCoffee ? Math.floor(item.stock_grams * lossRatio) : null
+                  const isLowStock = isCoffee && item.stock_grams < 5000
+
+                  return (
+                    <div key={item.id} className="flex flex-col gap-3 p-4 bg-warm-roast/5 border-b border-warm-roast/10">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-expresso">{item.item_name}</span>
+                          <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full capitalize">
+                            {item.category.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <Dialog>
+                          <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
+                            <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
+                            <InventoryForm initialData={item} settings={settings} />
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="text-sm">
+                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_raw')}: </span>
+                        <span className={`font-semibold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
+                          {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
+                        </span>
+                        {isLowStock && <span className="text-red-500 text-xs ml-1">⚠ Low</span>}
+                      </div>
+                      {isCoffee && roastedYield !== null && (
+                        <div className="text-sm">
+                          <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_yield').replace('{loss}', String(settings?.roast_loss_percentage || 20))}: </span>
+                          <span className="text-coffee-fruit font-medium bg-coffee-fruit/10 px-2 py-0.5 rounded-md">
+                            {(roastedYield / 1000).toFixed(2)} kg
+                          </span>
+                        </div>
+                      )}
+                      <div className="text-sm text-expresso/70">
+                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_cost')}: </span>
+                        {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic">N/A</span>}
+                      </div>
+                      {item.notes && (
+                        <p className="text-xs text-expresso/50 truncate">{item.notes}</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs uppercase bg-warm-roast/5 text-expresso/70 font-bold border-b border-warm-roast/10">
                 <tr>

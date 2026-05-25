@@ -116,6 +116,23 @@ export const dictionaries = {
     order_form_update: "Update Order",
     order_form_create: "Create Order",
 
+    // Roast Levels
+    roast_light: "Light",
+    roast_medium_light: "Medium-Light",
+    roast_medium: "Medium",
+    roast_medium_dark: "Medium-Dark",
+    roast_dark: "Dark",
+
+    // Preparation Methods
+    prep_whole_bean: "Whole Bean",
+    prep_elec_perk: "Elec Perk",
+    prep_drip: "Drip",
+    prep_auto_drip: "Auto-Drip",
+    prep_coarse: "Coarse",
+
+    // Stock warnings
+    stock_warning_negative: "Warning: Stock will go negative after this order.",
+
     // Customers
     customers_title: "Customers",
     customers_subtitle: "Manage your customer database and contacts.",
@@ -309,6 +326,23 @@ export const dictionaries = {
     order_form_origin_notes_placeholder: "ej. Finca El Paraíso, Diego Bermúdez",
     order_form_update: "Actualizar Pedido",
     order_form_create: "Crear Pedido",
+
+    // Roast Levels
+    roast_light: "Ligero",
+    roast_medium_light: "Medio-Ligero",
+    roast_medium: "Medio",
+    roast_medium_dark: "Medio-Oscuro",
+    roast_dark: "Oscuro",
+
+    // Preparation Methods
+    prep_whole_bean: "Grano Entero",
+    prep_elec_perk: "Percolador Eléctrico",
+    prep_drip: "Goteo",
+    prep_auto_drip: "Goteo Automático",
+    prep_coarse: "Molido Grueso",
+
+    // Stock warnings
+    stock_warning_negative: "Advertencia: El stock será negativo después de este pedido.",
 
     // Customers
     customers_title: "Clientes",

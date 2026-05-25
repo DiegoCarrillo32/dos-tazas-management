@@ -68,6 +68,9 @@ export async function createOrder(params: OrderInsertParams) {
 
       // Deduct from inventory
       const newStock = invItem.stock_grams - rawGramsUsed
+      if (newStock < 0) {
+        console.warn(`[Inventory Warning] Stock for item ${params.inventory_id} will go negative: ${newStock}g remaining after this order.`)
+      }
       await supabase
         .from('inventory')
         .update({ stock_grams: newStock })
@@ -205,40 +208,72 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
 
   if (inventoryChanged) {
     try {
-      // Step A: Revert old inventory deduction
-      if (oldOrder.inventory_id && oldOrder.amount_grams) {
-        const { data: oldInvItem } = await supabase
-          .from('inventory')
-          .select('stock_grams')
-          .eq('id', oldOrder.inventory_id)
-          .single()
-
-        if (oldInvItem) {
-          const oldRawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
-          await supabase
-            .from('inventory')
-            .update({ stock_grams: oldInvItem.stock_grams + oldRawGrams })
-            .eq('id', oldOrder.inventory_id)
-        }
-      }
-
-      // Step B: Apply new inventory deduction
       const newInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
       const newAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
+      const sameBean = newInventoryId === oldOrder.inventory_id
 
-      if (newInventoryId && newAmountGrams) {
-        const { data: newInvItem } = await supabase
-          .from('inventory')
-          .select('stock_grams')
-          .eq('id', newInventoryId)
-          .single()
+      if (sameBean && oldOrder.inventory_id && oldOrder.amount_grams && newAmountGrams) {
+        // Optimized path: same bean — compute diff and do a single SELECT + UPDATE
+        const oldRawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
+        const newRawGrams = Math.ceil(newAmountGrams / lossRatio)
+        const diffGrams = newRawGrams - oldRawGrams
 
-        if (newInvItem) {
-          const newRawGrams = Math.ceil(newAmountGrams / lossRatio)
-          await supabase
+        if (diffGrams !== 0) {
+          const { data: invItem } = await supabase
             .from('inventory')
-            .update({ stock_grams: newInvItem.stock_grams - newRawGrams })
+            .select('stock_grams')
+            .eq('id', oldOrder.inventory_id)
+            .single()
+
+          if (invItem) {
+            const updatedStock = invItem.stock_grams - diffGrams
+            if (updatedStock < 0) {
+              console.warn(`[Inventory Warning] Stock for item ${oldOrder.inventory_id} will go negative: ${updatedStock}g remaining after this order update.`)
+            }
+            await supabase
+              .from('inventory')
+              .update({ stock_grams: updatedStock })
+              .eq('id', oldOrder.inventory_id)
+          }
+        }
+      } else {
+        // Different bean — revert old deduction, then apply new deduction
+        // Step A: Revert old inventory deduction
+        if (oldOrder.inventory_id && oldOrder.amount_grams) {
+          const { data: oldInvItem } = await supabase
+            .from('inventory')
+            .select('stock_grams')
+            .eq('id', oldOrder.inventory_id)
+            .single()
+
+          if (oldInvItem) {
+            const oldRawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
+            await supabase
+              .from('inventory')
+              .update({ stock_grams: oldInvItem.stock_grams + oldRawGrams })
+              .eq('id', oldOrder.inventory_id)
+          }
+        }
+
+        // Step B: Apply new inventory deduction
+        if (newInventoryId && newAmountGrams) {
+          const { data: newInvItem } = await supabase
+            .from('inventory')
+            .select('stock_grams')
             .eq('id', newInventoryId)
+            .single()
+
+          if (newInvItem) {
+            const newRawGrams = Math.ceil(newAmountGrams / lossRatio)
+            const updatedStock = newInvItem.stock_grams - newRawGrams
+            if (updatedStock < 0) {
+              console.warn(`[Inventory Warning] Stock for item ${newInventoryId} will go negative: ${updatedStock}g remaining after this order update.`)
+            }
+            await supabase
+              .from('inventory')
+              .update({ stock_grams: updatedStock })
+              .eq('id', newInventoryId)
+          }
         }
       }
     } catch (invErr) {

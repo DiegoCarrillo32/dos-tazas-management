@@ -63,7 +63,7 @@ export function OrdersBoard({ orders, customers, inventoryItems, settings }: { o
       </div>
 
       {/* Desktop View: Kanban */}
-      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="hidden md:grid md:grid-cols-3 gap-6">
         <KanbanColumn title={t('orders_pending')} emptyText={t('orders_no_stage_orders')} items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50" />
         <KanbanColumn title={t('orders_roasted')} emptyText={t('orders_no_stage_orders')} items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50" />
         <KanbanColumn title={t('orders_delivered')} emptyText={t('orders_no_stage_orders')} items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50" />

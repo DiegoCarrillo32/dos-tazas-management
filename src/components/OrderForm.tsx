@@ -33,13 +33,19 @@ interface OrderFormProps {
 }
 
 const PREPARATION_METHODS = [
-  "Whole Bean",
-  "Elec Perk",
-  "Drip",
-  "Auto-Drip",
-  "Coarse",
+  { value: "Whole Bean", labelKey: "prep_whole_bean" as const },
+  { value: "Elec Perk", labelKey: "prep_elec_perk" as const },
+  { value: "Drip", labelKey: "prep_drip" as const },
+  { value: "Auto-Drip", labelKey: "prep_auto_drip" as const },
+  { value: "Coarse", labelKey: "prep_coarse" as const },
 ];
-const ROAST_LEVELS = ["Light", "Medium-Light", "Medium", "Medium-Dark", "Dark"];
+const ROAST_LEVELS = [
+  { value: "Light", labelKey: "roast_light" as const },
+  { value: "Medium-Light", labelKey: "roast_medium_light" as const },
+  { value: "Medium", labelKey: "roast_medium" as const },
+  { value: "Medium-Dark", labelKey: "roast_medium_dark" as const },
+  { value: "Dark", labelKey: "roast_dark" as const },
+];
 
 export function OrderForm({
   customers: initialCustomers,
@@ -143,15 +149,15 @@ export function OrderForm({
   };
 
   return (
-    <Card className="w-full shadow-lg border-warm-roast/20">
+    <Card className="w-full shadow-lg border-warm-roast/20 flex flex-col max-h-[85vh] sm:max-h-[90vh]">
       <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 px-6 py-5 m-0">
         <CardTitle className="text-xl font-heading text-expresso">
           {initialData?.id ? t('order_form_edit') : t('order_form_new')}
         </CardTitle>
       </CardHeader>
 
-      <form onSubmit={handleSubmit} className="flex flex-col">
-        <CardContent className="space-y-4 px-6 pb-6 pt-4 m-0">
+      <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+        <CardContent className="space-y-4 px-6 pb-6 pt-4 m-0 overflow-y-auto">
           {error && (
             <div className="text-red-500 text-sm font-medium">{error}</div>
           )}
@@ -253,8 +259,8 @@ export function OrderForm({
                 </SelectTrigger>
                 <SelectContent>
                   {PREPARATION_METHODS.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
+                    <SelectItem key={method.value} value={method.value}>
+                      {t(method.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -275,8 +281,8 @@ export function OrderForm({
                 </SelectTrigger>
                 <SelectContent>
                   {ROAST_LEVELS.map((roast) => (
-                    <SelectItem key={roast} value={roast}>
-                      {roast}
+                    <SelectItem key={roast.value} value={roast.value}>
+                      {t(roast.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
