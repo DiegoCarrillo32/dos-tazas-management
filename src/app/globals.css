@@ -39,6 +39,7 @@ body {
   font-family: "Gotham", sans-serif;
   background-color: var(--color-white-pergamino);
   color: var(--color-expresso);
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {

@@ -9,7 +9,7 @@ interface StatCardProps {
   icon: LucideIcon
   trend?: string
   color?: string
-  dragHandleProps?: any
+  dragHandleProps?: Record<string, unknown>
 }
 
 export function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'text-coffee-fruit', dragHandleProps }: StatCardProps) {

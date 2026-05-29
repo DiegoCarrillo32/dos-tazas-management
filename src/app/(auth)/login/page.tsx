@@ -101,7 +101,7 @@ export default function LoginPage() {
 
       {/* Decorative slogan footer */}
       <p className="text-center text-[11px] text-expresso/40 mt-6 font-medium italic">
-        "Roasted to perfection, managed with ease."
+        &quot;Roasted to perfection, managed with ease.&quot;
       </p>
     </div>
   )

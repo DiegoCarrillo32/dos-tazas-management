@@ -18,6 +18,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from '@dnd-kit/core'
 import {
   arrayMove,
@@ -25,6 +27,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
+import { restrictToWindowEdges } from '@dnd-kit/modifiers'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import {
   fetchAnalyticsSummary,
@@ -49,6 +52,7 @@ interface AnalyticsDashboardProps {
   initialPrep: BreakdownItem[]
   settings?: UserSettingsRecord
 }
+const DEFAULT_CARD_ORDER = ['revenue', 'cost', 'profit', 'margin', 'coffee_sold', 'total_orders']
 
 export function AnalyticsDashboard({
   initialSummary,
@@ -65,23 +69,25 @@ export function AnalyticsDashboard({
   const [roastData, setRoastData] = useState(initialRoast)
   const [prepData, setPrepData] = useState(initialPrep)
 
-  const defaultOrder = ['revenue', 'cost', 'profit', 'margin', 'coffee_sold', 'total_orders']
-  const [cardOrder, setCardOrder] = useState<string[]>(defaultOrder)
+  const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER)
   const [isMounted, setIsMounted] = useState(false)
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setIsMounted(true)
     const saved = localStorage.getItem('dos_tazas_analytics_card_order')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length === defaultOrder.length) {
+        if (Array.isArray(parsed) && parsed.length === DEFAULT_CARD_ORDER.length) {
           setCardOrder(parsed)
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
   const sensors = useSensors(
@@ -92,6 +98,10 @@ export function AnalyticsDashboard({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -104,6 +114,11 @@ export function AnalyticsDashboard({
         return newOrder
       })
     }
+    setActiveId(null)
+  }
+
+  const handleDragCancel = () => {
+    setActiveId(null)
   }
 
   const cardsConfig = {
@@ -121,7 +136,7 @@ export function AnalyticsDashboard({
       value: `${currencySymbol}${summary.totalCost.toFixed(2)}`,
       icon: Coins,
       color: "text-red-600",
-      className: "col-span-12 sm:col-span-6 lg:col-span-2",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
     },
     profit: {
       id: 'profit',
@@ -137,7 +152,7 @@ export function AnalyticsDashboard({
       value: `${(summary.totalRevenue > 0 ? (summary.totalProfit / summary.totalRevenue) * 100 : 0).toFixed(1)}%`,
       icon: Coins,
       color: (summary.totalRevenue > 0 ? (summary.totalProfit / summary.totalRevenue) * 100 : 0) >= 0 ? 'text-emerald-600' : 'text-red-600',
-      className: "col-span-12 sm:col-span-6 lg:col-span-2",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
     },
     coffee_sold: {
       id: 'coffee_sold',
@@ -146,7 +161,7 @@ export function AnalyticsDashboard({
       subtitle: `${summary.totalCoffeeSoldGrams.toLocaleString()} grams`,
       icon: Coffee,
       color: "text-warm-roast",
-      className: "col-span-12 sm:col-span-6 lg:col-span-6",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
     },
     total_orders: {
       id: 'total_orders',
@@ -154,7 +169,7 @@ export function AnalyticsDashboard({
       value: summary.totalOrders.toString(),
       icon: Package,
       color: "text-expresso",
-      className: "col-span-12 sm:col-span-6 lg:col-span-6",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
     }
   }
 
@@ -209,30 +224,30 @@ export function AnalyticsDashboard({
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="bg-white/60 border border-warm-roast/10 rounded-xl p-4 shadow-sm">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex-1 min-w-[140px] space-y-1.5">
+      <div className="bg-white/70 backdrop-blur-md border border-warm-roast/10 rounded-xl p-5 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+          <div className="space-y-1.5 w-full">
             <Label className="text-expresso text-xs font-semibold">Start Date</Label>
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit text-sm"
+              className="border-warm-roast/30 focus-visible:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors"
             />
           </div>
-          <div className="flex-1 min-w-[140px] space-y-1.5">
+          <div className="space-y-1.5 w-full">
             <Label className="text-expresso text-xs font-semibold">End Date</Label>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit text-sm"
+              className="border-warm-roast/30 focus-visible:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors"
             />
           </div>
-          <div className="flex-1 min-w-[140px] space-y-1.5">
+          <div className="space-y-1.5 w-full">
             <Label className="text-expresso text-xs font-semibold">Payment</Label>
             <Select value={paymentFilter} onValueChange={(val) => setPaymentFilter((val || 'all') as PaymentStatus | 'all')}>
-              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit text-sm">
+              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -242,10 +257,10 @@ export function AnalyticsDashboard({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex-1 min-w-[140px] space-y-1.5">
+          <div className="space-y-1.5 w-full">
             <Label className="text-expresso text-xs font-semibold">Fulfillment</Label>
             <Select value={fulfillmentFilter} onValueChange={(val) => setFulfillmentFilter((val || 'all') as FulfillmentStatus | 'all')}>
-              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit text-sm">
+              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -256,12 +271,12 @@ export function AnalyticsDashboard({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex gap-2 w-full sm:col-span-2 lg:col-span-1">
             <Button
               onClick={applyFilters}
               disabled={isPending}
-              className="bg-coffee-fruit hover:bg-warm-roast text-white flex-1"
-              size="sm"
+              className="bg-coffee-fruit hover:bg-warm-roast text-white flex-1 transition-colors shadow-sm"
+              size="default"
             >
               {isPending ? 'Loading...' : 'Apply'}
             </Button>
@@ -269,8 +284,8 @@ export function AnalyticsDashboard({
               onClick={clearFilters}
               disabled={isPending}
               variant="outline"
-              className="text-expresso border-warm-roast/30"
-              size="sm"
+              className="text-expresso border-warm-roast/30 hover:bg-warm-roast/5 flex-1 transition-colors"
+              size="default"
             >
               Clear
             </Button>
@@ -280,7 +295,14 @@ export function AnalyticsDashboard({
 
       {/* KPI Cards */}
       {isMounted ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+          modifiers={[restrictToWindowEdges]}
+        >
           <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-12 gap-4">
               {cardOrder.map((id) => {
@@ -289,10 +311,17 @@ export function AnalyticsDashboard({
               })}
             </div>
           </SortableContext>
+          <DragOverlay adjustScale={false}>
+            {activeId && cardsConfig[activeId as keyof typeof cardsConfig] ? (
+              <div className="w-full h-full opacity-90 cursor-grabbing shadow-2xl rounded-xl ring-2 ring-coffee-fruit/20">
+                <StatCard {...cardsConfig[activeId as keyof typeof cardsConfig]} />
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
       ) : (
         <div className="grid grid-cols-12 gap-4">
-          {defaultOrder.map((id) => {
+          {DEFAULT_CARD_ORDER.map((id) => {
             const config = cardsConfig[id as keyof typeof cardsConfig]
             return config ? (
               <div key={config.id} className={config.className}>

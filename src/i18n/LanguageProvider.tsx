@@ -16,6 +16,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     const storedLang = localStorage.getItem('app-language') as Language;
     if (storedLang && (storedLang === 'en' || storedLang === 'es')) {
       setLanguageState(storedLang);
@@ -25,6 +26,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       setLanguageState(browserLang);
     }
     setMounted(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const setLanguage = (lang: Language) => {

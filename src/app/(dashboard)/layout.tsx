@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: settings.business_name || "Dos Tazas Management",
     }
-  } catch (error) {
+  } catch {
     return {
       title: "Dos Tazas Management",
     }
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   let settings = null
   try {
     settings = await fetchSettings()
-  } catch (e) {
+  } catch {
     // Ignore errors if not logged in
   }
 

@@ -192,7 +192,7 @@ export function OrderForm({
                 onValueChange={(val) => setCustomerId(val || "")}
                 required
               >
-                <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
+                <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
                   <SelectValue placeholder={t('order_form_select_customer')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -220,7 +220,7 @@ export function OrderForm({
               onValueChange={(val) => setInventoryId(val === "none" || !val ? "" : val)}
               disabled={!!initialData?.id}
             >
-              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
+              <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
                 <SelectValue placeholder={t('order_form_select_bean')} />
               </SelectTrigger>
               <SelectContent>
@@ -254,7 +254,7 @@ export function OrderForm({
                 onValueChange={(val) => setPrepMethod(val || "")}
                 required
               >
-                <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
+                <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
                   <SelectValue placeholder={t('order_form_select_method')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -276,7 +276,7 @@ export function OrderForm({
                 onValueChange={(val) => setRoastLevel(val || "")}
                 required
               >
-                <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
+                <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
                   <SelectValue placeholder={t('order_form_select_roast')} />
                 </SelectTrigger>
                 <SelectContent>

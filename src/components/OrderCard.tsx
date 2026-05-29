@@ -3,12 +3,15 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Coffee, Phone, User, Calendar, DollarSign, Maximize2 } from 'lucide-react'
 import type { FulfillmentStatus, PaymentStatus, OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from '@/types'
 import { OrderDetailsModal } from './OrderDetailsModal'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { useUpdateFulfillment, useUpdatePayment } from '@/hooks/queries'
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface OrderCardProps {
   order: OrderWithCustomer
@@ -23,18 +26,28 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
   const [fulfillment, setFulfillment] = useState<FulfillmentStatus>(order.fulfillment_status)
   const [payment, setPayment] = useState<PaymentStatus>(order.payment_status)
 
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setFulfillment(order.fulfillment_status)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [order.fulfillment_status])
+
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setPayment(order.payment_status)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [order.payment_status])
+
   const fulfillmentMutation = useUpdateFulfillment()
   const paymentMutation = useUpdatePayment()
 
-  const handleFulfillmentToggle = () => {
-    const nextStatus: Record<FulfillmentStatus, FulfillmentStatus> = {
-      'pending': 'roasted',
-      'roasted': 'delivered',
-      'delivered': 'pending'
-    }
-    const newStatus = nextStatus[fulfillment]
-    setFulfillment(newStatus)
-    fulfillmentMutation.mutate({ id: order.id, status: newStatus })
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: order.id,
+  })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
   }
 
   const handlePaymentToggle = () => {
@@ -56,8 +69,12 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="w-full shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group">
-        <DialogTrigger render={<button type="button" className="cursor-pointer text-left w-full" />}>
+      <Card 
+        ref={setNodeRef}
+        style={style}
+        className="w-full shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group"
+      >
+        <DialogTrigger render={<button type="button" className="cursor-grab active:cursor-grabbing text-left w-full" {...attributes} {...listeners} />}>
           <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 pb-4 relative">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-expresso/5 p-1.5 rounded-md">
               <Maximize2 className="h-4 w-4 text-expresso/50" />
@@ -125,15 +142,23 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
         </DialogTrigger>
 
       <CardFooter className="bg-expresso/5 flex gap-2 pt-4 justify-between border-t border-warm-roast/10">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleFulfillmentToggle}
-          disabled={fulfillmentMutation.isPending}
-          className={`flex-1 transition-colors border-transparent ${fulfillmentColors[fulfillment]}`}
+        <Select
+          value={fulfillment}
+          onValueChange={(val) => {
+            const newStatus = val as FulfillmentStatus;
+            setFulfillment(newStatus);
+            fulfillmentMutation.mutate({ id: order.id, status: newStatus });
+          }}
         >
-          {fulfillment === 'pending' ? t('orders_pending') : fulfillment === 'roasted' ? t('orders_roasted') : t('orders_delivered')}
-        </Button>
+          <SelectTrigger size="sm" className={`flex-1 h-7 py-0 text-[0.8rem] font-semibold px-2.5 border-transparent transition-colors rounded-[12px] [&>svg]:size-3.5 ${fulfillmentColors[fulfillment]}`}>
+            <SelectValue>{fulfillment === 'pending' ? t('orders_pending') : fulfillment === 'roasted' ? t('orders_roasted') : t('orders_delivered')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">{t('orders_pending')}</SelectItem>
+            <SelectItem value="roasted">{t('orders_roasted')}</SelectItem>
+            <SelectItem value="delivered">{t('orders_delivered')}</SelectItem>
+          </SelectContent>
+        </Select>
         <Button 
           variant="outline" 
           size="sm" 

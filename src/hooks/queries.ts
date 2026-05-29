@@ -12,7 +12,6 @@ import type {
   CustomerUpdateParams,
   InventoryInsertParams,
   InventoryUpdateParams,
-  CustomerRecord,
 } from '@/types'
 import {
   createOrder,

@@ -25,9 +25,9 @@ export function SortableStatCard({ id, className, ...props }: SortableStatCardPr
   } = useSortable({ id })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
     zIndex: isDragging ? 10 : 1,
   }
 

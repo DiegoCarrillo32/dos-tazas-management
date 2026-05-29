@@ -89,107 +89,124 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             handleSubmit(e)
           }
         }}>
-          <ContentWrapper className="space-y-3">
-            {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
-            
-            <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-expresso">{t('cust_form_full_name')} <span className="text-red-500">*</span></Label>
-              <Input 
-                id="full_name" 
-                placeholder="e.g. John Doe" 
-                value={fullName} 
-                onChange={(e) => setFullName(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-expresso">{t('cust_form_phone')}</Label>
-              <Input 
-                id="phone" 
-                placeholder="e.g. +1 234 567 8900" 
-                value={phone} 
-                onChange={(e) => setPhone(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address" className="text-expresso">{t('cust_form_address')}</Label>
-              <Input 
-                id="address" 
-                placeholder="e.g. 123 Coffee St, Bean City" 
-                value={address} 
-                onChange={(e) => setAddress(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-              />
-            </div>
-          </ContentWrapper>
-
-          <FooterWrapper className="flex justify-end gap-2 mt-4">
-            {onCancel && (
-              <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isPending} className="text-expresso">
-                {t('cancel')}
-              </Button>
-            )}
-            <Button type="button" onClick={handleSubmit} size="sm" disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-              {isPending ? t('loading') : t('cust_form_save')}
-            </Button>
-          </FooterWrapper>
+          <FormContent 
+            error={error} fullName={fullName} setFullName={setFullName}
+            phone={phone} setPhone={setPhone}
+            address={address} setAddress={setAddress}
+            ContentWrapper={ContentWrapper}
+            inline={inline}
+          />
+          <FormFooter 
+            onCancel={onCancel} isPending={isPending} 
+            handleSubmit={handleSubmit} inline={inline} 
+            FooterWrapper={FooterWrapper}
+          />
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col">
-          <ContentWrapper className="space-y-4 px-6 pb-6 pt-4 m-0">
-            {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
-            
-            <div className="space-y-2">
-              <Label htmlFor="full_name" className="text-expresso">{t('cust_form_full_name')} <span className="text-red-500">*</span></Label>
-              <Input 
-                id="full_name" 
-                placeholder="e.g. John Doe" 
-                value={fullName} 
-                onChange={(e) => setFullName(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-expresso">{t('cust_form_phone')}</Label>
-              <Input 
-                id="phone" 
-                placeholder="e.g. +1 234 567 8900" 
-                value={phone} 
-                onChange={(e) => setPhone(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address" className="text-expresso">{t('cust_form_address')}</Label>
-              <Input 
-                id="address" 
-                placeholder="e.g. 123 Coffee St, Bean City" 
-                value={address} 
-                onChange={(e) => setAddress(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-              />
-            </div>
-          </ContentWrapper>
-
-          <FooterWrapper className="flex justify-end gap-3 border-t border-warm-roast/10 bg-expresso/5 p-4 m-0">
-            {onCancel && (
-              <Button type="button" variant="outline" onClick={onCancel} disabled={isPending} className="text-expresso">
-                {t('cancel')}
-              </Button>
-            )}
-            <Button type="submit" disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
-              {isPending ? t('loading') : t('cust_form_save')}
-            </Button>
-          </FooterWrapper>
+          <FormContent 
+            error={error} fullName={fullName} setFullName={setFullName}
+            phone={phone} setPhone={setPhone}
+            address={address} setAddress={setAddress}
+            ContentWrapper={ContentWrapper}
+            inline={inline}
+          />
+          <FormFooter 
+            onCancel={onCancel} isPending={isPending} 
+            handleSubmit={handleSubmit} inline={inline} 
+            FooterWrapper={FooterWrapper}
+            isNativeForm={true}
+          />
         </form>
       )}
     </Wrapper>
+  )
+}
+
+interface FormContentProps {
+  error: string | null
+  fullName: string
+  setFullName: (val: string) => void
+  phone: string
+  setPhone: (val: string) => void
+  address: string
+  setAddress: (val: string) => void
+  ContentWrapper: React.ElementType
+  inline: boolean
+}
+
+function FormContent({ 
+  error, fullName, setFullName, phone, setPhone, address, setAddress, ContentWrapper, inline 
+}: FormContentProps) {
+  const { t } = useTranslation()
+  return (
+    <ContentWrapper className={inline ? "space-y-3" : "space-y-4 px-6 pb-6 pt-4 m-0"}>
+      {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
+      
+      <div className="space-y-2">
+        <Label htmlFor="full_name" className="text-expresso">{t('cust_form_full_name')} <span className="text-red-500">*</span></Label>
+        <Input 
+          id="full_name" 
+          placeholder="e.g. John Doe" 
+          value={fullName} 
+          onChange={(e) => setFullName(e.target.value)}
+          className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="phone" className="text-expresso">{t('cust_form_phone')}</Label>
+        <Input 
+          id="phone" 
+          placeholder="e.g. +1 234 567 8900" 
+          value={phone} 
+          onChange={(e) => setPhone(e.target.value)}
+          className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="address" className="text-expresso">{t('cust_form_address')}</Label>
+        <Input 
+          id="address" 
+          placeholder="e.g. 123 Coffee St, Bean City" 
+          value={address} 
+          onChange={(e) => setAddress(e.target.value)}
+          className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+        />
+      </div>
+    </ContentWrapper>
+  )
+}
+
+interface FormFooterProps {
+  onCancel?: () => void
+  isPending: boolean
+  handleSubmit: (e: React.SyntheticEvent) => void
+  inline: boolean
+  FooterWrapper: React.ElementType
+  isNativeForm?: boolean
+}
+
+function FormFooter({ onCancel, isPending, handleSubmit, inline, FooterWrapper, isNativeForm = false }: FormFooterProps) {
+  const { t } = useTranslation()
+  return (
+    <FooterWrapper className={inline ? "flex justify-end gap-2 mt-4" : "flex justify-end gap-3 border-t border-warm-roast/10 bg-expresso/5 p-4 m-0"}>
+      {onCancel && (
+        <Button type="button" variant="outline" size={inline ? "sm" : "default"} onClick={onCancel} disabled={isPending} className="text-expresso">
+          {t('cancel')}
+        </Button>
+      )}
+      {isNativeForm ? (
+        <Button type="submit" size={inline ? "sm" : "default"} disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
+          {isPending ? t('loading') : t('cust_form_save')}
+        </Button>
+      ) : (
+        <Button type="button" onClick={handleSubmit} size={inline ? "sm" : "default"} disabled={isPending} className="bg-coffee-fruit hover:bg-warm-roast text-white">
+          {isPending ? t('loading') : t('cust_form_save')}
+        </Button>
+      )}
+    </FooterWrapper>
   )
 }

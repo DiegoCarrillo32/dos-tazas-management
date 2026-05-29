@@ -46,11 +46,10 @@ export async function createOrder(params: OrderInsertParams) {
   // Fetch settings for roasting loss and cost rates
   const { fetchSettings } = await import('./settings')
   const settings = await fetchSettings()
-  const lossRatio = 1 - (settings.roast_loss_percentage / 100)
   const bagCount = params.bag_count ?? 1
 
   // Compute cost breakdown
-  let coffeeCost = 0
+  let costPerKg: number | null = null
   let rawGramsUsed = 0
 
   if (params.inventory_id && params.amount_grams) {
@@ -61,10 +60,9 @@ export async function createOrder(params: OrderInsertParams) {
       .single()
 
     if (invItem) {
-      rawGramsUsed = Math.ceil(params.amount_grams / lossRatio)
-      coffeeCost = invItem.cost_per_kg
-        ? Math.round((rawGramsUsed / 1000) * Number(invItem.cost_per_kg) * 100) / 100
-        : 0
+      costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
+      const { calculateRawGrams } = await import('@/utils/calculations')
+      rawGramsUsed = calculateRawGrams(params.amount_grams, settings.roast_loss_percentage)
 
       // Deduct from inventory
       const newStock = invItem.stock_grams - rawGramsUsed
@@ -78,18 +76,13 @@ export async function createOrder(params: OrderInsertParams) {
     }
   }
 
-  const costBreakdown = {
-    coffee: coffeeCost,
-    bag: Math.round(bagCount * Number(settings.cost_per_bag) * 100) / 100,
-    sticker: Math.round(bagCount * Number(settings.cost_per_sticker) * 100) / 100,
-    electricity: Number(settings.cost_electricity_per_order),
-    fuel: Number(settings.cost_fuel_per_order),
-    roasting_time: Number(settings.cost_roasting_time_per_order)
-  }
-
-  const totalCost = Math.round(
-    Object.values(costBreakdown).reduce((sum, v) => sum + v, 0) * 100
-  ) / 100
+  const { calculateOrderCosts } = await import('@/utils/calculations')
+  const { costBreakdown, totalCost } = calculateOrderCosts({
+    amountGrams: params.amount_grams ?? 0,
+    bagCount,
+    settings,
+    costPerKg
+  })
 
   const { data, error } = await supabase
     .from('orders')
@@ -201,7 +194,6 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
   // Fetch settings for roasting loss and cost rates
   const { fetchSettings } = await import('./settings')
   const settings = await fetchSettings()
-  const lossRatio = 1 - (settings.roast_loss_percentage / 100)
 
   // 2. Reconcile inventory if inventory_id or amount_grams is updated
   const inventoryChanged = params.inventory_id !== undefined || params.amount_grams !== undefined
@@ -212,10 +204,12 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
       const newAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
       const sameBean = newInventoryId === oldOrder.inventory_id
 
+      const { calculateRawGrams } = await import('@/utils/calculations')
+
       if (sameBean && oldOrder.inventory_id && oldOrder.amount_grams && newAmountGrams) {
         // Optimized path: same bean — compute diff and do a single SELECT + UPDATE
-        const oldRawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
-        const newRawGrams = Math.ceil(newAmountGrams / lossRatio)
+        const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, settings.roast_loss_percentage)
+        const newRawGrams = calculateRawGrams(newAmountGrams, settings.roast_loss_percentage)
         const diffGrams = newRawGrams - oldRawGrams
 
         if (diffGrams !== 0) {
@@ -247,7 +241,7 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
             .single()
 
           if (oldInvItem) {
-            const oldRawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
+            const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, settings.roast_loss_percentage)
             await supabase
               .from('inventory')
               .update({ stock_grams: oldInvItem.stock_grams + oldRawGrams })
@@ -264,7 +258,7 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
             .single()
 
           if (newInvItem) {
-            const newRawGrams = Math.ceil(newAmountGrams / lossRatio)
+            const newRawGrams = calculateRawGrams(newAmountGrams, settings.roast_loss_percentage)
             const updatedStock = newInvItem.stock_grams - newRawGrams
             if (updatedStock < 0) {
               console.warn(`[Inventory Warning] Stock for item ${newInventoryId} will go negative: ${updatedStock}g remaining after this order update.`)
@@ -293,7 +287,7 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
     const finalAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
     const finalBagCount = params.bag_count !== undefined ? params.bag_count : (oldOrder.bag_count ?? 1)
 
-    let coffeeCost = 0
+    let costPerKg: number | null = null
     if (finalInventoryId && finalAmountGrams) {
       const { data: invItem } = await supabase
         .from('inventory')
@@ -301,24 +295,18 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
         .eq('id', finalInventoryId)
         .single()
 
-      if (invItem?.cost_per_kg) {
-        const rawGrams = Math.ceil(finalAmountGrams / lossRatio)
-        coffeeCost = Math.round((rawGrams / 1000) * Number(invItem.cost_per_kg) * 100) / 100
+      if (invItem) {
+        costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
       }
     }
 
-    const costBreakdown = {
-      coffee: coffeeCost,
-      bag: Math.round(finalBagCount * Number(settings.cost_per_bag) * 100) / 100,
-      sticker: Math.round(finalBagCount * Number(settings.cost_per_sticker) * 100) / 100,
-      electricity: Number(settings.cost_electricity_per_order),
-      fuel: Number(settings.cost_fuel_per_order),
-      roasting_time: Number(settings.cost_roasting_time_per_order)
-    }
-
-    const totalCost = Math.round(
-      Object.values(costBreakdown).reduce((sum, v) => sum + v, 0) * 100
-    ) / 100
+    const { calculateOrderCosts } = await import('@/utils/calculations')
+    const { costBreakdown, totalCost } = calculateOrderCosts({
+      amountGrams: finalAmountGrams ?? 0,
+      bagCount: finalBagCount,
+      settings,
+      costPerKg
+    })
 
     costUpdate = { total_cost: totalCost, cost_breakdown: costBreakdown }
   }
@@ -360,7 +348,7 @@ export async function deleteOrder(orderId: string) {
     try {
       const { fetchSettings } = await import('./settings')
       const settings = await fetchSettings()
-      const lossRatio = 1 - (settings.roast_loss_percentage / 100)
+      const { calculateRawGrams } = await import('@/utils/calculations')
 
       const { data: invItem } = await supabase
         .from('inventory')
@@ -369,7 +357,7 @@ export async function deleteOrder(orderId: string) {
         .single()
 
       if (invItem) {
-        const rawGrams = Math.ceil(oldOrder.amount_grams / lossRatio)
+        const rawGrams = calculateRawGrams(oldOrder.amount_grams, settings.roast_loss_percentage)
         await supabase
           .from('inventory')
           .update({ stock_grams: invItem.stock_grams + rawGrams })
