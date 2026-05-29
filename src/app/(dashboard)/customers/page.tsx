@@ -67,7 +67,7 @@ export default function CustomersPage() {
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
-        <CardHeader className="bg-white-pergamino border-b border-warm-roast/5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <CardTitle className="text-xl font-heading text-expresso flex items-center gap-2">
               <Users className="h-5 w-5 text-coffee-fruit" />

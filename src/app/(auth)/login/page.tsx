@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Coffee, KeyRound, Mail } from 'lucide-react'
+import { KeyRound, Mail } from 'lucide-react'
 import { login } from '@/actions/auth'
 
 export default function LoginPage() {
@@ -32,8 +33,15 @@ export default function LoginPage() {
 
       {/* Floating Logo Badge & Title */}
       <div className="flex flex-col items-center justify-center mb-8 gap-2">
-        <div className="bg-gradient-to-br from-coffee-fruit to-warm-roast text-white p-4 rounded-2xl shadow-xl hover:rotate-6 transition-transform duration-300 cursor-pointer">
-          <Coffee className="h-10 w-10 animate-bounce" style={{ animationDuration: '3s' }} />
+        <div className="bg-white/90 p-3 rounded-2xl shadow-xl hover:rotate-6 transition-transform duration-300 cursor-pointer border border-warm-roast/10 flex items-center justify-center">
+          <Image 
+            src="/favicon.svg" 
+            alt="Dos Tazas Logo" 
+            width={48} 
+            height={48} 
+            className="animate-bounce" 
+            style={{ animationDuration: '3s' }}
+          />
         </div>
         <h2 className="font-heading text-4xl text-expresso tracking-tight mt-2">Dos Tazas</h2>
         <p className="text-[10px] text-expresso/60 uppercase tracking-[0.2em] font-bold">Roastery Management</p>

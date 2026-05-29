@@ -10,27 +10,31 @@ import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 export const dynamic = 'force-dynamic'
 
 export default async function AnalyticsPage() {
+  const now = new Date()
+  const defaultStartDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const defaultEndDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
+
+  const defaultFilters = { startDate: defaultStartDate, endDate: defaultEndDate }
+
   const [summary, revenue, roastData, prepData, settings] = await Promise.all([
-    fetchAnalyticsSummary(),
-    fetchRevenueTimeSeries(),
-    fetchTopRoastLevels(),
-    fetchTopPrepMethods(),
+    fetchAnalyticsSummary(defaultFilters),
+    fetchRevenueTimeSeries(defaultFilters),
+    fetchTopRoastLevels(defaultFilters),
+    fetchTopPrepMethods(defaultFilters),
     fetchSettings()
   ])
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-heading text-expresso">Analytics</h1>
-        <p className="text-expresso/70 font-medium text-sm">Revenue, sales trends, and product breakdown.</p>
-      </div>
-
       <AnalyticsDashboard
         initialSummary={summary}
         initialRevenue={revenue}
         initialRoast={roastData}
         initialPrep={prepData}
         settings={settings}
+        defaultStartDate={defaultStartDate}
+        defaultEndDate={defaultEndDate}
       />
     </div>
   )

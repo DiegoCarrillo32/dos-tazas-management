@@ -73,7 +73,7 @@ export default function InventoryPage() {
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
-        <CardHeader className="bg-white-pergamino border-b border-warm-roast/5 flex flex-col gap-4">
+        <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle className="text-xl font-heading text-expresso flex items-center gap-2">

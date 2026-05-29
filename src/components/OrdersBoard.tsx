@@ -41,7 +41,7 @@ const KanbanColumn = ({ title, items, customers, inventoryItems, settings, color
       <div className="flex flex-col gap-4">
         {items.map(order => <OrderCard key={order.id} order={order} customers={customers} inventoryItems={inventoryItems} settings={settings} />)}
         {items.length === 0 && (
-          <div className="text-sm text-expresso/50 text-center py-12 border-2 border-dashed border-warm-roast/20 rounded-lg bg-white/50">
+          <div className="text-sm text-expresso/50 text-center py-12 border-2 border-dashed border-warm-roast/20 rounded-lg bg-white/50 dark:bg-white/5">
             {emptyText}
           </div>
         )}
@@ -83,18 +83,18 @@ export function OrdersBoard({ orders, customers, inventoryItems, settings }: { o
       <div className="md:hidden">
         <Tabs defaultValue="pending" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6 bg-expresso/5 p-1 rounded-xl">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 rounded-lg transition-all">{t('orders_pending')}</TabsTrigger>
-            <TabsTrigger value="roasted" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 rounded-lg transition-all">{t('orders_roasted')}</TabsTrigger>
-            <TabsTrigger value="delivered" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-900 rounded-lg transition-all">{t('orders_delivered')}</TabsTrigger>
+            <TabsTrigger value="pending" className="data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 dark:data-[state=active]:bg-yellow-950/40 dark:data-[state=active]:text-yellow-300 rounded-lg transition-all">{t('orders_pending')}</TabsTrigger>
+            <TabsTrigger value="roasted" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 dark:data-[state=active]:bg-orange-950/40 dark:data-[state=active]:text-orange-300 rounded-lg transition-all">{t('orders_roasted')}</TabsTrigger>
+            <TabsTrigger value="delivered" className="data-[state=active]:bg-green-100 data-[state=active]:text-green-900 dark:data-[state=active]:bg-green-950/40 dark:data-[state=active]:text-green-300 rounded-lg transition-all">{t('orders_delivered')}</TabsTrigger>
           </TabsList>
           <TabsContent value="pending" className="mt-0 outline-none">
-            <KanbanColumn title={t('orders_pending')} emptyText={t('orders_no_stage_orders')} items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50" status="pending" />
+            <KanbanColumn title={t('orders_pending')} emptyText={t('orders_no_stage_orders')} items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50 dark:bg-yellow-950/10" status="pending" />
           </TabsContent>
           <TabsContent value="roasted" className="mt-0 outline-none">
-            <KanbanColumn title={t('orders_roasted')} emptyText={t('orders_no_stage_orders')} items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50" status="roasted" />
+            <KanbanColumn title={t('orders_roasted')} emptyText={t('orders_no_stage_orders')} items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50 dark:bg-orange-950/10" status="roasted" />
           </TabsContent>
           <TabsContent value="delivered" className="mt-0 outline-none">
-            <KanbanColumn title={t('orders_delivered')} emptyText={t('orders_no_stage_orders')} items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50" status="delivered" />
+            <KanbanColumn title={t('orders_delivered')} emptyText={t('orders_no_stage_orders')} items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50 dark:bg-green-950/10" status="delivered" />
           </TabsContent>
         </Tabs>
       </div>
@@ -102,9 +102,9 @@ export function OrdersBoard({ orders, customers, inventoryItems, settings }: { o
       {/* Desktop View: Kanban */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd} modifiers={[restrictToWindowEdges]}>
         <div className="hidden md:grid md:grid-cols-3 gap-6">
-          <KanbanColumn title={t('orders_pending')} emptyText={t('orders_no_stage_orders')} items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50" status="pending" />
-          <KanbanColumn title={t('orders_roasted')} emptyText={t('orders_no_stage_orders')} items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50" status="roasted" />
-          <KanbanColumn title={t('orders_delivered')} emptyText={t('orders_no_stage_orders')} items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50" status="delivered" />
+          <KanbanColumn title={t('orders_pending')} emptyText={t('orders_no_stage_orders')} items={pending} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-yellow-50/50 dark:bg-yellow-950/10" status="pending" />
+          <KanbanColumn title={t('orders_roasted')} emptyText={t('orders_no_stage_orders')} items={roasted} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-orange-50/50 dark:bg-orange-950/10" status="roasted" />
+          <KanbanColumn title={t('orders_delivered')} emptyText={t('orders_no_stage_orders')} items={delivered} customers={customers} inventoryItems={inventoryItems} settings={settings} color="bg-green-50/50 dark:bg-green-950/10" status="delivered" />
         </div>
       </DndContext>
     </>

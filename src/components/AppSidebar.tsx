@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Coffee,
   Settings,
   BarChart3,
   Users,
@@ -32,6 +31,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import type { DictionaryKey } from "@/i18n/dictionaries";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
@@ -91,8 +91,8 @@ export function AppSidebar({
     >
       <SidebarHeader className="p-3 border-b border-warm-roast/10 flex flex-row items-center justify-between min-h-[60px]">
         <div className="flex items-center gap-3 group-data-[state=collapsed]:hidden overflow-hidden">
-          <div className="bg-coffee-fruit text-white p-2 rounded-lg shadow-inner shrink-0">
-            <Coffee className="h-6 w-6" />
+          <div className="bg-white/95 p-1 rounded-lg shadow-inner border border-warm-roast/10 shrink-0 flex items-center justify-center">
+            <Image src="/favicon.svg" alt="Dos Tazas Logo" width={32} height={32} />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-heading text-lg text-expresso leading-none truncate">

@@ -57,14 +57,14 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
   }
 
   const fulfillmentColors: Record<FulfillmentStatus, string> = {
-    pending: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-    roasted: 'bg-orange-100 text-orange-800 hover:bg-orange-200',
-    delivered: 'bg-green-100 text-green-800 hover:bg-green-200'
+    pending: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-300 dark:hover:bg-yellow-950/50',
+    roasted: 'bg-orange-100 text-orange-800 hover:bg-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50',
+    delivered: 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-950/30 dark:text-green-300 dark:hover:bg-green-950/50'
   }
 
   const paymentColors: Record<PaymentStatus, string> = {
-    pending: 'bg-red-100 text-red-800 hover:bg-red-200',
-    paid: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+    pending: 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50',
+    paid: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-950/50'
   }
 
   return (
@@ -72,10 +72,10 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
       <Card 
         ref={setNodeRef}
         style={style}
-        className="w-full shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group"
+        className="w-full h-[320px] flex flex-col shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group"
       >
-        <DialogTrigger render={<button type="button" className="cursor-grab active:cursor-grabbing text-left w-full" {...attributes} {...listeners} />}>
-          <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 pb-4 relative">
+        <DialogTrigger render={<button type="button" className="cursor-grab active:cursor-grabbing text-left w-full flex-1 flex flex-col overflow-hidden" {...attributes} {...listeners} />}>
+          <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 pt-4 pb-4 relative">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-expresso/5 p-1.5 rounded-md">
               <Maximize2 className="h-4 w-4 text-expresso/50" />
             </div>
@@ -96,7 +96,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
                 {order.total_cost != null && (
                   <div className="mt-1 flex items-center gap-1.5 justify-end">
                     <span className="text-[10px] font-bold text-expresso/50">{t('order_cost')}: {settings?.currency_symbol || '$'}{Number(order.total_cost).toFixed(2)}</span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${Number(order.total_price) - Number(order.total_cost) >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`whitespace-nowrap tracking-tight text-[9px] font-bold px-1.5 py-0.5 rounded-full ${Number(order.total_price) - Number(order.total_cost) >= 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300'}`}>
                       {Number(order.total_price) - Number(order.total_cost) >= 0 ? '+' : ''}{settings?.currency_symbol || '$'}{(Number(order.total_price) - Number(order.total_cost)).toFixed(2)}
                     </span>
                   </div>
@@ -134,14 +134,14 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
             )}
 
             {order.origin_notes && (
-              <div className="text-xs bg-warm-roast/5 p-2 rounded-md italic text-expresso/80 mt-1 border border-warm-roast/10">
+              <div className="text-xs bg-warm-roast/5 p-2 rounded-md italic text-expresso/80 mt-1 border border-warm-roast/10 line-clamp-2">
                 &ldquo;{order.origin_notes}&rdquo;
               </div>
             )}
           </CardContent>
         </DialogTrigger>
 
-      <CardFooter className="bg-expresso/5 flex gap-2 pt-4 justify-between border-t border-warm-roast/10">
+      <CardFooter className="bg-expresso/5 flex gap-2 pt-4 justify-between border-t border-warm-roast/10 mt-auto">
         <Select
           value={fulfillment}
           onValueChange={(val) => {

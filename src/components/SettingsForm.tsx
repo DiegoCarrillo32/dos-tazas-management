@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useTransition } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,47 +11,60 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { updateSettings } from '@/actions/settings'
 import type { UserSettingsRecord } from '@/types'
-import { Save, Building2, Percent, DollarSign, Globe, Coins } from 'lucide-react'
+import { Save, Building2, Percent, DollarSign, Globe, Coins, SunMoon } from 'lucide-react'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { Language } from '@/i18n/dictionaries'
+import { useTheme } from '@/providers/ThemeProvider'
+import { toast } from 'sonner'
+
+const settingsSchema = z.object({
+  business_name: z.string().optional(),
+  roast_loss_percentage: z.number().min(0).max(100),
+  currency_symbol: z.string().max(3, 'Max 3 chars').min(1, 'Required'),
+  cost_per_bag: z.number().min(0),
+  cost_per_sticker: z.number().min(0),
+  cost_electricity: z.number().min(0),
+  cost_fuel: z.number().min(0),
+  cost_roasting_time: z.number().min(0),
+})
+
+type SettingsFormValues = z.infer<typeof settingsSchema>
 
 export function SettingsForm({ initialData }: { initialData: UserSettingsRecord }) {
   const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<boolean>(false)
+  const { theme, setTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
 
-  const [businessName, setBusinessName] = useState(initialData.business_name || '')
-  const [roastLossPercentage, setRoastLossPercentage] = useState(initialData.roast_loss_percentage)
-  const [currencySymbol, setCurrencySymbol] = useState(initialData.currency_symbol || '$')
-  const [costPerBag, setCostPerBag] = useState(initialData.cost_per_bag || 0)
-  const [costPerSticker, setCostPerSticker] = useState(initialData.cost_per_sticker || 0)
-  const [costElectricity, setCostElectricity] = useState(initialData.cost_electricity_per_order || 0)
-  const [costFuel, setCostFuel] = useState(initialData.cost_fuel_per_order || 0)
-  const [costRoastingTime, setCostRoastingTime] = useState(initialData.cost_roasting_time_per_order || 0)
+  const { register, handleSubmit, formState: { errors } } = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      business_name: initialData.business_name || '',
+      roast_loss_percentage: initialData.roast_loss_percentage ?? 20,
+      currency_symbol: initialData.currency_symbol || '$',
+      cost_per_bag: initialData.cost_per_bag ?? 0,
+      cost_per_sticker: initialData.cost_per_sticker ?? 0,
+      cost_electricity: initialData.cost_electricity_per_order ?? 0,
+      cost_fuel: initialData.cost_fuel_per_order ?? 0,
+      cost_roasting_time: initialData.cost_roasting_time_per_order ?? 0,
+    }
+  })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setSuccess(false)
-
+  const onSubmit = (data: SettingsFormValues) => {
     startTransition(async () => {
       try {
         await updateSettings({
-          business_name: businessName || null,
-          roast_loss_percentage: Number(roastLossPercentage),
-          currency_symbol: currencySymbol || '$',
-          cost_per_bag: Number(costPerBag),
-          cost_per_sticker: Number(costPerSticker),
-          cost_electricity_per_order: Number(costElectricity),
-          cost_fuel_per_order: Number(costFuel),
-          cost_roasting_time_per_order: Number(costRoastingTime)
+          business_name: data.business_name || null,
+          roast_loss_percentage: data.roast_loss_percentage,
+          currency_symbol: data.currency_symbol || '$',
+          cost_per_bag: data.cost_per_bag,
+          cost_per_sticker: data.cost_per_sticker,
+          cost_electricity_per_order: data.cost_electricity,
+          cost_fuel_per_order: data.cost_fuel,
+          cost_roasting_time_per_order: data.cost_roasting_time
         })
-        setSuccess(true)
-        
-        setTimeout(() => setSuccess(false), 3000)
+        toast.success(t('settings_success'))
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to update settings')
+        toast.error(err instanceof Error ? err.message : 'Failed to update settings')
       }
     })
   }
@@ -62,11 +78,8 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
         </CardDescription>
       </CardHeader>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6 px-6 py-6">
-          {error && <div className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-md">{error}</div>}
-          {success && <div className="text-emerald-600 text-sm font-medium bg-emerald-50 p-3 rounded-md">{t('settings_success')}</div>}
-
           <div className="space-y-2">
             <Label htmlFor="business_name" className="text-expresso flex items-center gap-2">
               <Building2 className="h-4 w-4 text-warm-roast" />
@@ -75,10 +88,10 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
             <Input 
               id="business_name" 
               placeholder={t('settings_business_name_placeholder')} 
-              value={businessName} 
-              onChange={(e) => setBusinessName(e.target.value)}
+              {...register('business_name')}
               className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-md"
             />
+            {errors.business_name && <p className="text-red-500 text-xs">{errors.business_name.message}</p>}
             <p className="text-xs text-expresso/60">{t('settings_business_name_hint')}</p>
           </div>
 
@@ -94,13 +107,12 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   type="number"
                   min="0"
                   max="100"
-                  value={roastLossPercentage} 
-                  onChange={(e) => setRoastLossPercentage(Number(e.target.value))}
+                  {...register('roast_loss_percentage', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[120px]"
-                  required
                 />
                 <span className="text-expresso font-medium">%</span>
               </div>
+              {errors.roast_loss_percentage && <p className="text-red-500 text-xs">{errors.roast_loss_percentage.message}</p>}
               <p className="text-xs text-expresso/60">
                 {t('settings_roast_loss_hint')}
               </p>
@@ -114,12 +126,11 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
               <Input 
                 id="currency_symbol" 
                 placeholder="$" 
-                value={currencySymbol} 
-                onChange={(e) => setCurrencySymbol(e.target.value)}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[120px]"
                 maxLength={3}
-                required
+                {...register('currency_symbol')}
+                className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[120px]"
               />
+              {errors.currency_symbol && <p className="text-red-500 text-xs">{errors.currency_symbol.message}</p>}
               <p className="text-xs text-expresso/60">
                 {t('settings_currency_hint')}
               </p>
@@ -143,6 +154,26 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                 {t('settings_language_hint')}
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="app_theme" className="text-expresso flex items-center gap-2">
+                <SunMoon className="h-4 w-4 text-warm-roast" />
+                {t('settings_theme')}
+              </Label>
+              <Select value={theme} onValueChange={(val) => setTheme(val as "light" | "dark" | "system")}>
+                <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit w-full md:max-w-[180px]">
+                  <SelectValue placeholder="Select theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">{t('settings_theme_light')}</SelectItem>
+                  <SelectItem value="dark">{t('settings_theme_dark')}</SelectItem>
+                  <SelectItem value="system">{t('settings_theme_system')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-expresso/60">
+                {t('settings_theme_hint')}
+              </p>
+            </div>
           </div>
 
           <div className="border-t border-warm-roast/10 pt-6 mt-6">
@@ -163,10 +194,10 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={costPerBag}
-                  onChange={(e) => setCostPerBag(Number(e.target.value))}
+                  {...register('cost_per_bag', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
                 />
+                {errors.cost_per_bag && <p className="text-red-500 text-xs">{errors.cost_per_bag.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
               </div>
 
@@ -180,10 +211,10 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={costPerSticker}
-                  onChange={(e) => setCostPerSticker(Number(e.target.value))}
+                  {...register('cost_per_sticker', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
                 />
+                {errors.cost_per_sticker && <p className="text-red-500 text-xs">{errors.cost_per_sticker.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
               </div>
 
@@ -197,10 +228,10 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={costElectricity}
-                  onChange={(e) => setCostElectricity(Number(e.target.value))}
+                  {...register('cost_electricity', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
                 />
+                {errors.cost_electricity && <p className="text-red-500 text-xs">{errors.cost_electricity.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
               </div>
 
@@ -214,10 +245,10 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={costFuel}
-                  onChange={(e) => setCostFuel(Number(e.target.value))}
+                  {...register('cost_fuel', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
                 />
+                {errors.cost_fuel && <p className="text-red-500 text-xs">{errors.cost_fuel.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
               </div>
 
@@ -231,10 +262,10 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   type="number"
                   step="0.01"
                   min="0"
-                  value={costRoastingTime}
-                  onChange={(e) => setCostRoastingTime(Number(e.target.value))}
+                  {...register('cost_roasting_time', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
                 />
+                {errors.cost_roasting_time && <p className="text-red-500 text-xs">{errors.cost_roasting_time.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
               </div>
             </div>

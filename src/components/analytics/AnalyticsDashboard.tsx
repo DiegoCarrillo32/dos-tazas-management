@@ -51,6 +51,8 @@ interface AnalyticsDashboardProps {
   initialRoast: BreakdownItem[]
   initialPrep: BreakdownItem[]
   settings?: UserSettingsRecord
+  defaultStartDate?: string
+  defaultEndDate?: string
 }
 const DEFAULT_CARD_ORDER = ['revenue', 'cost', 'profit', 'margin', 'coffee_sold', 'total_orders']
 
@@ -59,7 +61,9 @@ export function AnalyticsDashboard({
   initialRevenue,
   initialRoast,
   initialPrep,
-  settings
+  settings,
+  defaultStartDate,
+  defaultEndDate
 }: AnalyticsDashboardProps) {
   const { t } = useTranslation()
   const currencySymbol = settings?.currency_symbol || '$'
@@ -174,8 +178,8 @@ export function AnalyticsDashboard({
   }
 
   // Filter state
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState(defaultStartDate || '')
+  const [endDate, setEndDate] = useState(defaultEndDate || '')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all')
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentStatus | 'all'>('all')
 
@@ -223,51 +227,55 @@ export function AnalyticsDashboard({
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-heading text-expresso">{t('analytics_title')}</h1>
+        <p className="text-expresso/70 font-medium text-sm">{t('analytics_subtitle')}</p>
+      </div>
       {/* Filters */}
-      <div className="bg-white/70 backdrop-blur-md border border-warm-roast/10 rounded-xl p-5 shadow-sm">
+      <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-5 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           <div className="space-y-1.5 w-full">
-            <Label className="text-expresso text-xs font-semibold">Start Date</Label>
+            <Label className="text-foreground text-xs font-semibold">{t('filter_start_date')}</Label>
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors"
+              className="h-10 border-border focus-visible:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors"
             />
           </div>
           <div className="space-y-1.5 w-full">
-            <Label className="text-expresso text-xs font-semibold">End Date</Label>
+            <Label className="text-foreground text-xs font-semibold">{t('filter_end_date')}</Label>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors"
+              className="h-10 border-border focus-visible:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors"
             />
           </div>
           <div className="space-y-1.5 w-full">
-            <Label className="text-expresso text-xs font-semibold">Payment</Label>
+            <Label className="text-foreground text-xs font-semibold">{t('filter_payment')}</Label>
             <Select value={paymentFilter} onValueChange={(val) => setPaymentFilter((val || 'all') as PaymentStatus | 'all')}>
-              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors">
-                <SelectValue placeholder="All" />
+              <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">
+                <SelectValue placeholder={t('filter_all')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="all">{t('filter_all')}</SelectItem>
+                <SelectItem value="pending">{t('orders_pending')}</SelectItem>
+                <SelectItem value="paid">{t('order_paid')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5 w-full">
-            <Label className="text-expresso text-xs font-semibold">Fulfillment</Label>
+            <Label className="text-foreground text-xs font-semibold">{t('filter_fulfillment')}</Label>
             <Select value={fulfillmentFilter} onValueChange={(val) => setFulfillmentFilter((val || 'all') as FulfillmentStatus | 'all')}>
-              <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit text-sm w-full bg-white/80 focus:bg-white transition-colors">
-                <SelectValue placeholder="All" />
+              <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">
+                <SelectValue placeholder={t('filter_all')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="roasted">Roasted</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="all">{t('filter_all')}</SelectItem>
+                <SelectItem value="pending">{t('orders_pending')}</SelectItem>
+                <SelectItem value="roasted">{t('orders_roasted')}</SelectItem>
+                <SelectItem value="delivered">{t('orders_delivered')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -275,19 +283,19 @@ export function AnalyticsDashboard({
             <Button
               onClick={applyFilters}
               disabled={isPending}
-              className="bg-coffee-fruit hover:bg-warm-roast text-white flex-1 transition-colors shadow-sm"
+              className="h-10 bg-coffee-fruit hover:bg-warm-roast text-white flex-1 transition-colors shadow-sm"
               size="default"
             >
-              {isPending ? 'Loading...' : 'Apply'}
+              {isPending ? t('loading') : t('filter_apply')}
             </Button>
             <Button
               onClick={clearFilters}
               disabled={isPending}
               variant="outline"
-              className="text-expresso border-warm-roast/30 hover:bg-warm-roast/5 flex-1 transition-colors"
+              className="h-10 text-expresso border-warm-roast/30 hover:bg-warm-roast/5 flex-1 transition-colors"
               size="default"
             >
-              Clear
+              {t('filter_clear')}
             </Button>
           </div>
         </div>
