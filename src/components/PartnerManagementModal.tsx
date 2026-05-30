@@ -98,7 +98,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
               <div className="flex gap-4 items-end">
                 <div className="flex-1 space-y-2">
                   <Label>Coffee Bean</Label>
-                  <Select value={selectedInventory} onValueChange={setSelectedInventory}>
+                  <Select value={selectedInventory} onValueChange={(val) => setSelectedInventory(val || "")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select coffee..." />
                     </SelectTrigger>

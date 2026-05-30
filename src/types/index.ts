@@ -13,6 +13,7 @@ export type CustomerRecord = {
   phone: string | null
   address: string | null
   created_at: string
+  company_name?: string | null
 }
 
 export type CustomerWithLastPurchase = CustomerRecord & {
@@ -260,6 +261,9 @@ export type B2BPricingRecord = {
   inventory_id: string
   price_per_kg: number
   created_at: string
+  inventory?: {
+    item_name: string
+  } | null
 }
 
 export type B2BRecurringOrderRecord = {
@@ -274,6 +278,9 @@ export type B2BRecurringOrderRecord = {
   day_of_week: number
   is_active: boolean
   created_at: string
+  inventory?: {
+    item_name: string
+  } | null
 }
 
 export type B2BPartnerInsertParams = Omit<B2BPartnerRecord, 'id' | 'roaster_user_id' | 'partner_user_id' | 'invite_code' | 'status' | 'created_at'>

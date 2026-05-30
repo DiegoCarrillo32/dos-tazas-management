@@ -55,7 +55,7 @@ const recurringSchema = z.object({
   roast_level: z.string().min(1, 'Roast level is required'),
   amount_grams: z.number().min(1, 'Amount must be greater than 0'),
   bag_count: z.number().min(1, 'At least 1 bag required'),
-  frequency: z.string().min(1, 'Frequency is required'),
+  frequency: z.enum(["weekly", "biweekly", "monthly"]),
   day_of_week: z.number().min(0).max(6),
 });
 
