@@ -43,6 +43,43 @@ export async function createOrder(params: OrderInsertParams) {
     throw new Error('You must be logged in to create an order.')
   }
 
+  // Handle B2B auto customer resolution
+  let customerId = params.customer_id
+  if (params.partner_id && customerId === 'B2B_AUTO') {
+    const { data: partner } = await supabase
+      .from('b2b_partners')
+      .select('company_name, contact_phone, contact_name')
+      .eq('id', params.partner_id)
+      .single()
+
+    if (partner) {
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('full_name', partner.company_name)
+        .limit(1)
+        .single()
+
+      if (existingCustomer) {
+        customerId = existingCustomer.id
+      } else {
+        const { data: newCustomer } = await supabase
+          .from('customers')
+          .insert([{
+            full_name: partner.company_name,
+            phone: partner.contact_phone || null,
+            email: null,
+            address: null,
+            user_id: user.id
+          }])
+          .select('id')
+          .single()
+        if (newCustomer) customerId = newCustomer.id
+      }
+    }
+  }
+
   // Fetch settings for roasting loss and cost rates
   const { fetchSettings } = await import('./settings')
   const settings = await fetchSettings()
@@ -88,6 +125,7 @@ export async function createOrder(params: OrderInsertParams) {
     .from('orders')
     .insert([{
       ...params,
+      customer_id: customerId,
       bag_count: bagCount,
       user_id: user.id,
       fulfillment_status: 'pending',

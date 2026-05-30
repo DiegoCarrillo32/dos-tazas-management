@@ -67,3 +67,24 @@ export function calculateOrderCosts({
     rawGramsUsed
   }
 }
+
+export function calculateYieldPercentage(weightIn: number, weightOut: number): number {
+  if (weightIn <= 0) return 0
+  return Number(((weightOut / weightIn) * 100).toFixed(1))
+}
+
+export function calculateGreenCoffeeNeeded(roastedAmountNeeded: number, roastLossPercentage: number): number {
+  if (roastLossPercentage >= 100) return 0
+  const lossRatio = 1 - (roastLossPercentage / 100)
+  return Math.ceil(roastedAmountNeeded / lossRatio)
+}
+
+export function aggregatePendingB2BOrders(orders: any[]): Record<string, number> {
+  const pendingB2B = orders.filter((o: any) => o.fulfillment_status === 'pending' && !!o.company_name)
+  return pendingB2B.reduce((acc: Record<string, number>, order: any) => {
+    if (order.inventory_id) {
+      acc[order.inventory_id] = (acc[order.inventory_id] || 0) + order.amount_grams
+    }
+    return acc
+  }, {})
+}

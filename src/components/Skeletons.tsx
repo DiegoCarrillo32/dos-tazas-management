@@ -67,3 +67,19 @@ export function TableSkeleton({ cols = 5, rows = 4 }: { cols?: number; rows?: nu
     </div>
   )
 }
+
+export function TableRowSkeleton({ cols = 5, rows = 3 }: { cols?: number; rows?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-warm-roast/5">
+          {Array.from({ length: cols }).map((_, j) => (
+            <td key={j} className="px-6 py-4">
+              <div className="h-4 bg-warm-roast/10 rounded w-full max-w-[120px]" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  )
+}

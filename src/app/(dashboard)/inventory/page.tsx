@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/
 import { Button } from '@/components/ui/button'
 import { Plus, PackageSearch, Coffee, Edit, Search } from 'lucide-react'
 import { InventoryForm } from '@/components/InventoryForm'
+import { GreenCoffeeLotsDialog } from '@/components/GreenCoffeeLotsDialog'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 
@@ -176,16 +177,21 @@ export default function InventoryPage() {
                             {item.category.replace('_', ' ')}
                           </span>
                         </div>
-                        <Dialog>
-                          <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
-                            <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
-                            <InventoryForm initialData={item} settings={settings} />
-                          </DialogContent>
-                        </Dialog>
+                        <div className="flex items-center gap-2">
+                          {isCoffee && (
+                            <GreenCoffeeLotsDialog inventoryId={item.id} inventoryName={item.item_name} />
+                          )}
+                          <Dialog>
+                            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
+                              <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
+                              <InventoryForm initialData={item} settings={settings} />
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </div>
                       <div className="text-sm">
                         <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_raw')}: </span>
@@ -272,7 +278,10 @@ export default function InventoryPage() {
                         <td className="px-6 py-4 text-expresso/70">
                           {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic">N/A</span>}
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                          {isCoffee && (
+                            <GreenCoffeeLotsDialog inventoryId={item.id} inventoryName={item.item_name} />
+                          )}
                           <Dialog>
                             <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
                               <Edit className="h-4 w-4" />

@@ -61,6 +61,7 @@ export function OrderDetailsModal({
             if (onClose) onClose();
           }}
           onCancel={() => setIsEditing(false)}
+          isB2B={!!order.partner_id || !!order.company_name}
         />
       </div>
     );

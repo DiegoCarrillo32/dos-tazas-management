@@ -1,6 +1,8 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
 import { fetchSettings } from "@/actions/settings"
+import { createClient } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,6 +23,21 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+      
+    if (profile?.role === 'partner') {
+      redirect('/dashboard')
+    }
+  }
+
   let settings = null
   try {
     settings = await fetchSettings()

@@ -18,7 +18,7 @@ import { CustomerForm } from "@/components/CustomerForm";
 import { FormCard } from "@/components/ui/form-card";
 import type { CustomerRecord, OrderInsertParams, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useCreateOrder, useUpdateOrder } from '@/hooks/queries';
+import { useCreateOrder, useUpdateOrder, usePartners } from '@/hooks/queries';
 import { toast } from "sonner";
 
 const PREPARATION_METHODS = [
@@ -45,6 +45,8 @@ const orderSchema = z.object({
   bag_count: z.number().min(1, 'At least 1 bag required'),
   total_price: z.number().min(0, 'Cannot be negative'),
   origin_notes: z.string().optional(),
+  company_name: z.string().optional(),
+  partner_id: z.string().optional(),
 });
 
 type OrderFormValues = z.infer<typeof orderSchema>;
@@ -56,6 +58,7 @@ interface OrderFormProps {
   initialData?: OrderInsertParams & { id?: string };
   onSuccess?: () => void;
   onCancel?: () => void;
+  isB2B?: boolean;
 }
 
 export function OrderForm({
@@ -65,28 +68,53 @@ export function OrderForm({
   initialData,
   onSuccess,
   onCancel,
+  isB2B = false,
 }: OrderFormProps) {
   const { t } = useTranslation();
 
   const [customersList, setCustomersList] = useState(initialCustomers);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
-  const { register, handleSubmit, control, setValue, formState: { errors }, reset } = useForm<OrderFormValues>({
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    register,
+    reset,
+    formState: { errors },
+  } = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
-    defaultValues: {
-      customer_id: initialData?.customer_id || '',
-      inventory_id: initialData?.inventory_id || '',
-      preparation_method: initialData?.preparation_method || '',
-      roast_level: initialData?.roast_level || '',
-      amount_grams: initialData?.amount_grams ?? ('' as unknown as number),
-      bag_count: initialData?.bag_count ?? 1,
-      total_price: initialData?.total_price ?? ('' as unknown as number),
-      origin_notes: initialData?.origin_notes || '',
-    }
+    defaultValues: initialData
+      ? {
+          customer_id: initialData.customer_id,
+          inventory_id: initialData.inventory_id || undefined,
+          preparation_method: initialData.preparation_method,
+          roast_level: initialData.roast_level,
+          amount_grams: initialData.amount_grams,
+          bag_count: initialData.bag_count || 1,
+          total_price: initialData.total_price || 0,
+          origin_notes: initialData.origin_notes || "",
+          company_name: initialData.company_name || "",
+          partner_id: initialData.partner_id || undefined,
+        }
+      : {
+          customer_id: isB2B ? "B2B_AUTO" : "",
+          inventory_id: undefined,
+          preparation_method: "Whole Bean",
+          roast_level: "Medium",
+          amount_grams: 250,
+          bag_count: 1,
+          total_price: 0,
+          origin_notes: "",
+          company_name: "",
+          partner_id: undefined,
+        },
   });
 
   const createMutation = useCreateOrder();
   const updateMutation = useUpdateOrder();
+  const { data: partnersData } = usePartners();
+  const partners = Array.isArray(partnersData) ? partnersData : [];
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const roastLossPercentage = settings?.roast_loss_percentage ?? 20;
@@ -107,6 +135,8 @@ export function OrderForm({
       origin_notes: data.origin_notes || null,
       inventory_id: data.inventory_id || null,
       bag_count: data.bag_count,
+      company_name: data.company_name || null,
+      partner_id: data.partner_id || null,
     };
 
     const onMutationSuccess = () => {
@@ -166,23 +196,7 @@ export function OrderForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full">
       <FormCard title={title} footer={footer}>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="customer_id" className="text-expresso">
-              {t('order_form_customer')} <span className="text-red-500">*</span>
-            </Label>
-            <button
-              type="button"
-              onClick={() => setIsCreatingCustomer(!isCreatingCustomer)}
-              className="text-xs font-semibold text-coffee-fruit hover:text-warm-roast transition-colors"
-            >
-              {isCreatingCustomer
-                ? t('order_form_cancel_customer')
-                : t('order_form_add_customer')}
-            </button>
-          </div>
-
-          {isCreatingCustomer ? (
+        {isCreatingCustomer ? (
             <div className="mt-2">
               <CustomerForm
                 inline={true}
@@ -190,33 +204,49 @@ export function OrderForm({
                 onCancel={() => setIsCreatingCustomer(false)}
               />
             </div>
-          ) : customersList.length > 0 ? (
-            <Controller
-              control={control}
-              name="customer_id"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
-                    <SelectValue placeholder={t('order_form_select_customer')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customersList.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.full_name}
-                        {c.phone ? ` — ${c.phone}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          ) : (
-            <div className="text-sm text-expresso/60 border border-dashed border-warm-roast/20 rounded-md p-3 text-center">
-              {t('order_form_no_customers')}
+        ) : null}
+
+        {!isB2B && (
+          <div className="space-y-2">
+            <Label htmlFor="customer_id" className="text-expresso font-bold tracking-tight">
+              {t('order_form_customer')} *
+            </Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Controller
+                  name="customer_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <SelectTrigger className={`bg-white-pergamino border-warm-roast/20 focus:ring-coffee-fruit h-12 rounded-xl transition-all ${errors.customer_id ? 'border-red-500 ring-1 ring-red-500' : ''}`}>
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white-pergamino border-warm-roast/10 rounded-xl overflow-hidden shadow-xl">
+                        {customersList.map((c) => (
+                          <SelectItem key={c.id} value={c.id} className="focus:bg-warm-roast/5 focus:text-coffee-fruit cursor-pointer rounded-lg m-1">
+                            <span className="font-medium">{c.full_name}</span>
+                            {c.company_name && <span className="text-xs text-expresso/60 ml-2">({c.company_name})</span>}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.customer_id && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.customer_id.message}</p>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCreatingCustomer(true)}
+                className="h-12 px-4 border-warm-roast/20 text-coffee-fruit hover:bg-warm-roast/5 rounded-xl font-medium"
+              >
+                New
+              </Button>
             </div>
-          )}
-          {errors.customer_id && <p className="text-red-500 text-xs font-medium">{errors.customer_id.message}</p>}
-        </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="inventory_id" className="text-expresso">
@@ -355,16 +385,67 @@ export function OrderForm({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="origin_notes" className="text-expresso">
-            {t('order_form_origin_notes')}
-          </Label>
-          <Input
-            id="origin_notes"
-            placeholder={t('order_form_origin_notes_placeholder')}
-            {...register('origin_notes')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="origin_notes" className="text-expresso">
+              {t('order_form_origin_notes')}
+            </Label>
+            <Input
+              id="origin_notes"
+              placeholder={t('order_form_origin_notes_placeholder')}
+              {...register('origin_notes')}
+              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            />
+          </div>
+
+          {isB2B && (
+            <div className="space-y-4 col-span-2 mt-2">
+              <div className="space-y-2 border border-warm-roast/10 bg-warm-roast/5 p-4 rounded-xl">
+                <Label htmlFor="partner_id" className="text-expresso font-bold">
+                  Link to Connected Partner <span className="text-xs text-expresso/50 font-normal ml-1">(Optional)</span>
+                </Label>
+                <p className="text-xs text-expresso/70 mb-2">If you select a partner, they will be able to see this order in their dashboard.</p>
+                <Controller
+                  control={control}
+                  name="partner_id"
+                  render={({ field }) => (
+                    <Select value={field.value || "none"} onValueChange={(val) => {
+                      field.onChange(val === "none" ? "" : val)
+                      if (val !== "none") {
+                        const selectedPartner = partners.find(p => p.id === val)
+                        if (selectedPartner) {
+                          setValue('company_name', selectedPartner.company_name)
+                        }
+                      }
+                    }}>
+                      <SelectTrigger className="w-full bg-white border-warm-roast/30 focus:ring-coffee-fruit">
+                        <SelectValue placeholder="Select a connected partner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Partner (Manual Entry)</SelectItem>
+                        {partners.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.company_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company_name" className="text-expresso">
+                  Company Name <span className="text-xs text-expresso/50 font-normal ml-1">(Will be filled automatically if partner selected)</span>
+                </Label>
+                <Input
+                  id="company_name"
+                  placeholder="e.g. Central Perk Cafe"
+                  {...register('company_name', { required: 'Company name is required for B2B orders' })}
+                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+                />
+                {errors.company_name && <p className="text-red-500 text-xs font-medium">{errors.company_name.message}</p>}
+              </div>
+            </div>
+          )}
         </div>
       </FormCard>
     </form>

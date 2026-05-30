@@ -15,8 +15,8 @@ interface StatCardProps {
 export function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'text-coffee-fruit', dragHandleProps }: StatCardProps) {
   return (
     <Card className="shadow-md border-warm-roast/10 hover:shadow-lg transition-shadow h-full w-full">
-      <CardContent className="pt-6">
-        <div className="flex flex-col gap-1">
+      <CardContent className="p-5 flex flex-col justify-between h-full">
+        <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-2">
               {dragHandleProps && (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateRawGrams, calculateOrderCosts } from './calculations'
+import { calculateRawGrams, calculateOrderCosts, calculateYieldPercentage, calculateGreenCoffeeNeeded, aggregatePendingB2BOrders } from './calculations'
 import type { UserSettingsRecord } from '@/types'
 
 describe('calculations', () => {
@@ -123,6 +123,49 @@ describe('calculations', () => {
 
       // Sum of breakdown: 7.71 + 1.00 + 0.33 + 1.20 + 0.80 + 3.50 = 14.54
       expect(result.totalCost).toBe(14.54)
+    })
+  })
+
+  describe('calculateYieldPercentage', () => {
+    it('calculates the yield correctly', () => {
+      const result = calculateYieldPercentage(1200, 1000)
+      expect(result).toBe(83.3)
+    })
+
+    it('returns 0 if weightIn is 0', () => {
+      const result = calculateYieldPercentage(0, 1000)
+      expect(result).toBe(0)
+    })
+  })
+
+  describe('calculateGreenCoffeeNeeded', () => {
+    it('calculates correctly with 20% loss', () => {
+      const result = calculateGreenCoffeeNeeded(1000, 20)
+      expect(result).toBe(1250)
+    })
+
+    it('returns 0 if loss percentage is >= 100', () => {
+      const result = calculateGreenCoffeeNeeded(1000, 100)
+      expect(result).toBe(0)
+    })
+  })
+
+  describe('aggregatePendingB2BOrders', () => {
+    it('aggregates pending b2b orders by inventory_id', () => {
+      const mockOrders = [
+        { fulfillment_status: 'pending', company_name: 'Cafe A', inventory_id: 'inv-1', amount_grams: 1000 },
+        { fulfillment_status: 'pending', company_name: 'Cafe B', inventory_id: 'inv-1', amount_grams: 2000 },
+        { fulfillment_status: 'pending', company_name: 'Cafe C', inventory_id: 'inv-2', amount_grams: 500 },
+        { fulfillment_status: 'delivered', company_name: 'Cafe D', inventory_id: 'inv-1', amount_grams: 3000 }, // should be ignored
+        { fulfillment_status: 'pending', company_name: null, inventory_id: 'inv-2', amount_grams: 1000 }, // should be ignored
+        { fulfillment_status: 'pending', company_name: 'Cafe E', inventory_id: null, amount_grams: 500 }, // should be ignored
+      ]
+
+      const result = aggregatePendingB2BOrders(mockOrders)
+      expect(result).toEqual({
+        'inv-1': 3000,
+        'inv-2': 500
+      })
     })
   })
 })

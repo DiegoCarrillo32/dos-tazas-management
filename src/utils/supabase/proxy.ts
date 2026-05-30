@@ -60,7 +60,8 @@ export async function updateSession(request: NextRequest) {
   if (
     !user &&
     !path.startsWith('/login') &&
-    !path.startsWith('/auth')
+    !path.startsWith('/auth') &&
+    !path.startsWith('/join')
   ) {
     // No user and trying to access a protected route — redirect to login
     const url = request.nextUrl.clone()
