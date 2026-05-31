@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePartnerPricing, useSetPartnerPricing, useDeletePartnerPricing, usePartnerRecurringOrders, useConfirmOrderFromTemplate, useInventory, useDeletePartner, useRevokePartner, useRestorePartner } from "@/hooks/queries"
+import { usePartnerPricing, useSetPartnerPricing, useDeletePartnerPricing, usePartnerRecurringOrders, useConfirmOrderFromTemplate, useInventory, useDeletePartner, useRevokePartner, useRestorePartner, useDeleteRecurringOrder } from "@/hooks/queries"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -40,6 +40,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
   const deletePartnerMutation = useDeletePartner()
   const revokePartnerMutation = useRevokePartner()
   const restorePartnerMutation = useRestorePartner()
+  const deleteRecurringOrderMutation = useDeleteRecurringOrder(partner.id)
 
   const handleSetPricing = () => {
     if (!selectedInventory || !newPrice) return
@@ -192,7 +193,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                   <tr>
                     <th className="px-6 py-3">Order Details</th>
                     <th className="px-6 py-3">Frequency</th>
-                    <th className="px-6 py-3 text-right">Generate Order</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -216,14 +217,32 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <Button 
-                            onClick={() => handleGenerateOrder(order.id)}
-                            disabled={confirmOrderMutation.isPending || !order.is_active}
-                            className="bg-coffee-fruit/10 text-coffee-fruit hover:bg-coffee-fruit hover:text-white transition-colors"
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Create Order Now
-                          </Button>
+                          <div className="flex justify-end items-center gap-2">
+                            <Button 
+                              onClick={() => handleGenerateOrder(order.id)}
+                              disabled={confirmOrderMutation.isPending || !order.is_active}
+                              className="bg-coffee-fruit/10 text-coffee-fruit hover:bg-coffee-fruit hover:text-white transition-colors"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Create Order Now
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this standing order?")) {
+                                  deleteRecurringOrderMutation.mutate(order.id, {
+                                    onSuccess: () => toast.success("Standing order deleted"),
+                                    onError: (err) => toast.error(err.message)
+                                  })
+                                }
+                              }}
+                              disabled={deleteRecurringOrderMutation.isPending}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))

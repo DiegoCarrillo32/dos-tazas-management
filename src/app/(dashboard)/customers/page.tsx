@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { useCustomers } from '@/hooks/queries'
+import { useCustomers, useDeleteCustomer } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Plus, Users, Edit, Search } from 'lucide-react'
+import { Plus, Users, Edit, Search, Trash2 } from 'lucide-react'
 import { CustomerForm } from '@/components/CustomerForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
@@ -13,6 +13,7 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 export default function CustomersPage() {
   const { t } = useTranslation()
   const { data: customers, isLoading } = useCustomers()
+  const deleteMutation = useDeleteCustomer()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -133,16 +134,32 @@ export default function CustomersPage() {
                   <div key={customer.id} className="flex flex-col gap-3 p-4 bg-warm-roast/5 border-b border-warm-roast/10">
                     <div className="flex items-start justify-between">
                       <span className="font-bold text-expresso">{customer.full_name}</span>
-                      <Dialog>
-                        <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
-                          <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
-                          <CustomerForm initialData={customer} />
-                        </DialogContent>
-                      </Dialog>
+                      <div className="flex gap-1">
+                        <Dialog>
+                          <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
+                            <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
+                            <CustomerForm initialData={customer} />
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+                          onClick={() => {
+                            if (confirm(t('delete_confirm') || 'Are you sure you want to delete this customer?')) {
+                              deleteMutation.mutate(customer.id)
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
                     </div>
                     {customer.phone && (
                       <div className="text-sm text-expresso/80">
@@ -217,16 +234,32 @@ export default function CustomersPage() {
                         }) : <span className="text-expresso/40 italic">{t('customers_never')}</span>}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Dialog>
-                          <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
-                            <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
-                            <CustomerForm initialData={customer} />
-                          </DialogContent>
-                        </Dialog>
+                        <div className="flex justify-end gap-1">
+                          <Dialog>
+                            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
+                              <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
+                              <CustomerForm initialData={customer} />
+                            </DialogContent>
+                          </Dialog>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
+                            onClick={() => {
+                              if (confirm(t('delete_confirm') || 'Are you sure you want to delete this customer?')) {
+                                deleteMutation.mutate(customer.id)
+                              }
+                            }}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))

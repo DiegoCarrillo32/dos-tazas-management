@@ -77,3 +77,19 @@ export async function updateCustomer(customerId: string, params: CustomerUpdateP
   revalidatePath('/', 'layout')
   return data as CustomerRecord
 }
+
+export async function deleteCustomer(customerId: string): Promise<void> {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('customers')
+    .delete()
+    .eq('id', customerId)
+
+  if (error) {
+    console.error('Error deleting customer:', error)
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/', 'layout')
+}

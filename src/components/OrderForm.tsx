@@ -14,8 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CustomerForm } from "@/components/CustomerForm";
 import { FormCard } from "@/components/ui/form-card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { CustomerRecord, OrderInsertParams, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useCreateOrder, useUpdateOrder, usePartners } from '@/hooks/queries';
@@ -74,6 +79,7 @@ export function OrderForm({
 
   const [customersList, setCustomersList] = useState(initialCustomers);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [customerOpen, setCustomerOpen] = useState(false);
 
   const {
     control,
@@ -194,56 +200,87 @@ export function OrderForm({
   );
 
   return (
+    <>
     <form onSubmit={handleSubmit(onSubmit)} className="w-full">
       <FormCard title={title} footer={footer}>
-        {isCreatingCustomer ? (
-            <div className="mt-2">
-              <CustomerForm
-                inline={true}
-                onSuccess={handleCustomerCreated}
-                onCancel={() => setIsCreatingCustomer(false)}
-              />
-            </div>
-        ) : null}
 
         {!isB2B && (
           <div className="space-y-2">
-            <Label htmlFor="customer_id" className="text-expresso font-bold tracking-tight">
-              {t('order_form_customer')} *
-            </Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="customer_id" className="text-expresso font-bold tracking-tight">
+                {t('order_form_customer')} *
+              </Label>
+              <button
+                type="button"
+                onClick={() => setIsCreatingCustomer(true)}
+                className="text-xs font-medium text-coffee-fruit hover:text-warm-roast transition-colors hover:underline focus:outline-none"
+              >
+                Create a new Customer
+              </button>
+            </div>
             <div className="flex gap-2">
               <div className="flex-1">
                 <Controller
                   name="customer_id"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <SelectTrigger className={`bg-white-pergamino border-warm-roast/20 focus:ring-coffee-fruit h-12 rounded-xl transition-all ${errors.customer_id ? 'border-red-500 ring-1 ring-red-500' : ''}`}>
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white-pergamino border-warm-roast/10 rounded-xl overflow-hidden shadow-xl">
-                        {customersList.map((c) => (
-                          <SelectItem key={c.id} value={c.id} className="focus:bg-warm-roast/5 focus:text-coffee-fruit cursor-pointer rounded-lg m-1">
-                            <span className="font-medium">{c.full_name}</span>
-                            {c.company_name && <span className="text-xs text-expresso/60 ml-2">({c.company_name})</span>}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+                      <PopoverTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={customerOpen}
+                            className={cn(
+                              "w-full justify-between bg-white-pergamino border-warm-roast/20 hover:bg-white-pergamino hover:text-expresso focus:ring-coffee-fruit h-12 rounded-xl transition-all font-normal text-base",
+                              !field.value && "text-muted-foreground",
+                              errors.customer_id && "border-red-500 ring-1 ring-red-500"
+                            )}
+                          />
+                        }
+                      >
+                          {field.value
+                            ? <span className="truncate">{customersList.find((c) => c.id === field.value)?.full_name}</span>
+                            : "Select a customer..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-(--anchor-width) p-0 bg-white-pergamino border-warm-roast/10 rounded-xl overflow-hidden shadow-xl" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search customers..." className="h-10 text-base sm:text-sm" />
+                          <CommandList>
+                            <CommandEmpty className="py-6 text-center text-sm text-expresso/60">No customer found.</CommandEmpty>
+                            <CommandGroup className="max-h-[300px] overflow-auto">
+                              {customersList.map((c) => (
+                                <CommandItem
+                                  key={c.id}
+                                  value={c.full_name}
+                                  onSelect={() => {
+                                    field.onChange(c.id);
+                                    setCustomerOpen(false);
+                                  }}
+                                  className="focus:bg-warm-roast/5 focus:text-coffee-fruit cursor-pointer rounded-lg m-1 py-2 px-2"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4 shrink-0",
+                                      c.id === field.value ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <span className="font-medium truncate">{c.full_name}</span>
+                                  {c.company_name && <span className="text-xs text-expresso/60 ml-2 truncate">({c.company_name})</span>}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 />
                 {errors.customer_id && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{errors.customer_id.message}</p>
                 )}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreatingCustomer(true)}
-                className="h-12 px-4 border-warm-roast/20 text-coffee-fruit hover:bg-warm-roast/5 rounded-xl font-medium"
-              >
-                New
-              </Button>
             </div>
           </div>
         )}
@@ -449,5 +486,21 @@ export function OrderForm({
         </div>
       </FormCard>
     </form>
+
+    <Dialog open={isCreatingCustomer} onOpenChange={setIsCreatingCustomer}>
+      <DialogContent className="bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden max-w-[500px]">
+        <div className="p-6">
+          <DialogTitle className="text-xl font-heading text-expresso mb-4">
+            {t('cust_form_add')}
+          </DialogTitle>
+          <CustomerForm
+            inline={true}
+            onSuccess={handleCustomerCreated}
+            onCancel={() => setIsCreatingCustomer(false)}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
