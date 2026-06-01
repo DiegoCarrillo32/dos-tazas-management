@@ -308,6 +308,11 @@ export function OrderForm({
                       {item.item_name} — {(item.stock_grams / 1000).toFixed(2)} {t('order_form_raw_stock')}
                     </SelectItem>
                   ))}
+                  {initialData?.inventory_id && !inventoryItems.find(i => i.id === initialData.inventory_id) && (
+                    <SelectItem value={initialData.inventory_id}>
+                      {(initialData as any).inventory?.item_name || 'Unknown Coffee Bean'}
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             )}
@@ -463,6 +468,11 @@ export function OrderForm({
                         {partners.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.company_name}</SelectItem>
                         ))}
+                        {initialData?.partner_id && !partners.find(p => p.id === initialData.partner_id) && (
+                          <SelectItem value={initialData.partner_id}>
+                            {initialData.company_name || 'Unknown Partner'}
+                          </SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   )}

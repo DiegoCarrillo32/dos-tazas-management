@@ -50,7 +50,7 @@ export function OrderDetailsModal({
 
   if (isEditing) {
     return (
-      <div className="bg-background rounded-xl shadow-xl overflow-hidden max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-background rounded-xl overflow-hidden w-full">
         <OrderForm
           customers={customers}
           inventoryItems={inventoryItems}
