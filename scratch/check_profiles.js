@@ -9,7 +9,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function check() {
-  const { data: users, error: userErr } = await supabase.auth.admin ? await supabase.auth.admin.listUsers() : { data: null, error: 'No admin' }
+  const { data: users } = await supabase.auth.admin ? await supabase.auth.admin.listUsers() : { data: null }
   console.log('Users count:', users?.users?.length || 'Unknown')
 
   const { data: profiles, error } = await supabase.from('user_profiles').select('*')

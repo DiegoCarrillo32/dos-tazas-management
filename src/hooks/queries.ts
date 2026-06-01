@@ -66,7 +66,6 @@ import { updateSettings } from '@/actions/settings'
 import {
   generateInvite,
   acceptInvite,
-  getMyRoaster,
   revokePartner,
   restorePartner,
   deletePartner,

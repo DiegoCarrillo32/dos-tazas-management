@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FormCard } from '@/components/ui/form-card'
-import type { RoastBatchRecord } from '@/types'
-import { useCreateRoastBatch, useUpdateRoastBatch, useEquipment, useInventory } from '@/hooks/queries'
+import type { RoastBatchRecord, GreenCoffeeLotRecord } from '@/types'
+import { useCreateRoastBatch, useUpdateRoastBatch, useEquipment } from '@/hooks/queries'
 import { toast } from 'sonner'
 import { useEffect, useState } from 'react'
 
@@ -45,14 +45,13 @@ export function RoastBatchForm({ initialData, onSuccess, onCancel, inline = fals
   })
 
   const { data: equipment } = useEquipment()
-  const { data: inventory } = useInventory()
   const roasters = equipment?.filter(e => e.type === 'roaster') || []
   
   // To get green_coffee_lots, we need to fetch them. Since we don't have a global hook for all lots,
   // we might just select from `inventory` where category === 'green_coffee', and then assume the lot is the inventory item itself.
   // Wait, the schema expects `green_lot_id` which references `green_coffee_lots` table.
   // Since we don't have a global fetch for all green_coffee_lots, let's fetch them here directly.
-  const [lots, setLots] = useState<any[]>([])
+  const [lots, setLots] = useState<(GreenCoffeeLotRecord & { inventory?: { item_name: string } | null })[]>([])
 
   useEffect(() => {
     async function fetchLots() {
@@ -75,6 +74,7 @@ export function RoastBatchForm({ initialData, onSuccess, onCancel, inline = fals
   const updateMutation = useUpdateRoastBatch()
   const isPending = createMutation.isPending || updateMutation.isPending
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const weightIn = watch('weight_in_grams')
   const weightOut = watch('weight_out_grams')
   const yieldPercent = (weightIn && weightOut && weightIn > 0) ? ((weightOut / weightIn) * 100).toFixed(1) : null
@@ -195,7 +195,7 @@ export function RoastBatchForm({ initialData, onSuccess, onCancel, inline = fals
               step="0.1"
               placeholder="e.g. 12.5" 
               {...register('roast_time_minutes', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.roast_time_minutes && <p className="text-red-500 text-xs font-medium">{errors.roast_time_minutes.message}</p>}
           </div>
@@ -209,7 +209,7 @@ export function RoastBatchForm({ initialData, onSuccess, onCancel, inline = fals
               type="number"
               placeholder="e.g. 15000" 
               {...register('weight_in_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.weight_in_grams && <p className="text-red-500 text-xs font-medium">{errors.weight_in_grams.message}</p>}
           </div>
@@ -221,7 +221,7 @@ export function RoastBatchForm({ initialData, onSuccess, onCancel, inline = fals
               type="number"
               placeholder="e.g. 12000" 
               {...register('weight_out_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.weight_out_grams && <p className="text-red-500 text-xs font-medium">{errors.weight_out_grams.message}</p>}
             {yieldPercent && (

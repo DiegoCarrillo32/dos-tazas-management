@@ -5,7 +5,6 @@ import type {
   MaintenanceLogRecord,
   MaintenanceLogInsertParams,
   GreenCoffeeLotRecord,
-  GreenCoffeeLotInsertParams,
   RoastBatchRecord,
   RoastBatchInsertParams,
   OrderRecord,

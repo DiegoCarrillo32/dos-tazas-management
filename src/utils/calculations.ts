@@ -1,4 +1,4 @@
-import type { CostBreakdown, UserSettingsRecord } from '@/types'
+import type { CostBreakdown, UserSettingsRecord, OrderRecord } from '@/types'
 
 export interface CostCalculationParams {
   amountGrams: number
@@ -79,11 +79,11 @@ export function calculateGreenCoffeeNeeded(roastedAmountNeeded: number, roastLos
   return Math.ceil(roastedAmountNeeded / lossRatio)
 }
 
-export function aggregatePendingB2BOrders(orders: any[]): Record<string, number> {
-  const pendingB2B = orders.filter((o: any) => o.fulfillment_status === 'pending' && !!o.company_name)
-  return pendingB2B.reduce((acc: Record<string, number>, order: any) => {
+export function aggregatePendingB2BOrders(orders: Partial<OrderRecord>[]): Record<string, number> {
+  const pendingB2B = orders.filter((o) => o.fulfillment_status === 'pending' && !!o.company_name)
+  return pendingB2B.reduce((acc: Record<string, number>, order) => {
     if (order.inventory_id) {
-      acc[order.inventory_id] = (acc[order.inventory_id] || 0) + order.amount_grams
+      acc[order.inventory_id] = (acc[order.inventory_id] || 0) + (order.amount_grams || 0)
     }
     return acc
   }, {})

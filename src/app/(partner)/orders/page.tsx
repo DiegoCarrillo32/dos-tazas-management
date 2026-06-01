@@ -2,7 +2,7 @@
 
 import { useOrders } from '@/hooks/queries'
 import { PageHeader } from '@/components/PageHeader'
-import { TableSkeleton, TableRowSkeleton } from '@/components/Skeletons'
+import { TableRowSkeleton } from '@/components/Skeletons'
 import { Package } from 'lucide-react'
 
 export default function PartnerOrders() {

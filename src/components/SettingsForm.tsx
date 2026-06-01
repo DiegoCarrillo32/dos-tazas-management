@@ -89,7 +89,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
               id="business_name" 
               placeholder={t('settings_business_name_placeholder')} 
               {...register('business_name')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-md"
+              className="max-w-md"
             />
             {errors.business_name && <p className="text-red-500 text-xs">{errors.business_name.message}</p>}
             <p className="text-xs text-expresso/60">{t('settings_business_name_hint')}</p>
@@ -108,7 +108,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   min="0"
                   max="100"
                   {...register('roast_loss_percentage', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[120px]"
+                  className="max-w-[120px]"
                 />
                 <span className="text-expresso font-medium">%</span>
               </div>
@@ -128,7 +128,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                 placeholder="$" 
                 maxLength={3}
                 {...register('currency_symbol')}
-                className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[120px]"
+                className="max-w-[120px]"
               />
               {errors.currency_symbol && <p className="text-red-500 text-xs">{errors.currency_symbol.message}</p>}
               <p className="text-xs text-expresso/60">
@@ -195,7 +195,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   step="0.01"
                   min="0"
                   {...register('cost_per_bag', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                  className="max-w-[150px]"
                 />
                 {errors.cost_per_bag && <p className="text-red-500 text-xs">{errors.cost_per_bag.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
@@ -212,7 +212,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   step="0.01"
                   min="0"
                   {...register('cost_per_sticker', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                  className="max-w-[150px]"
                 />
                 {errors.cost_per_sticker && <p className="text-red-500 text-xs">{errors.cost_per_sticker.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
@@ -229,7 +229,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   step="0.01"
                   min="0"
                   {...register('cost_electricity', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                  className="max-w-[150px]"
                 />
                 {errors.cost_electricity && <p className="text-red-500 text-xs">{errors.cost_electricity.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
@@ -246,7 +246,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   step="0.01"
                   min="0"
                   {...register('cost_fuel', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                  className="max-w-[150px]"
                 />
                 {errors.cost_fuel && <p className="text-red-500 text-xs">{errors.cost_fuel.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
@@ -263,7 +263,7 @@ export function SettingsForm({ initialData }: { initialData: UserSettingsRecord 
                   step="0.01"
                   min="0"
                   {...register('cost_roasting_time', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit max-w-[150px]"
+                  className="max-w-[150px]"
                 />
                 {errors.cost_roasting_time && <p className="text-red-500 text-xs">{errors.cost_roasting_time.message}</p>}
                 <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>

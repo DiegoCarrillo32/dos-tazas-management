@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,13 +19,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { useCreateRecurringOrder, useUpdateRecurringOrder } from '@/hooks/queries';
 import { toast } from "sonner";
 
-const PREPARATION_METHODS = [
-  { value: "Whole Bean", labelKey: "prep_whole_bean" as const },
-  { value: "Elec Perk", labelKey: "prep_elec_perk" as const },
-  { value: "Drip", labelKey: "prep_drip" as const },
-  { value: "Auto-Drip", labelKey: "prep_auto_drip" as const },
-  { value: "Coarse", labelKey: "prep_coarse" as const },
-];
+
 const ROAST_LEVELS = [
   { value: "Light", labelKey: "roast_light" as const },
   { value: "Medium-Light", labelKey: "roast_medium_light" as const },
@@ -198,23 +191,11 @@ export function RecurringOrderForm({
             <Label htmlFor="preparation_method" className="text-expresso">
               {t('order_form_preparation')} <span className="text-red-500">*</span>
             </Label>
-            <Controller
-              control={control}
-              name="preparation_method"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
-                    <SelectValue placeholder={t('order_form_select_method')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PREPARATION_METHODS.map((method) => (
-                      <SelectItem key={method.value} value={method.value}>
-                        {t(method.labelKey)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            <Input 
+              id="preparation_method" 
+              placeholder="e.g. 1 elect perk and 1 auto drip" 
+              {...register('preparation_method')}
+              className=""
             />
             {errors.preparation_method && <p className="text-red-500 text-xs font-medium">{errors.preparation_method.message}</p>}
           </div>
@@ -255,7 +236,7 @@ export function RecurringOrderForm({
               type="number"
               placeholder="e.g. 5000"
               {...register('amount_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.amount_grams && <p className="text-red-500 text-xs font-medium">{errors.amount_grams.message}</p>}
           </div>
@@ -270,7 +251,7 @@ export function RecurringOrderForm({
               min="1"
               step="1"
               {...register('bag_count', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.bag_count && <p className="text-red-500 text-xs font-medium">{errors.bag_count.message}</p>}
           </div>

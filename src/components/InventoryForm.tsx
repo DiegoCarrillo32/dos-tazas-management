@@ -45,6 +45,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
     }
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const category = watch('category')
   const stockGrams = watch('stock_grams')
 
@@ -124,7 +125,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
             id="item_name" 
             placeholder={t('inv_form_name_placeholder')} 
             {...register('item_name')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.item_name && <p className="text-red-500 text-xs font-medium">{errors.item_name.message}</p>}
         </div>
@@ -159,7 +160,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
               step="0.01"
               placeholder="0.00" 
               {...register('cost_per_kg', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.cost_per_kg && <p className="text-red-500 text-xs font-medium">{errors.cost_per_kg.message}</p>}
           </div>
@@ -174,7 +175,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
             type="number"
             placeholder={category === 'green_coffee' ? "e.g. 20000" : "e.g. 50"}
             {...register('stock_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.stock_grams && <p className="text-red-500 text-xs font-medium">{errors.stock_grams.message}</p>}
           
@@ -191,7 +192,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
             id="notes" 
             placeholder={t('inv_form_notes_placeholder')} 
             {...register('notes')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.notes && <p className="text-red-500 text-xs font-medium">{errors.notes.message}</p>}
         </div>

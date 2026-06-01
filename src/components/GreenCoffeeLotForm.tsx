@@ -124,7 +124,7 @@ export function GreenCoffeeLotForm({ inventoryId, initialData, onSuccess, onCanc
               id="origin" 
               placeholder="e.g. Colombia, Cauca" 
               {...register('origin')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.origin && <p className="text-red-500 text-xs font-medium">{errors.origin.message}</p>}
           </div>
@@ -135,7 +135,7 @@ export function GreenCoffeeLotForm({ inventoryId, initialData, onSuccess, onCanc
               id="varietal" 
               placeholder="e.g. Castillo, Geisha" 
               {...register('varietal')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.varietal && <p className="text-red-500 text-xs font-medium">{errors.varietal.message}</p>}
           </div>
@@ -171,7 +171,7 @@ export function GreenCoffeeLotForm({ inventoryId, initialData, onSuccess, onCanc
               id="altitude" 
               placeholder="e.g. 1900m" 
               {...register('altitude')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.altitude && <p className="text-red-500 text-xs font-medium">{errors.altitude.message}</p>}
           </div>

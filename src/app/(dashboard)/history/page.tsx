@@ -7,6 +7,7 @@ import { History, CheckCircle, Search } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export default function HistoryPage() {
   const { t } = useTranslation()
@@ -71,12 +72,12 @@ export default function HistoryPage() {
         {/* Search Input */}
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
-          <input
+          <Input
             type="text"
             placeholder={t('pag_search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-warm-roast/5 border border-warm-roast/10 rounded-full focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso placeholder-expresso/40"
+            className="w-full pl-9 rounded-full"
           />
         </div>
 

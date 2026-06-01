@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/
 import { Input } from '@/components/ui/input'
 import { RoastBatchForm } from '@/components/RoastBatchForm'
 import { useRoastBatches } from '@/hooks/queries'
-import { TableSkeleton, TableRowSkeleton } from '@/components/Skeletons'
+import { TableRowSkeleton } from '@/components/Skeletons'
 
 export default function RoastsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -50,7 +50,7 @@ export default function RoastsPage() {
               placeholder="Search roasts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 border-warm-roast/20 focus-visible:ring-coffee-fruit bg-white-pergamino"
+              className="w-full pl-9 rounded-full"
             />
           </div>
         </div>
@@ -58,7 +58,108 @@ export default function RoastsPage() {
 
       {/* Roasts Table */}
       <div className="bg-white rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-32 bg-white rounded-xl border border-warm-roast/10 animate-pulse" />
+            ))
+          ) : filteredRoasts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
+              <Flame className="h-8 w-8 opacity-20" />
+              <p>No roast batches found</p>
+            </div>
+          ) : (
+            filteredRoasts.map((batch) => {
+              const yieldPercent = (batch.weight_in_grams && batch.weight_out_grams && batch.weight_in_grams > 0)
+                ? ((batch.weight_out_grams / batch.weight_in_grams) * 100).toFixed(1)
+                : null
+              return (
+                <div key={batch.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
+                    <div>
+                      <div className="font-bold text-expresso text-base mb-1">{batch.green_lot_name || 'Unknown Lot'}</div>
+                      <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full">
+                        {new Date(batch.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Dialog>
+                        <DialogTrigger render={
+                          <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />
+                        }>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none">
+                          <DialogTitle className="sr-only">Edit Roast</DialogTitle>
+                          <RoastBatchForm initialData={batch} />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
+                  {/* Content Grid */}
+                  <div className="p-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                        Weight In
+                      </div>
+                      <div className="font-medium text-expresso text-sm">
+                        {batch.weight_in_grams} g
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                        Weight Out
+                      </div>
+                      <div className="font-medium text-expresso text-sm">
+                        {batch.weight_out_grams} g
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                        Yield
+                      </div>
+                      <div className="font-medium text-sm">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${Number(yieldPercent) < 80 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                          {yieldPercent ? `${yieldPercent}%` : '—'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                        Roaster
+                      </div>
+                      <div className="font-medium text-expresso text-sm truncate" title={batch.equipment_name || ''}>
+                        {batch.equipment_name || <span className="text-expresso/40 italic font-normal">—</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(batch.notes || batch.roast_time_minutes) && (
+                    <div className="px-4 pb-4">
+                      {batch.roast_time_minutes && (
+                        <p className="text-xs text-expresso/60 mb-2">
+                          <span className="font-semibold text-expresso">Time:</span> {batch.roast_time_minutes} mins
+                        </p>
+                      )}
+                      {batch.notes && (
+                        <p className="text-xs text-expresso/60 bg-warm-roast/5 p-2 rounded-lg italic">
+                          &quot;{batch.notes}&quot;
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
               <tr>

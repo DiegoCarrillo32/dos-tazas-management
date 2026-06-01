@@ -106,7 +106,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             id="full_name" 
             placeholder="e.g. John Doe" 
             {...register('full_name')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.full_name && <p className="text-red-500 text-xs font-medium">{errors.full_name.message}</p>}
         </div>
@@ -117,7 +117,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             id="phone" 
             placeholder="e.g. +1 234 567 8900" 
             {...register('phone')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.phone && <p className="text-red-500 text-xs font-medium">{errors.phone.message}</p>}
         </div>
@@ -128,7 +128,7 @@ export function CustomerForm({ initialData, onSuccess, onCancel, inline = false 
             id="address" 
             placeholder="e.g. 123 Coffee St, Bean City" 
             {...register('address')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.address && <p className="text-red-500 text-xs font-medium">{errors.address.message}</p>}
         </div>

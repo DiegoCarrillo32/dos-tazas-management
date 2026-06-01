@@ -5,6 +5,7 @@ import { useCustomers, useDeleteCustomer } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Plus, Users, Edit, Search, Trash2 } from 'lucide-react'
 import { CustomerForm } from '@/components/CustomerForm'
 import { TableSkeleton } from '@/components/Skeletons'
@@ -86,7 +87,7 @@ export default function CustomersPage() {
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
-              <input
+              <Input
                 type="text"
                 placeholder={t('pag_search')}
                 value={searchQuery}
@@ -94,7 +95,7 @@ export default function CustomersPage() {
                   setSearchQuery(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="w-full pl-9 pr-4 py-2 text-sm bg-warm-roast/5 border border-warm-roast/10 rounded-full focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso placeholder-expresso/40"
+                className="w-full pl-9 rounded-full"
               />
             </div>
             
@@ -129,16 +130,17 @@ export default function CustomersPage() {
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-warm-roast/10">
+              <div className="flex flex-col gap-4 p-4 bg-warm-roast/5">
                 {paginatedItems.map((customer) => (
-                  <div key={customer.id} className="flex flex-col gap-3 p-4 bg-warm-roast/5 border-b border-warm-roast/10">
-                    <div className="flex items-start justify-between">
-                      <span className="font-bold text-expresso">{customer.full_name}</span>
-                      <div className="flex gap-1">
+                  <div key={customer.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
+                      <div className="font-bold text-expresso text-base">{customer.full_name}</div>
+                      <div className="flex items-center gap-1">
                         <Dialog>
                           <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
                             <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
@@ -161,22 +163,42 @@ export default function CustomersPage() {
                         </Button>
                       </div>
                     </div>
-                    {customer.phone && (
-                      <div className="text-sm text-expresso/80">
-                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('customers_col_phone')}: </span>
-                        {customer.phone}
+
+                    {/* Content Grid */}
+                    <div className="p-4 grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                          {t('customers_col_phone')}
+                        </div>
+                        <div className="font-medium text-expresso text-sm">
+                          {customer.phone || <span className="text-expresso/40 italic font-normal">{t('customers_not_provided')}</span>}
+                        </div>
                       </div>
-                    )}
-                    {customer.last_purchase_date && (
-                      <div className="text-sm text-expresso/80">
-                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('customers_col_last_purchase')}: </span>
-                        {new Date(customer.last_purchase_date).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                          {t('customers_col_last_purchase')}
+                        </div>
+                        <div className="font-medium text-expresso text-sm">
+                          {customer.last_purchase_date ? new Date(customer.last_purchase_date).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          }) : <span className="text-expresso/40 italic font-normal">{t('customers_never')}</span>}
+                        </div>
                       </div>
-                    )}
+                      
+                      {customer.address && (
+                        <div className="col-span-2 pt-2 border-t border-warm-roast/5">
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                            {t('customers_col_address')}
+                          </div>
+                          <div className="text-sm text-expresso/80 truncate" title={customer.address}>
+                            {customer.address}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

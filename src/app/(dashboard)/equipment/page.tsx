@@ -5,6 +5,7 @@ import { useEquipment } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Plus, Settings, Edit, Search } from 'lucide-react'
 import { EquipmentForm } from '@/components/EquipmentForm'
 import { MaintenanceLogsDialog } from '@/components/MaintenanceLogsDialog'
@@ -85,7 +86,7 @@ export default function EquipmentPage() {
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
-                <input
+                <Input
                   type="text"
                   placeholder={t('pag_search')}
                   value={searchQuery}
@@ -93,7 +94,7 @@ export default function EquipmentPage() {
                     setSearchQuery(e.target.value)
                     setCurrentPage(1)
                   }}
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-warm-roast/5 border border-warm-roast/10 rounded-full focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso placeholder-expresso/40"
+                  className="w-full pl-9 rounded-full"
                 />
               </div>
 
@@ -117,8 +118,76 @@ export default function EquipmentPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {/* Mobile Card View */}
+          <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
+            {paginatedItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-expresso/60">
+                <Settings className="h-12 w-12 text-warm-roast/20" />
+                <p className="text-lg font-medium">No equipment found</p>
+                <p className="text-sm">Try adjusting your search or add a new equipment</p>
+              </div>
+            ) : (
+              paginatedItems.map((item) => (
+                <div key={item.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
+                    <div>
+                      <div className="font-bold text-expresso text-base mb-1">{item.name}</div>
+                      <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full capitalize">
+                        {item.type.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MaintenanceLogsDialog equipmentId={item.id} equipmentName={item.name} />
+                      <Dialog>
+                        <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-equipment-form">
+                          <DialogTitle className="sr-only">Edit Equipment</DialogTitle>
+                          <EquipmentForm initialData={item} />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
+                  {/* Content Grid */}
+                  <div className="p-4 grid grid-cols-2 gap-4">
+                    {item.model && (
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                          Model
+                        </div>
+                        <div className="font-medium text-expresso text-sm truncate" title={item.model}>
+                          {item.model}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                        Manufacturer
+                      </div>
+                      <div className="font-medium text-expresso text-sm truncate" title={item.manufacturer || ''}>
+                        {item.manufacturer || <span className="text-expresso/40 italic font-normal">—</span>}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                        Purchase Date
+                      </div>
+                      <div className="font-medium text-expresso text-sm">
+                        {item.purchase_date || <span className="text-expresso/40 italic font-normal">—</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
           {/* Desktop Table View */}
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs uppercase bg-warm-roast/5 text-expresso/70 font-bold border-b border-warm-roast/10">
                 <tr>

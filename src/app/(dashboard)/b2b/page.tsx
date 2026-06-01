@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Briefcase, Users, ShoppingCart, Calculator } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { OrderForm } from '@/components/OrderForm'
-import { TableSkeleton, TableRowSkeleton } from '@/components/Skeletons'
+import { TableRowSkeleton } from '@/components/Skeletons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InvitePartnerDialog } from '@/components/InvitePartnerDialog'
 import { PartnersList } from '@/components/PartnersList'
@@ -73,17 +73,17 @@ export default function B2BPage() {
       />
 
       <Tabs defaultValue="partners" className="w-full space-y-6">
-        <TabsList className="bg-white-pergamino border border-warm-roast/10 p-1 rounded-full h-12 flex max-w-[400px]">
-          <TabsTrigger value="partners" className="rounded-full flex-1 data-[state=active]:bg-white data-[state=active]:text-coffee-fruit data-[state=active]:shadow-sm text-expresso/70">
-            <Users className="w-4 h-4 mr-2" />
+        <TabsList className="bg-white border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1 max-w-[400px]">
+          <TabsTrigger value="partners" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+            <Users className="w-4 h-4 mr-1 shrink-0" />
             {t('b2b_partners_tab') || "Partners"}
           </TabsTrigger>
-          <TabsTrigger value="orders" className="rounded-full flex-1 data-[state=active]:bg-white data-[state=active]:text-coffee-fruit data-[state=active]:shadow-sm text-expresso/70">
-            <ShoppingCart className="w-4 h-4 mr-2" />
+          <TabsTrigger value="orders" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+            <ShoppingCart className="w-4 h-4 mr-1 shrink-0" />
             {t('b2b_orders_tab') || "Orders"}
           </TabsTrigger>
-          <TabsTrigger value="schedule" className="rounded-full flex-1 data-[state=active]:bg-white data-[state=active]:text-coffee-fruit data-[state=active]:shadow-sm text-expresso/70">
-            <Calculator className="w-4 h-4 mr-2" />
+          <TabsTrigger value="schedule" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+            <Calculator className="w-4 h-4 mr-1 shrink-0" />
             {t('b2b_schedule_tab') || "Schedule"}
           </TabsTrigger>
         </TabsList>

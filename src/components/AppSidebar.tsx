@@ -93,7 +93,7 @@ export function AppSidebar({
   const { t } = useTranslation();
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   return (
     <Sidebar

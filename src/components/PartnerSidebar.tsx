@@ -41,7 +41,7 @@ const menuItems = [
 export function PartnerSidebar({ className }: { className?: string }) {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   return (
     <Sidebar className={className}>
@@ -110,13 +110,5 @@ export function PartnerSidebar({ className }: { className?: string }) {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
-}
-
-function Button({ children, className, variant, ...props }: React.ComponentProps<"button"> & { variant?: string }) {
-  return (
-    <button className={`px-4 py-2 ${className}`} {...props}>
-      {children}
-    </button>
   )
 }

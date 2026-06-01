@@ -5,7 +5,7 @@ import {
   aggregatePendingB2BOrders,
   calculateRawGrams,
 } from '@/utils/calculations'
-import type { OrderWithCustomer, RoastBatchRecord, InventoryRecord } from '@/types'
+import type { OrderWithCustomer } from '@/types'
 
 /**
  * Tests for the B2B / Wholesale business logic:
@@ -42,20 +42,6 @@ function makeOrder(overrides: Partial<OrderWithCustomer> = {}): OrderWithCustome
   }
 }
 
-function makeRoastBatch(overrides: Partial<RoastBatchRecord> = {}): RoastBatchRecord {
-  return {
-    id: 'rb-default',
-    user_id: 'user-001',
-    equipment_id: 'eq-001',
-    green_lot_id: 'lot-001',
-    weight_in_grams: 10000,
-    weight_out_grams: 8200,
-    roast_time_minutes: 13.5,
-    notes: null,
-    created_at: '2024-06-01T00:00:00Z',
-    ...overrides,
-  }
-}
 
 // ─── Tests ───────────────────────────────────────────────────
 

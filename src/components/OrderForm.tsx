@@ -232,7 +232,7 @@ export function OrderForm({
                             role="combobox"
                             aria-expanded={customerOpen}
                             className={cn(
-                              "w-full justify-between bg-white-pergamino border-warm-roast/20 hover:bg-white-pergamino hover:text-expresso focus:ring-coffee-fruit h-12 rounded-xl transition-all font-normal text-base",
+                              "w-full justify-between bg-white-pergamino border-warm-roast/20 hover:bg-white-pergamino hover:text-expresso focus:ring-coffee-fruit h-12 rounded-xl transition-all font-normal text-base flex items-center",
                               !field.value && "text-muted-foreground",
                               errors.customer_id && "border-red-500 ring-1 ring-red-500"
                             )}
@@ -244,7 +244,7 @@ export function OrderForm({
                             : "Select a customer..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </PopoverTrigger>
-                      <PopoverContent className="w-(--anchor-width) p-0 bg-white-pergamino border-warm-roast/10 rounded-xl overflow-hidden shadow-xl" align="start">
+                      <PopoverContent className="w-[300px] sm:w-[400px] p-0 bg-white-pergamino border-warm-roast/10 rounded-xl overflow-hidden shadow-xl" align="start">
                         <Command>
                           <CommandInput placeholder="Search customers..." className="h-10 text-base sm:text-sm" />
                           <CommandList>
@@ -386,7 +386,7 @@ export function OrderForm({
               type="number"
               placeholder="e.g. 2000"
               {...register('amount_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.amount_grams && <p className="text-red-500 text-xs font-medium">{errors.amount_grams.message}</p>}
           </div>
@@ -401,7 +401,7 @@ export function OrderForm({
               min="1"
               step="1"
               {...register('bag_count', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.bag_count && <p className="text-red-500 text-xs font-medium">{errors.bag_count.message}</p>}
           </div>
@@ -416,7 +416,7 @@ export function OrderForm({
               step="0.01"
               placeholder="0.00"
               {...register('total_price', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.total_price && <p className="text-red-500 text-xs font-medium">{errors.total_price.message}</p>}
           </div>
@@ -431,7 +431,7 @@ export function OrderForm({
               id="origin_notes"
               placeholder={t('order_form_origin_notes_placeholder')}
               {...register('origin_notes')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
           </div>
 
@@ -477,7 +477,7 @@ export function OrderForm({
                   id="company_name"
                   placeholder="e.g. Central Perk Cafe"
                   {...register('company_name', { required: 'Company name is required for B2B orders' })}
-                  className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+                  className=""
                 />
                 {errors.company_name && <p className="text-red-500 text-xs font-medium">{errors.company_name.message}</p>}
               </div>
@@ -488,7 +488,7 @@ export function OrderForm({
     </form>
 
     <Dialog open={isCreatingCustomer} onOpenChange={setIsCreatingCustomer}>
-      <DialogContent className="bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden max-w-[500px]">
+      <DialogContent className="sm:w-full sm:max-w-[500px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden">
         <div className="p-6">
           <DialogTitle className="text-xl font-heading text-expresso mb-4">
             {t('cust_form_add')}

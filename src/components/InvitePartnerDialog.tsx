@@ -32,8 +32,9 @@ export function InvitePartnerDialog() {
       )
       
       setInviteCode(partner.invite_code)
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate invite')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate invite'
+      setError(message)
     } finally {
       setIsGenerating(false)
     }
@@ -106,7 +107,7 @@ export function InvitePartnerDialog() {
                   name="companyName" 
                   required 
                   placeholder="e.g. Central Perk Cafe"
-                  className="border-warm-roast/20 focus-visible:ring-coffee-fruit rounded-xl h-11"
+                  className=""
                 />
               </div>
               
@@ -117,7 +118,7 @@ export function InvitePartnerDialog() {
                     id="contactName" 
                     name="contactName" 
                     placeholder="e.g. Gunther"
-                    className="border-warm-roast/20 focus-visible:ring-coffee-fruit rounded-xl h-11"
+                    className=""
                   />
                 </div>
                 <div className="space-y-2">
@@ -126,7 +127,7 @@ export function InvitePartnerDialog() {
                     id="contactPhone" 
                     name="contactPhone" 
                     placeholder="e.g. 555-0123"
-                    className="border-warm-roast/20 focus-visible:ring-coffee-fruit rounded-xl h-11"
+                    className=""
                   />
                 </div>
               </div>
@@ -138,7 +139,7 @@ export function InvitePartnerDialog() {
                   name="email" 
                   type="email"
                   placeholder="e.g. orders@centralperk.com"
-                  className="border-warm-roast/20 focus-visible:ring-coffee-fruit rounded-xl h-11"
+                  className=""
                 />
               </div>
               

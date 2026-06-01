@@ -1,9 +1,10 @@
 'use client'
 
 import { usePartnerRecurringOrders, useInventory, usePartners, useDeleteRecurringOrder } from '@/hooks/queries'
+import type { B2BPartnerRecord } from '@/types'
 import { PageHeader } from '@/components/PageHeader'
-import { TableSkeleton, TableRowSkeleton } from '@/components/Skeletons'
-import { RefreshCw, Plus, Trash2, Edit2 } from 'lucide-react'
+import { TableRowSkeleton } from '@/components/Skeletons'
+import { RefreshCw, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { RecurringOrderForm } from '@/components/RecurringOrderForm'
@@ -12,7 +13,7 @@ import { useState } from 'react'
 export default function PartnerRecurringOrders() {
   const { data: partnerData } = usePartners()
   const partnerDataArray = Array.isArray(partnerData) ? partnerData : []
-  const partnerId = partnerDataArray[0]?.id || (partnerData as any)?.id
+  const partnerId = partnerDataArray[0]?.id || (partnerData as B2BPartnerRecord)?.id
   const { data: recurringOrders, isLoading } = usePartnerRecurringOrders(partnerId || '')
   const { data: inventoryItems } = useInventory()
   const deleteMutation = useDeleteRecurringOrder(partnerId || '')
@@ -74,7 +75,7 @@ export default function PartnerRecurringOrders() {
                 recurringOrders.map((order) => (
                   <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors group">
                     <td className="px-6 py-4 font-bold text-coffee-fruit">
-                      {order.inventory_id ? 'Custom Coffee' : 'Coffee Bean'}
+                      {order.inventory?.item_name || 'Standard Coffee'}
                       <div className="text-xs font-normal text-expresso/60 mt-0.5 capitalize">
                         {order.roast_level} Roast • {order.preparation_method}
                       </div>

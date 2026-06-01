@@ -1,19 +1,19 @@
 'use client'
 
 import { useOrders, usePartnerRecurringOrders, usePartners } from '@/hooks/queries'
+import type { B2BPartnerRecord } from '@/types'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { TableSkeleton, TableRowSkeleton } from '@/components/Skeletons'
+import { TableRowSkeleton } from '@/components/Skeletons'
 import { RefreshCw, Package, ArrowRight, Clock } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 
 export default function PartnerDashboard() {
   const { data: orders, isLoading: ordersLoading } = useOrders()
   const { data: partnerData } = usePartners()
   const partnerDataArray = Array.isArray(partnerData) ? partnerData : []
-  const partnerId = partnerDataArray[0]?.id || (partnerData as any)?.id
-  const { data: recurringOrders, isLoading: recurringLoading } = usePartnerRecurringOrders(partnerId || '')
+  const partnerId = partnerDataArray[0]?.id || (partnerData as B2BPartnerRecord)?.id
+  usePartnerRecurringOrders(partnerId || '')
 
   const pendingOrders = (orders || []).filter(o => o.fulfillment_status === 'pending' || o.fulfillment_status === 'roasted')
   const recentOrders = (orders || []).slice(0, 5)

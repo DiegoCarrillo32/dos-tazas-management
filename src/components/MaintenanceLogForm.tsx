@@ -132,7 +132,7 @@ export function MaintenanceLogForm({ equipmentId, initialData, onSuccess, onCanc
               id="date" 
               type="date"
               {...register('date')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.date && <p className="text-red-500 text-xs font-medium">{errors.date.message}</p>}
           </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,11 +18,11 @@ function JoinForm() {
   const [error, setError] = useState<string | null>(null)
   const [inviteCode, setInviteCode] = useState(codeParam || '')
 
-  useEffect(() => {
-    if (codeParam) {
-      setInviteCode(codeParam)
-    }
-  }, [codeParam])
+  const [prevCode, setPrevCode] = useState(codeParam)
+  if (codeParam !== prevCode) {
+    setPrevCode(codeParam)
+    setInviteCode(codeParam || '')
+  }
 
   async function handleSubmit(formData: FormData) {
     setIsPending(true)

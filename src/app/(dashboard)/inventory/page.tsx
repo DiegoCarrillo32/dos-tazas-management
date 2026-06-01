@@ -5,6 +5,7 @@ import { useInventory, useSettings } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Plus, PackageSearch, Coffee, Edit, Search } from 'lucide-react'
 import { InventoryForm } from '@/components/InventoryForm'
 import { GreenCoffeeLotsDialog } from '@/components/GreenCoffeeLotsDialog'
@@ -93,7 +94,7 @@ export default function InventoryPage() {
               {/* Search input */}
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
-                <input
+                <Input
                   type="text"
                   placeholder={t('pag_search')}
                   value={searchQuery}
@@ -101,7 +102,7 @@ export default function InventoryPage() {
                     setSearchQuery(e.target.value)
                     setCurrentPage(1)
                   }}
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-warm-roast/5 border border-warm-roast/10 rounded-full focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso placeholder-expresso/40"
+                  className="w-full pl-9 rounded-full"
                 />
               </div>
 
@@ -162,29 +163,30 @@ export default function InventoryPage() {
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-warm-roast/10">
+              <div className="flex flex-col gap-4 p-4 bg-warm-roast/5">
                 {paginatedItems.map((item) => {
                   const isCoffee = item.category === 'green_coffee'
                   const roastedYield = isCoffee ? Math.floor(item.stock_grams * lossRatio) : null
                   const isLowStock = isCoffee && item.stock_grams < 5000
 
                   return (
-                    <div key={item.id} className="flex flex-col gap-3 p-4 bg-warm-roast/5 border-b border-warm-roast/10">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-expresso">{item.item_name}</span>
+                    <div key={item.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
+                        <div>
+                          <div className="font-bold text-expresso text-base mb-1">{item.item_name}</div>
                           <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full capitalize">
                             {item.category.replace('_', ' ')}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           {isCoffee && (
                             <GreenCoffeeLotsDialog inventoryId={item.id} inventoryName={item.item_name} />
                           )}
                           <Dialog>
                             <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
                               <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
@@ -193,27 +195,46 @@ export default function InventoryPage() {
                           </Dialog>
                         </div>
                       </div>
-                      <div className="text-sm">
-                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_raw')}: </span>
-                        <span className={`font-semibold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
-                          {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
-                        </span>
-                        {isLowStock && <span className="text-red-500 text-xs ml-1">⚠ Low</span>}
-                      </div>
-                      {isCoffee && roastedYield !== null && (
-                        <div className="text-sm">
-                          <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_yield').replace('{loss}', String(settings?.roast_loss_percentage || 20))}: </span>
-                          <span className="text-coffee-fruit font-medium bg-coffee-fruit/10 px-2 py-0.5 rounded-md">
-                            {(roastedYield / 1000).toFixed(2)} kg
-                          </span>
+
+                      {/* Content Grid */}
+                      <div className="p-4 grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                            {t('inventory_col_raw')}
+                          </div>
+                          <div className={`font-semibold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
+                            {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
+                            {isLowStock && <span className="text-red-500 text-xs ml-1 font-normal">⚠ Low</span>}
+                          </div>
                         </div>
-                      )}
-                      <div className="text-sm text-expresso/70">
-                        <span className="text-expresso/50 text-xs font-semibold uppercase">{t('inventory_col_cost')}: </span>
-                        {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic">N/A</span>}
+
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                            {t('inventory_col_cost')}
+                          </div>
+                          <div className="font-semibold text-expresso">
+                            {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic font-normal">N/A</span>}
+                          </div>
+                        </div>
+
+                        {isCoffee && roastedYield !== null && (
+                          <div className="col-span-2 pt-2 border-t border-warm-roast/5">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
+                              {t('inventory_col_yield').replace('{loss}', String(settings?.roast_loss_percentage || 20))}
+                            </div>
+                            <span className="text-coffee-fruit font-medium bg-coffee-fruit/10 px-2.5 py-1 rounded-md inline-block text-sm">
+                              {(roastedYield / 1000).toFixed(2)} kg
+                            </span>
+                          </div>
+                        )}
                       </div>
+
                       {item.notes && (
-                        <p className="text-xs text-expresso/50 truncate">{item.notes}</p>
+                        <div className="px-4 pb-4">
+                          <p className="text-xs text-expresso/60 bg-warm-roast/5 p-2 rounded-lg italic">
+                            &quot;{item.notes}&quot;
+                          </p>
+                        </div>
                       )}
                     </div>
                   )

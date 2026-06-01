@@ -113,7 +113,7 @@ export function EquipmentForm({ initialData, onSuccess, onCancel, inline = false
             id="name" 
             placeholder="e.g. Main Roaster" 
             {...register('name')}
-            className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+            className=""
           />
           {errors.name && <p className="text-red-500 text-xs font-medium">{errors.name.message}</p>}
         </div>
@@ -147,7 +147,7 @@ export function EquipmentForm({ initialData, onSuccess, onCancel, inline = false
               id="purchase_date" 
               type="date"
               {...register('purchase_date')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.purchase_date && <p className="text-red-500 text-xs font-medium">{errors.purchase_date.message}</p>}
           </div>
@@ -160,7 +160,7 @@ export function EquipmentForm({ initialData, onSuccess, onCancel, inline = false
               id="manufacturer" 
               placeholder="e.g. Probat" 
               {...register('manufacturer')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.manufacturer && <p className="text-red-500 text-xs font-medium">{errors.manufacturer.message}</p>}
           </div>
@@ -171,7 +171,7 @@ export function EquipmentForm({ initialData, onSuccess, onCancel, inline = false
               id="model" 
               placeholder="e.g. P12" 
               {...register('model')}
-              className="border-warm-roast/30 focus-visible:ring-coffee-fruit"
+              className=""
             />
             {errors.model && <p className="text-red-500 text-xs font-medium">{errors.model.message}</p>}
           </div>

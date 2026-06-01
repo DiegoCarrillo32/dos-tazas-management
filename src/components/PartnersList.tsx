@@ -2,9 +2,7 @@
 
 import { usePartners } from '@/hooks/queries'
 import { TableSkeleton } from '@/components/Skeletons'
-import { Store, UserX } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { queryKeys } from '@/hooks/queries'
+import { Store } from 'lucide-react'
 import type { B2BPartnerRecord } from '@/types'
 import { PartnerManagementModal } from '@/components/PartnerManagementModal'
 
