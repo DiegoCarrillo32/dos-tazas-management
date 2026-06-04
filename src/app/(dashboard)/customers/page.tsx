@@ -207,7 +207,7 @@ export default function CustomersPage() {
 
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left min-w-[800px]">
               <thead className="text-xs uppercase bg-warm-roast/5 text-expresso/70 font-bold border-b border-warm-roast/10">
                 <tr>
                   <th scope="col" className="px-6 py-4 rounded-tl-lg">{t('customers_col_name')}</th>

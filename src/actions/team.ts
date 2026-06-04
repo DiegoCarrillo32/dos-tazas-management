@@ -187,3 +187,26 @@ export async function deleteTeamMember(memberId: string) {
   revalidatePath('/team')
   return true
 }
+
+/**
+ * Allows a worker to update their own name.
+ */
+export async function updateMyWorkerName(name: string) {
+  const supabase = await createClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError || !userData.user) {
+    throw new Error('Not authenticated')
+  }
+
+  const { error } = await supabase
+    .from('team_members')
+    .update({ name })
+    .eq('worker_user_id', userData.user.id)
+
+  if (error) {
+    throw new Error(`Failed to update name: ${error.message}`)
+  }
+
+  revalidatePath('/settings')
+  return true
+}

@@ -95,7 +95,7 @@ export default function B2BPage() {
         <TabsContent value="orders" className="m-0 animate-in fade-in duration-300 outline-none">
           <div className="bg-white rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-sm text-left min-w-[800px]">
                 <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
                   <tr>
                     <th scope="col" className="px-6 py-4">Company</th>

@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { updateSettings } from '@/actions/settings'
+import { updateMyWorkerName } from '@/actions/team'
 import type { UserSettingsRecord } from '@/types'
-import { Save, Building2, Percent, DollarSign, Globe, Coins, SunMoon } from 'lucide-react'
+import { Save, Building2, Percent, DollarSign, Globe, Coins, SunMoon, User } from 'lucide-react'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { Language } from '@/i18n/dictionaries'
 import { useTheme } from '@/providers/ThemeProvider'
@@ -26,11 +27,12 @@ const settingsSchema = z.object({
   cost_electricity: z.number().min(0),
   cost_fuel: z.number().min(0),
   cost_roasting_time: z.number().min(0),
+  worker_name: z.string().optional(),
 })
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
 
-export function SettingsForm({ initialData, userRole = 'roaster' }: { initialData: UserSettingsRecord, userRole?: string }) {
+export function SettingsForm({ initialData, userRole = 'roaster', workerName = '' }: { initialData: UserSettingsRecord, userRole?: string, workerName?: string }) {
   const [isPending, startTransition] = useTransition()
   const { theme, setTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
@@ -46,22 +48,30 @@ export function SettingsForm({ initialData, userRole = 'roaster' }: { initialDat
       cost_electricity: initialData.cost_electricity_per_order ?? 0,
       cost_fuel: initialData.cost_fuel_per_order ?? 0,
       cost_roasting_time: initialData.cost_roasting_time_per_order ?? 0,
+      worker_name: workerName,
     }
   })
 
   const onSubmit = (data: SettingsFormValues) => {
     startTransition(async () => {
       try {
-        await updateSettings({
-          business_name: data.business_name || null,
-          roast_loss_percentage: data.roast_loss_percentage,
-          currency_symbol: data.currency_symbol || '$',
-          cost_per_bag: data.cost_per_bag,
-          cost_per_sticker: data.cost_per_sticker,
-          cost_electricity_per_order: data.cost_electricity,
-          cost_fuel_per_order: data.cost_fuel,
-          cost_roasting_time_per_order: data.cost_roasting_time
-        })
+        if (userRole !== 'worker') {
+          await updateSettings({
+            business_name: data.business_name || null,
+            roast_loss_percentage: data.roast_loss_percentage,
+            currency_symbol: data.currency_symbol || '$',
+            cost_per_bag: data.cost_per_bag,
+            cost_per_sticker: data.cost_per_sticker,
+            cost_electricity_per_order: data.cost_electricity,
+            cost_fuel_per_order: data.cost_fuel,
+            cost_roasting_time_per_order: data.cost_roasting_time
+          })
+        }
+        
+        if (userRole === 'worker' && data.worker_name !== undefined) {
+          await updateMyWorkerName(data.worker_name)
+        }
+
         toast.success(t('settings_success'))
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to update settings')
@@ -94,6 +104,23 @@ export function SettingsForm({ initialData, userRole = 'roaster' }: { initialDat
               />
               {errors.business_name && <p className="text-red-500 text-xs">{errors.business_name.message}</p>}
               <p className="text-xs text-expresso/60">{t('settings_business_name_hint')}</p>
+            </div>
+          )}
+
+          {userRole === 'worker' && (
+            <div className="space-y-2 mb-6">
+              <Label htmlFor="worker_name" className="text-expresso flex items-center gap-2">
+                <User className="h-4 w-4 text-warm-roast" />
+                Your Name
+              </Label>
+              <Input 
+                id="worker_name" 
+                placeholder="Enter your name" 
+                {...register('worker_name')}
+                className="max-w-md"
+              />
+              {errors.worker_name && <p className="text-red-500 text-xs">{errors.worker_name.message}</p>}
+              <p className="text-xs text-expresso/60">This name will be displayed on the team roster and timesheets.</p>
             </div>
           )}
 

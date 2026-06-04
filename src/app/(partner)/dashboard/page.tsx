@@ -74,7 +74,7 @@ export default function PartnerDashboard() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left min-w-[800px]">
             <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
               <tr>
                 <th scope="col" className="px-6 py-4">Date</th>

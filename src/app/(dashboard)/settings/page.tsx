@@ -1,4 +1,5 @@
 import { fetchSettings } from '@/actions/settings'
+import { getMyEmployer } from '@/actions/team'
 import { SettingsForm } from '@/components/SettingsForm'
 import { Settings } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
@@ -11,9 +12,18 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   
   let userRole = 'roaster'
+  let workerName = ''
+
   if (user) {
     const { data: profile } = await supabase.from('user_profiles').select('role').eq('user_id', user.id).single()
     if (profile?.role) userRole = profile.role
+
+    if (userRole === 'worker') {
+      const employer = await getMyEmployer()
+      if (employer?.name) {
+        workerName = employer.name
+      }
+    }
   }
 
   return (
@@ -28,7 +38,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <SettingsForm initialData={settings} userRole={userRole} />
+      <SettingsForm initialData={settings} userRole={userRole} workerName={workerName} />
     </div>
   )
 }

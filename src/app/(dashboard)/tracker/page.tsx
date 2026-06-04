@@ -170,12 +170,12 @@ export default function TrackerPage() {
         }
       />
 
-      <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-hidden">
+      <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
         <div className="p-4 border-b border-warm-roast/10 dark:border-border bg-white-pergamino dark:bg-muted/30 flex items-center text-expresso/70 dark:text-muted-foreground">
           <FileText className="w-4 h-4 mr-2" />
           <h3 className="font-semibold text-sm uppercase tracking-wider">Timesheet History</h3>
         </div>
-        <table className="w-full text-sm text-left">
+        <table className="w-full text-sm text-left min-w-[800px]">
           <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino/50 dark:bg-muted/10 border-b border-warm-roast/10 dark:border-border font-semibold tracking-wider">
             <tr>
               <th scope="col" className="px-6 py-4">Date</th>
