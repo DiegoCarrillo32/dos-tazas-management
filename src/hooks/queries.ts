@@ -97,6 +97,9 @@ export const queryKeys = {
   b2bPartnerPricing: (partnerId: string) => ['b2b_pricing', partnerId] as const,
   b2bRecurringOrders: (partnerId: string) => ['b2b_recurring_orders', partnerId] as const,
   b2bOrders: (partnerId?: string) => ['b2b_orders', partnerId || 'all'] as const,
+  teamMembers: ['team_members'] as const,
+  teamTimeLogs: ['team_time_logs'] as const,
+  workerTimeLogs: ['worker_time_logs'] as const,
 }
 
 // ─── Fetch Helpers ───────────────────────────────────────────
@@ -574,6 +577,96 @@ export function useConfirmOrderFromTemplate() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.b2bOrders() })
+    },
+  })
+}
+
+// ============================================================
+// Team & Time Tracker Hooks
+// ============================================================
+import { getTeamMembers, generateTeamInvite, updateTeamMember, deleteTeamMember } from '@/actions/team'
+import { getTeamTimeLogs, getWorkerTimeLogs, logTime, markTimeLogsPaid, deleteTimeLog } from '@/actions/tracker'
+import { TeamMemberRecord, TimeLogRecord, TeamMemberUpdateParams } from '@/types'
+
+export function useTeamMembers() {
+  return useQuery<TeamMemberRecord[]>({
+    queryKey: queryKeys.teamMembers,
+    queryFn: () => getTeamMembers(),
+  })
+}
+
+export function useGenerateTeamInvite() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, hourlyRate }: { name: string, hourlyRate: number }) => generateTeamInvite(name, hourlyRate),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.teamMembers })
+    },
+  })
+}
+
+export function useUpdateTeamMember() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, params }: { id: string, params: TeamMemberUpdateParams }) => updateTeamMember(id, params),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.teamMembers })
+    },
+  })
+}
+
+export function useDeleteTeamMember() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteTeamMember(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.teamMembers })
+    },
+  })
+}
+
+export function useTeamTimeLogs() {
+  return useQuery<TimeLogRecord[]>({
+    queryKey: queryKeys.teamTimeLogs,
+    queryFn: () => getTeamTimeLogs(),
+  })
+}
+
+export function useWorkerTimeLogs() {
+  return useQuery<TimeLogRecord[]>({
+    queryKey: queryKeys.workerTimeLogs,
+    queryFn: () => getWorkerTimeLogs(),
+  })
+}
+
+export function useLogTime() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ startTime, endTime, notes }: { startTime: string, endTime: string, notes: string | null }) => 
+      logTime(startTime, endTime, notes),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.workerTimeLogs })
+    },
+  })
+}
+
+export function useMarkTimeLogsPaid() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (logIds: string[]) => markTimeLogsPaid(logIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
+    },
+  })
+}
+
+export function useDeleteTimeLog() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (logId: string) => deleteTimeLog(logId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.workerTimeLogs })
+      qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
     },
   })
 }

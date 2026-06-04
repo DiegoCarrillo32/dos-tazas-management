@@ -26,6 +26,7 @@ export default async function DashboardLayout({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  let userRole = 'roaster'
   if (user) {
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -35,6 +36,9 @@ export default async function DashboardLayout({
       
     if (profile?.role === 'partner') {
       redirect('/dashboard')
+    }
+    if (profile?.role) {
+      userRole = profile.role
     }
   }
 
@@ -49,7 +53,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar businessName={businessName} />
+      <AppSidebar businessName={businessName} userRole={userRole} />
       <div className="flex flex-1 flex-col overflow-hidden w-full">
         <header className="md:hidden flex h-14 items-center gap-4 border-b border-warm-roast/10 bg-white-pergamino px-4 lg:h-[60px] lg:px-6">
           <SidebarTrigger className="text-expresso" />
@@ -62,3 +66,4 @@ export default async function DashboardLayout({
     </SidebarProvider>
   )
 }
+

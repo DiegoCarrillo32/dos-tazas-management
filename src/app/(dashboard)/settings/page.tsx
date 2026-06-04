@@ -1,11 +1,20 @@
 import { fetchSettings } from '@/actions/settings'
 import { SettingsForm } from '@/components/SettingsForm'
 import { Settings } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
   const settings = await fetchSettings()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  let userRole = 'roaster'
+  if (user) {
+    const { data: profile } = await supabase.from('user_profiles').select('role').eq('user_id', user.id).single()
+    if (profile?.role) userRole = profile.role
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto">
@@ -19,7 +28,7 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <SettingsForm initialData={settings} />
+      <SettingsForm initialData={settings} userRole={userRole} />
     </div>
   )
 }

@@ -161,6 +161,7 @@ describe('calculations', () => {
         { fulfillment_status: 'pending', company_name: 'Cafe E', inventory_id: null, amount_grams: 500 }, // should be ignored
       ]
 
+      // @ts-expect-error Mock data doesn't match full OrderRecord type
       const result = aggregatePendingB2BOrders(mockOrders)
       expect(result).toEqual({
         'inv-1': 3000,

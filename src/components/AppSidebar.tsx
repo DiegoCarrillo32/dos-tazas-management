@@ -8,6 +8,7 @@ import {
   LogOut,
   History,
   Package,
+  Clock,
   Flame,
   Briefcase,
   Wrench,
@@ -57,43 +58,66 @@ const sections: NavSection[] = [
   {
     labelKey: "sidebar_section_overview",
     items: [
-      { titleKey: "nav_dashboard", url: "/", icon: Home },
-      { titleKey: "nav_analytics", url: "/analytics", icon: BarChart3 },
-      { titleKey: "nav_history", url: "/history", icon: History },
+      { titleKey: "nav_dashboard" as DictionaryKey, url: "/", icon: Home },
+      { titleKey: "nav_tracker" as DictionaryKey, url: "/tracker", icon: Clock },
+      { titleKey: "nav_analytics" as DictionaryKey, url: "/analytics", icon: BarChart3 },
+      { titleKey: "nav_history" as DictionaryKey, url: "/history", icon: History },
     ],
   },
   {
-    labelKey: "sidebar_section_operations",
+    labelKey: "sidebar_section_operations" as DictionaryKey,
     items: [
-      { titleKey: "nav_inventory", url: "/inventory", icon: Package },
-      { titleKey: "nav_roasts", url: "/roasts", icon: Flame },
-      { titleKey: "nav_equipment", url: "/equipment", icon: Wrench },
+      { titleKey: "nav_inventory" as DictionaryKey, url: "/inventory", icon: Package },
+      { titleKey: "nav_roasts" as DictionaryKey, url: "/roasts", icon: Flame },
+      { titleKey: "nav_equipment" as DictionaryKey, url: "/equipment", icon: Wrench },
     ],
   },
   {
-    labelKey: "sidebar_section_sales",
+    labelKey: "sidebar_section_sales" as DictionaryKey,
     items: [
-      { titleKey: "nav_customers", url: "/customers", icon: Users },
-      { titleKey: "nav_b2b", url: "/b2b", icon: Briefcase },
+      { titleKey: "nav_customers" as DictionaryKey, url: "/customers", icon: Users },
+      { titleKey: "nav_b2b" as DictionaryKey, url: "/b2b", icon: Briefcase },
+      { titleKey: "nav_team" as DictionaryKey, url: "/team", icon: Users },
     ],
   },
   {
-    labelKey: "sidebar_section_system",
+    labelKey: "sidebar_section_system" as DictionaryKey,
     items: [
-      { titleKey: "nav_settings", url: "/settings", icon: Settings },
+      { titleKey: "nav_settings" as DictionaryKey, url: "/settings", icon: Settings },
     ],
   },
 ];
 
 export function AppSidebar({
   businessName = "Dos Tazas",
+  userRole = "roaster",
 }: {
   businessName?: string;
+  userRole?: string;
 }) {
   const { t } = useTranslation();
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
+
+  // Filter sections based on role
+  const filteredSections = sections.map(section => {
+    let allowedItems = section.items;
+    
+    if (userRole === "worker") {
+      // Workers can only see Orders, Tracker, History, Settings
+      allowedItems = section.items.filter(item => 
+        ['nav_dashboard', 'nav_tracker', 'nav_history', 'nav_settings'].includes(item.titleKey)
+      );
+    } else {
+      // Roasters don't see Tracker yet (or they do if they want to track themselves, but let's hide it)
+      allowedItems = section.items.filter(item => item.titleKey !== 'nav_tracker');
+      
+      // Add team module for roasters if we need it
+    }
+    
+    return { ...section, items: allowedItems };
+  }).filter(section => section.items.length > 0);
 
   return (
     <Sidebar
@@ -118,7 +142,7 @@ export function AppSidebar({
         <SidebarTrigger className="hidden md:inline-flex text-expresso hover:bg-warm-roast/10 group-data-[state=collapsed]:mx-auto" />
       </SidebarHeader>
       <SidebarContent>
-        {sections.map((section, idx) => (
+        {filteredSections.map((section, idx) => (
           <SidebarGroup key={section.labelKey}>
             {idx > 0 && <SidebarSeparator className="mb-1" />}
             <SidebarGroupLabel className="text-warm-roast/60 font-bold uppercase tracking-wider text-[10px]">

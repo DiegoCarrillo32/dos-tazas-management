@@ -230,7 +230,7 @@ export type RoastBatchUpdateParams = Partial<RoastBatchInsertParams>
 // B2B Partner Portal Types
 // ============================================================
 
-export type UserRole = 'roaster' | 'partner'
+export type UserRole = 'roaster' | 'partner' | 'worker'
 export type PartnerStatus = 'pending' | 'active' | 'revoked'
 export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly'
 
@@ -289,3 +289,43 @@ export type B2BPricingUpdateParams = Partial<Omit<B2BPricingRecord, 'id' | 'crea
 export type B2BRecurringOrderInsertParams = Omit<B2BRecurringOrderRecord, 'id' | 'created_at'>
 export type B2BRecurringOrderUpdateParams = Partial<Omit<B2BRecurringOrderRecord, 'id' | 'created_at'>>
 
+// ============================================================
+// Team & Time Tracker Types
+// ============================================================
+
+export type TeamMemberStatus = 'pending' | 'active'
+export type TimeLogStatus = 'pending' | 'paid'
+
+export type TeamMemberRecord = {
+  id: string
+  roaster_user_id: string
+  worker_user_id: string | null
+  name: string
+  invite_code: string
+  hourly_rate: number
+  status: TeamMemberStatus
+  created_at: string
+}
+
+export type TeamMemberInsertParams = Omit<TeamMemberRecord, 'id' | 'roaster_user_id' | 'worker_user_id' | 'invite_code' | 'status' | 'created_at'>
+export type TeamMemberUpdateParams = Partial<Omit<TeamMemberRecord, 'id' | 'created_at' | 'roaster_user_id' | 'invite_code'>>
+
+export type TimeLogRecord = {
+  id: string
+  worker_id: string
+  roaster_user_id: string
+  start_time: string
+  end_time: string
+  notes: string | null
+  status: TimeLogStatus
+  created_at: string
+  team_members?: {
+    name: string
+    invite_code: string
+    hourly_rate: number
+    worker_user_id: string | null
+  } | null
+}
+
+export type TimeLogInsertParams = Omit<TimeLogRecord, 'id' | 'roaster_user_id' | 'worker_id' | 'status' | 'created_at' | 'team_members'>
+export type TimeLogUpdateParams = Partial<Omit<TimeLogRecord, 'id' | 'roaster_user_id' | 'worker_id' | 'created_at' | 'team_members'>>

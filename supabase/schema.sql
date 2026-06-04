@@ -219,12 +219,12 @@ CREATE POLICY "Users can manage their own roast_batches"
 -- B2B Partner Portal
 -- ============================================================
 
--- User Profiles: distinguishes roasters from partners
+-- User Profiles: distinguishes roasters from partners and workers
 CREATE TABLE user_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL DEFAULT 'roaster', -- 'roaster' | 'partner'
-  linked_to UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- partner → roaster link
+  role TEXT NOT NULL DEFAULT 'roaster', -- 'roaster' | 'partner' | 'worker'
+  linked_to UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- partner/worker → roaster link
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -363,5 +363,94 @@ CREATE POLICY "Partners can view their own orders"
       SELECT 1 FROM b2b_partners
       WHERE b2b_partners.id = orders.partner_id
       AND b2b_partners.partner_user_id = auth.uid()
+    )
+  );
+
+-- ============================================================
+-- Team & Time Tracker Module
+-- ============================================================
+
+-- Team Members
+CREATE TABLE team_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  roaster_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  worker_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  name TEXT NOT NULL DEFAULT '',
+  invite_code TEXT NOT NULL UNIQUE,
+  hourly_rate NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'active'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_team_members_roaster ON team_members(roaster_user_id);
+CREATE INDEX idx_team_members_worker ON team_members(worker_user_id);
+CREATE INDEX idx_team_members_invite_code ON team_members(invite_code);
+ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Roasters can manage their team"
+  ON team_members FOR ALL TO authenticated
+  USING (auth.uid() = roaster_user_id) WITH CHECK (auth.uid() = roaster_user_id);
+
+CREATE POLICY "Workers can view own row"
+  ON team_members FOR SELECT TO authenticated
+  USING (worker_user_id = auth.uid());
+
+CREATE POLICY "Workers can claim invite"
+  ON team_members FOR UPDATE TO authenticated
+  USING (status = 'pending' AND invite_code IS NOT NULL)
+  WITH CHECK (status = 'active' AND worker_user_id = auth.uid());
+
+CREATE POLICY "Anyone can view pending team invites"
+  ON team_members FOR SELECT TO anon
+  USING (status = 'pending');
+CREATE POLICY "Authenticated users can view pending team invites"
+  ON team_members FOR SELECT TO authenticated
+  USING (status = 'pending');
+
+-- Time Logs
+CREATE TABLE time_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  worker_id UUID NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+  roaster_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'paid'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_time_logs_worker ON time_logs(worker_id);
+CREATE INDEX idx_time_logs_roaster ON time_logs(roaster_user_id);
+ALTER TABLE time_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Roasters can manage team time logs"
+  ON time_logs FOR ALL TO authenticated
+  USING (auth.uid() = roaster_user_id) WITH CHECK (auth.uid() = roaster_user_id);
+
+CREATE POLICY "Workers can manage their own time logs"
+  ON time_logs FOR ALL TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM team_members
+      WHERE team_members.id = time_logs.worker_id
+      AND team_members.worker_user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM team_members
+      WHERE team_members.id = time_logs.worker_id
+      AND team_members.worker_user_id = auth.uid()
+    )
+  );
+
+-- Allow workers to view their roaster's orders
+CREATE POLICY "Workers can view roaster orders"
+  ON orders FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM team_members
+      WHERE team_members.roaster_user_id = orders.user_id
+      AND team_members.worker_user_id = auth.uid()
     )
   );
