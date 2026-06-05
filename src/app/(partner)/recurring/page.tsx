@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/PageHeader'
 import { TableRowSkeleton } from '@/components/Skeletons'
 import { RefreshCw, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { GenericModal } from '@/components/ui/GenericModal'
 import { RecurringOrderForm } from '@/components/RecurringOrderForm'
 import { useState } from 'react'
 
@@ -26,24 +26,29 @@ export default function PartnerRecurringOrders() {
           subtitle="Manage your weekly standing orders and subscriptions."
         />
         {partnerId && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger render={
+          <GenericModal
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            trigger={
               <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-xl shadow-md transition-all gap-2 h-11 px-6">
                 <Plus className="h-4 w-4" />
                 New Standing Order
               </Button>
-            } />
-            <DialogContent className="sm:max-w-[600px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <RecurringOrderForm 
-                  partnerId={partnerId} 
-                  inventoryItems={inventoryItems || []} 
-                  onSuccess={() => setIsDialogOpen(false)} 
-                  onCancel={() => setIsDialogOpen(false)} 
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
+            }
+            contentClassName="sm:max-w-[600px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+            hideTitle={true}
+            hideFooter={true}
+            title="New Standing Order"
+          >
+            <div className="p-6">
+              <RecurringOrderForm 
+                partnerId={partnerId} 
+                inventoryItems={inventoryItems || []} 
+                onSuccess={() => setIsDialogOpen(false)} 
+                onCancel={() => setIsDialogOpen(false)} 
+              />
+            </div>
+          </GenericModal>
         )}
       </div>
 

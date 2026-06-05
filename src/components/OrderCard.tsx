@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog'
 import { useState, useEffect } from 'react'
 import { Coffee, Phone, User, Calendar, DollarSign, Maximize2 } from 'lucide-react'
 import type { FulfillmentStatus, PaymentStatus, OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from '@/types'
@@ -12,6 +11,7 @@ import { useUpdateFulfillment, useUpdatePayment } from '@/hooks/queries'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { GenericModal } from '@/components/ui/GenericModal'
 
 interface OrderCardProps {
   order: OrderWithCustomer
@@ -68,13 +68,13 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <>
       <Card 
         ref={setNodeRef}
         style={style}
         className="w-full h-[320px] flex flex-col shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group"
       >
-        <DialogTrigger render={<button type="button" className="cursor-grab active:cursor-grabbing text-left w-full flex-1 flex flex-col overflow-hidden" {...attributes} {...listeners} />}>
+        <button type="button" onClick={() => setIsOpen(true)} className="cursor-grab active:cursor-grabbing text-left w-full flex-1 flex flex-col overflow-hidden" {...attributes} {...listeners}>
           <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 pt-4 pb-4 relative">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-expresso/5 p-1.5 rounded-md">
               <Maximize2 className="h-4 w-4 text-expresso/50" />
@@ -139,7 +139,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
               </div>
             )}
           </CardContent>
-        </DialogTrigger>
+        </button>
 
       <CardFooter className="bg-expresso/5 flex gap-2 pt-4 justify-between border-t border-warm-roast/10 mt-auto">
         <Select
@@ -171,14 +171,17 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
         </Button>
       </CardFooter>
 
-      <DialogContent 
-        className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
-        closeButtonClassName="text-white/70 hover:text-white hover:bg-white/10"
+      <GenericModal 
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        hideTitle={true}
+        hideFooter={true}
+        title="Order Details"
+        contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
       >
-        <DialogTitle className="sr-only">Order Details</DialogTitle>
         <OrderDetailsModal order={order} customers={customers} inventoryItems={inventoryItems} settings={settings} onClose={() => setIsOpen(false)} />
-      </DialogContent>
+      </GenericModal>
     </Card>
-  </Dialog>
+  </>
   )
 }

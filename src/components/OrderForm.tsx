@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { orderSchema } from "@/lib/schemas";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CustomerForm } from "@/components/CustomerForm";
 import { FormCard } from "@/components/ui/form-card";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { GenericModal } from "@/components/ui/GenericModal";
 import type { CustomerRecord, OrderInsertParams, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useCreateOrder, useUpdateOrder, usePartners } from '@/hooks/queries';
@@ -41,18 +42,7 @@ const ROAST_LEVELS = [
   { value: "Dark", labelKey: "roast_dark" as const },
 ];
 
-const orderSchema = z.object({
-  customer_id: z.string().min(1, 'Customer is required'),
-  inventory_id: z.string().optional(),
-  preparation_method: z.string().min(1, 'Preparation method is required'),
-  roast_level: z.string().min(1, 'Roast level is required'),
-  amount_grams: z.number().min(1, 'Amount must be greater than 0'),
-  bag_count: z.number().min(1, 'At least 1 bag required'),
-  total_price: z.number().min(0, 'Cannot be negative'),
-  origin_notes: z.string().optional(),
-  company_name: z.string().optional(),
-  partner_id: z.string().optional(),
-});
+
 
 type OrderFormValues = z.infer<typeof orderSchema>;
 
@@ -159,11 +149,13 @@ export function OrderForm({
 
     if (initialData?.id) {
       updateMutation.mutate(
-        { id: initialData.id, params: payload },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { id: initialData.id, params: payload as any },
         { onSuccess: onMutationSuccess, onError: onMutationError }
       );
     } else {
-      createMutation.mutate(payload, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createMutation.mutate(payload as any, {
         onSuccess: onMutationSuccess,
         onError: onMutationError,
       });
@@ -310,6 +302,7 @@ export function OrderForm({
                   ))}
                   {initialData?.inventory_id && !inventoryItems.find(i => i.id === initialData.inventory_id) && (
                     <SelectItem value={initialData.inventory_id}>
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {(initialData as any).inventory?.item_name || 'Unknown Coffee Bean'}
                     </SelectItem>
                   )}
@@ -497,20 +490,25 @@ export function OrderForm({
       </FormCard>
     </form>
 
-    <Dialog open={isCreatingCustomer} onOpenChange={setIsCreatingCustomer}>
-      <DialogContent className="sm:w-full sm:max-w-[500px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden">
-        <div className="p-6">
-          <DialogTitle className="text-xl font-heading text-expresso mb-4">
-            {t('cust_form_add')}
-          </DialogTitle>
-          <CustomerForm
-            inline={true}
-            onSuccess={handleCustomerCreated}
-            onCancel={() => setIsCreatingCustomer(false)}
-          />
+    <GenericModal
+      isOpen={isCreatingCustomer}
+      onOpenChange={setIsCreatingCustomer}
+      contentClassName="sm:w-full sm:max-w-[500px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden"
+      hideTitle={true}
+      hideFooter={true}
+      title={t('cust_form_add') || "Add Customer"}
+    >
+      <div className="p-6">
+        <div className="text-xl font-heading text-expresso mb-4">
+          {t('cust_form_add')}
         </div>
-      </DialogContent>
-    </Dialog>
+        <CustomerForm
+          inline={true}
+          onSuccess={handleCustomerCreated}
+          onCancel={() => setIsCreatingCustomer(false)}
+        />
+      </div>
+    </GenericModal>
     </>
   );
 }

@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { customerSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -12,11 +13,7 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import { useCreateCustomer, useUpdateCustomer } from '@/hooks/queries'
 import { toast } from 'sonner'
 
-const customerSchema = z.object({
-  full_name: z.string().min(1, 'Full name is required'),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-})
+
 
 type CustomerFormValues = z.infer<typeof customerSchema>
 

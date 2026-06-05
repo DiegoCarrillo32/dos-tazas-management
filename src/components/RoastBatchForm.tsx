@@ -3,6 +3,7 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { roastBatchSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -13,14 +14,7 @@ import { useCreateRoastBatch, useUpdateRoastBatch, useEquipment } from '@/hooks/
 import { toast } from 'sonner'
 import { useEffect, useState } from 'react'
 
-const roastBatchSchema = z.object({
-  equipment_id: z.string().optional().nullable(),
-  green_lot_id: z.string().min(1, 'Green coffee lot is required'),
-  weight_in_grams: z.number().min(1, 'Weight in must be greater than 0'),
-  weight_out_grams: z.number().min(1, 'Weight out must be greater than 0'),
-  roast_time_minutes: z.number().nullable().optional(),
-  notes: z.string().optional(),
-})
+
 
 type RoastBatchFormValues = z.infer<typeof roastBatchSchema>
 

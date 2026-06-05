@@ -3,6 +3,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { recurringSchema } from "@/lib/schemas";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -42,15 +43,7 @@ const DAYS_OF_WEEK = [
   { value: 0, label: "Sunday" },
 ];
 
-const recurringSchema = z.object({
-  inventory_id: z.string().optional(),
-  preparation_method: z.string().min(1, 'Preparation method is required'),
-  roast_level: z.string().min(1, 'Roast level is required'),
-  amount_grams: z.number().min(1, 'Amount must be greater than 0'),
-  bag_count: z.number().min(1, 'At least 1 bag required'),
-  frequency: z.enum(["weekly", "biweekly", "monthly"]),
-  day_of_week: z.number().min(0).max(6),
-});
+
 
 type RecurringFormValues = z.infer<typeof recurringSchema>;
 

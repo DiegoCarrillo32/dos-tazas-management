@@ -2,7 +2,10 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { CustomerRecord, CustomerInsertParams, CustomerWithLastPurchase, CustomerUpdateParams } from '@/types'
+import type { CustomerRecord, CustomerWithLastPurchase } from '@/types'
+import { authActionClient } from '@/lib/safe-action'
+import { customerSchema } from '@/lib/schemas'
+import * as z from 'zod'
 
 export async function fetchCustomers(): Promise<CustomerWithLastPurchase[]> {
   const supabase = await createClient()
@@ -33,63 +36,58 @@ export async function fetchCustomers(): Promise<CustomerWithLastPurchase[]> {
   }) as CustomerWithLastPurchase[]
 }
 
-export async function createCustomer(params: CustomerInsertParams): Promise<CustomerRecord> {
-  const supabase = await createClient()
+export const createCustomer = authActionClient
+  .schema(customerSchema)
+  .action(async ({ parsedInput: params, ctx: { user, supabase } }): Promise<CustomerRecord> => {
+    const { data, error } = await supabase
+      .from('customers')
+      .insert([{
+        ...params,
+        user_id: user.id
+      }])
+      .select()
+      .single()
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('You must be logged in to create a customer.')
-  }
+    if (error) {
+      console.error('Error creating customer:', error)
+      throw new Error(error.message)
+    }
 
-  const { data, error } = await supabase
-    .from('customers')
-    .insert([{
-      ...params,
-      user_id: user.id
-    }])
-    .select()
-    .single()
+    revalidatePath('/', 'layout')
+    return data as CustomerRecord
+  })
 
-  if (error) {
-    console.error('Error creating customer:', error)
-    throw new Error(error.message)
-  }
+export const updateCustomer = authActionClient
+  .schema(z.object({ id: z.string(), params: customerSchema.partial() }))
+  .action(async ({ parsedInput: { id, params }, ctx: { supabase } }): Promise<CustomerRecord> => {
+    const { data, error } = await supabase
+      .from('customers')
+      .update(params)
+      .eq('id', id)
+      .select()
+      .single()
 
-  revalidatePath('/', 'layout')
-  return data as CustomerRecord
-}
+    if (error) {
+      console.error('Error updating customer:', error)
+      throw new Error(error.message)
+    }
 
-export async function updateCustomer(customerId: string, params: CustomerUpdateParams): Promise<CustomerRecord> {
-  const supabase = await createClient()
+    revalidatePath('/', 'layout')
+    return data as CustomerRecord
+  })
 
-  const { data, error } = await supabase
-    .from('customers')
-    .update(params)
-    .eq('id', customerId)
-    .select()
-    .single()
+export const deleteCustomer = authActionClient
+  .schema(z.object({ id: z.string() }))
+  .action(async ({ parsedInput: { id }, ctx: { supabase } }): Promise<void> => {
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .eq('id', id)
 
-  if (error) {
-    console.error('Error updating customer:', error)
-    throw new Error(error.message)
-  }
+    if (error) {
+      console.error('Error deleting customer:', error)
+      throw new Error(error.message)
+    }
 
-  revalidatePath('/', 'layout')
-  return data as CustomerRecord
-}
-
-export async function deleteCustomer(customerId: string): Promise<void> {
-  const supabase = await createClient()
-
-  const { error } = await supabase
-    .from('customers')
-    .delete()
-    .eq('id', customerId)
-
-  if (error) {
-    console.error('Error deleting customer:', error)
-    throw new Error(error.message)
-  }
-
-  revalidatePath('/', 'layout')
-}
+    revalidatePath('/', 'layout')
+  })

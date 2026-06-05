@@ -234,7 +234,7 @@ export function AnalyticsDashboard({
       {/* Filters */}
       <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-5 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          <div className="space-y-1.5 w-full">
+          <div className="space-y-1.5 w-full min-w-0">
             <Label className="text-foreground text-xs font-semibold">{t('filter_start_date')}</Label>
             <Input
               type="date"
@@ -243,7 +243,7 @@ export function AnalyticsDashboard({
               className="h-10 border-border focus-visible:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors"
             />
           </div>
-          <div className="space-y-1.5 w-full">
+          <div className="space-y-1.5 w-full min-w-0">
             <Label className="text-foreground text-xs font-semibold">{t('filter_end_date')}</Label>
             <Input
               type="date"
@@ -252,7 +252,7 @@ export function AnalyticsDashboard({
               className="h-10 border-border focus-visible:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors"
             />
           </div>
-          <div className="space-y-1.5 w-full">
+          <div className="space-y-1.5 w-full min-w-0">
             <Label className="text-foreground text-xs font-semibold">{t('filter_payment')}</Label>
             <Select value={paymentFilter} onValueChange={(val) => setPaymentFilter((val || 'all') as PaymentStatus | 'all')}>
               <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">
@@ -265,7 +265,7 @@ export function AnalyticsDashboard({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5 w-full">
+          <div className="space-y-1.5 w-full min-w-0">
             <Label className="text-foreground text-xs font-semibold">{t('filter_fulfillment')}</Label>
             <Select value={fulfillmentFilter} onValueChange={(val) => setFulfillmentFilter((val || 'all') as FulfillmentStatus | 'all')}>
               <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">

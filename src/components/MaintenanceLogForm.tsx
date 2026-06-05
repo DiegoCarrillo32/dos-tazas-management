@@ -3,6 +3,7 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { maintenanceSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -12,12 +13,7 @@ import type { MaintenanceLogRecord } from '@/types'
 import { useCreateMaintenanceLog, useUpdateMaintenanceLog } from '@/hooks/queries'
 import { toast } from 'sonner'
 
-const maintenanceSchema = z.object({
-  maintenance_type: z.string().min(1, 'Type is required'),
-  description: z.string().min(1, 'Description is required'),
-  cost: z.number().nullable().optional(),
-  date: z.string().min(1, 'Date is required'),
-})
+
 
 type MaintenanceFormValues = z.infer<typeof maintenanceSchema>
 

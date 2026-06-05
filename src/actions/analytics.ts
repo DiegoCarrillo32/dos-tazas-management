@@ -8,17 +8,22 @@ import type {
   BreakdownItem
 } from '@/types'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyAnalyticsFilters(query: any, filters: AnalyticsFilters) {
+  if (filters.startDate) query = query.gte('order_date', filters.startDate)
+  if (filters.endDate) query = query.lte('order_date', filters.endDate)
+  if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
+  if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
+  return query
+}
+
 export async function fetchAnalyticsSummary(
   filters: AnalyticsFilters = {}
 ): Promise<AnalyticsSummary> {
   const supabase = await createClient()
 
   let query = supabase.from('orders').select('total_price, amount_grams, total_cost')
-
-  if (filters.startDate) query = query.gte('order_date', filters.startDate)
-  if (filters.endDate) query = query.lte('order_date', filters.endDate)
-  if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
-  if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
+  query = applyAnalyticsFilters(query, filters)
 
   const { data, error } = await query
 
@@ -50,10 +55,7 @@ export async function fetchRevenueTimeSeries(
     .select('order_date, total_price, total_cost')
     .order('order_date', { ascending: true })
 
-  if (filters.startDate) query = query.gte('order_date', filters.startDate)
-  if (filters.endDate) query = query.lte('order_date', filters.endDate)
-  if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
-  if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
+  query = applyAnalyticsFilters(query, filters)
 
   const { data, error } = await query
 
@@ -97,10 +99,7 @@ export async function fetchTopRoastLevels(
     .from('orders')
     .select('roast_level, amount_grams')
 
-  if (filters.startDate) query = query.gte('order_date', filters.startDate)
-  if (filters.endDate) query = query.lte('order_date', filters.endDate)
-  if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
-  if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
+  query = applyAnalyticsFilters(query, filters)
 
   const { data, error } = await query
 
@@ -131,10 +130,7 @@ export async function fetchTopPrepMethods(
     .from('orders')
     .select('preparation_method, amount_grams')
 
-  if (filters.startDate) query = query.gte('order_date', filters.startDate)
-  if (filters.endDate) query = query.lte('order_date', filters.endDate)
-  if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
-  if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
+  query = applyAnalyticsFilters(query, filters)
 
   const { data, error } = await query
 

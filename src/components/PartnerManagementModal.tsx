@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { usePartnerPricing, useSetPartnerPricing, useDeletePartnerPricing, usePartnerRecurringOrders, useConfirmOrderFromTemplate, useInventory, useDeletePartner, useRevokePartner, useRestorePartner, useDeleteRecurringOrder } from "@/hooks/queries"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
@@ -11,6 +10,7 @@ import { Settings2, DollarSign, RefreshCw, Trash2, CheckCircle2, Plus, AlertCirc
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RecurringOrderForm } from "@/components/RecurringOrderForm"
+import { GenericModal } from "@/components/ui/GenericModal"
 import type { B2BPartnerRecord } from "@/types"
 
 export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord }) {
@@ -19,6 +19,18 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
   const [newPrice, setNewPrice] = useState("")
   const [selectedInventory, setSelectedInventory] = useState("")
   const [copied, setCopied] = useState(false)
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean
+    title?: string
+    message?: string
+    onConfirm?: () => void
+    confirmVariant?: "default" | "destructive"
+  }>({ isOpen: false })
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, confirmVariant: "default" | "destructive" = "default") => {
+    setModalState({ isOpen: true, title, message, onConfirm, confirmVariant })
+  }
 
   const handleCopy = () => {
     if (partner.invite_code) {
@@ -65,17 +77,24 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger render={
-        <Button variant="outline" className="text-coffee-fruit hover:bg-warm-roast/10 rounded-lg text-xs border-coffee-fruit/20">
-          <Settings2 className="mr-2 h-4 w-4" />
-          Manage
-        </Button>
-      } />
-      <DialogContent className="sm:w-full sm:max-w-[700px] bg-white-pergamino p-4 sm:p-6 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-        <DialogTitle className="text-2xl font-heading text-expresso mb-4">
+    <>
+      <GenericModal
+        isOpen={isOpen}
+        onOpenChange={setIsOpen}
+        trigger={
+          <Button variant="outline" className="text-coffee-fruit hover:bg-warm-roast/10 rounded-lg text-xs border-coffee-fruit/20">
+            <Settings2 className="mr-2 h-4 w-4" />
+            Manage
+          </Button>
+        }
+        contentClassName="sm:w-full sm:max-w-[700px] bg-white-pergamino p-4 sm:p-6 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+        hideTitle={true}
+        hideFooter={true}
+        title={`Manage ${partner.company_name}`}
+      >
+        <div className="text-2xl font-heading text-expresso mb-4">
           Manage {partner.company_name}
-        </DialogTitle>
+        </div>
 
         <Tabs defaultValue="pricing" className="w-full space-y-4 max-w-full">
           <TabsList className="bg-white border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1">
@@ -170,24 +189,29 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
           <TabsContent value="recurring" className="space-y-4 outline-none w-full max-w-full min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
               <h3 className="font-semibold text-expresso">Manage Standing Orders</h3>
-              <Dialog open={isRecurringFormOpen} onOpenChange={setIsRecurringFormOpen}>
-                <DialogTrigger render={
+              <GenericModal
+                isOpen={isRecurringFormOpen}
+                onOpenChange={setIsRecurringFormOpen}
+                trigger={
                   <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-lg h-9 text-xs transition-all w-full sm:w-auto">
                     <Plus className="h-3 w-3 mr-1" />
                     New Standing Order
                   </Button>
-                } />
-                <DialogContent className="sm:w-full sm:max-w-[600px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-                  <div className="p-6">
-                    <RecurringOrderForm 
-                      partnerId={partner.id} 
-                      inventoryItems={inventoryItems || []} 
-                      onSuccess={() => setIsRecurringFormOpen(false)} 
-                      onCancel={() => setIsRecurringFormOpen(false)} 
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
+                }
+                contentClassName="sm:w-full sm:max-w-[600px] bg-white-pergamino p-0 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+                hideTitle={true}
+                hideFooter={true}
+                title="New Standing Order"
+              >
+                <div className="p-6">
+                  <RecurringOrderForm 
+                    partnerId={partner.id} 
+                    inventoryItems={inventoryItems || []} 
+                    onSuccess={() => setIsRecurringFormOpen(false)} 
+                    onCancel={() => setIsRecurringFormOpen(false)} 
+                  />
+                </div>
+              </GenericModal>
             </div>
             
             {recurringOrders?.length === 0 ? (
@@ -211,12 +235,17 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          if (confirm("Are you sure you want to delete this standing order?")) {
-                            deleteRecurringOrderMutation.mutate(order.id, {
-                              onSuccess: () => toast.success("Standing order deleted"),
-                              onError: (err) => toast.error(err.message)
-                            })
-                          }
+                          showConfirm(
+                            "Delete Standing Order",
+                            "Are you sure you want to delete this standing order?",
+                            () => {
+                              deleteRecurringOrderMutation.mutate(order.id, {
+                                onSuccess: () => toast.success("Standing order deleted"),
+                                onError: (err) => toast.error(err.message)
+                              })
+                            },
+                            "destructive"
+                          )
                         }}
                         disabled={deleteRecurringOrderMutation.isPending}
                         className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
@@ -318,15 +347,20 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                       className="border-red-300 text-red-700 hover:bg-red-100 w-full sm:w-auto"
                       disabled={revokePartnerMutation.isPending}
                       onClick={() => {
-                        if (confirm("Are you sure you want to revoke this partner's access?")) {
-                          revokePartnerMutation.mutate(partner.id, {
-                            onSuccess: () => {
-                              toast.success("Access revoked")
-                              setIsOpen(false)
-                            },
-                            onError: (err) => toast.error(err.message)
-                          })
-                        }
+                        showConfirm(
+                          "Revoke Access",
+                          "Are you sure you want to revoke this partner's access?",
+                          () => {
+                            revokePartnerMutation.mutate(partner.id, {
+                              onSuccess: () => {
+                                toast.success("Access revoked")
+                                setIsOpen(false)
+                              },
+                              onError: (err) => toast.error(err.message)
+                            })
+                          },
+                          "destructive"
+                        )
                       }}
                     >
                       <Ban className="mr-2 h-4 w-4" />
@@ -347,15 +381,20 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                     className="w-full sm:w-auto"
                     disabled={deletePartnerMutation.isPending}
                     onClick={() => {
-                      if (confirm("Are you SURE? This will delete all custom pricing and standing orders for this partner. This cannot be undone.")) {
-                        deletePartnerMutation.mutate(partner.id, {
-                          onSuccess: () => {
-                            toast.success("Partner deleted successfully")
-                            setIsOpen(false)
-                          },
-                          onError: (err) => toast.error(err.message)
-                        })
-                      }
+                      showConfirm(
+                        "Delete Partner",
+                        "Are you SURE? This will delete all custom pricing and standing orders for this partner. This cannot be undone.",
+                        () => {
+                          deletePartnerMutation.mutate(partner.id, {
+                            onSuccess: () => {
+                              toast.success("Partner deleted successfully")
+                              setIsOpen(false)
+                            },
+                            onError: (err) => toast.error(err.message)
+                          })
+                        },
+                        "destructive"
+                      )
                     }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -367,7 +406,17 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
           </TabsContent>
 
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </GenericModal>
+
+      <GenericModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        title={modalState.title}
+        onConfirm={modalState.onConfirm}
+        confirmVariant={modalState.confirmVariant}
+      >
+        <p>{modalState.message}</p>
+      </GenericModal>
+    </>
   )
 }

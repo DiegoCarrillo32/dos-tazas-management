@@ -3,6 +3,7 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { inventorySchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -13,13 +14,7 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import { useCreateInventoryItem, useUpdateInventoryItem } from '@/hooks/queries'
 import { toast } from 'sonner'
 
-const inventorySchema = z.object({
-  item_name: z.string().min(1, 'Item name is required'),
-  category: z.string().min(1, 'Category is required'),
-  stock_grams: z.number().min(0, 'Quantity cannot be negative'),
-  cost_per_kg: z.number().nullable().optional(),
-  notes: z.string().optional(),
-})
+
 
 type InventoryFormValues = z.infer<typeof inventorySchema>
 

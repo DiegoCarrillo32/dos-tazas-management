@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useInventory, useSettings } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, PackageSearch, Coffee, Edit, Search } from 'lucide-react'
@@ -11,6 +10,7 @@ import { InventoryForm } from '@/components/InventoryForm'
 import { GreenCoffeeLotsDialog } from '@/components/GreenCoffeeLotsDialog'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
+import { GenericModal } from '@/components/ui/GenericModal'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
@@ -62,16 +62,20 @@ export default function InventoryPage() {
           <p className="text-expresso/70 font-medium text-sm">{t('inventory_subtitle')}</p>
         </div>
         
-        <Dialog>
-          <DialogTrigger render={<Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6" />}>
-            <Plus className="h-5 w-5" />
-            <span className="hidden sm:inline font-bold">{t('inventory_add')}</span>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="new-inventory-form">
-            <DialogTitle className="sr-only">{t('inventory_add_title')}</DialogTitle>
-            <InventoryForm settings={settings} />
-          </DialogContent>
-        </Dialog>
+        <GenericModal
+          hideFooter={true}
+          hideTitle={true}
+          title={t('inventory_add_title') || "Add Inventory"}
+          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+          trigger={
+            <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
+              <Plus className="h-5 w-5" />
+              <span className="hidden sm:inline font-bold">{t('inventory_add')}</span>
+            </Button>
+          }
+        >
+          <InventoryForm settings={settings} />
+        </GenericModal>
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
@@ -183,16 +187,20 @@ export default function InventoryPage() {
                           {isCoffee && (
                             <GreenCoffeeLotsDialog inventoryId={item.id} inventoryName={item.item_name} />
                           )}
-                          <Dialog>
-                            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                                <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
-                              <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
-                              <InventoryForm initialData={item} settings={settings} />
-                            </DialogContent>
-                          </Dialog>
+                          <GenericModal
+                            hideFooter={true}
+                            hideTitle={true}
+                            title={t('inv_form_edit') || "Edit Inventory"}
+                            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+                            trigger={
+                              <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                                  <Edit className="h-4 w-4" />
+                                  <span className="sr-only">Edit</span>
+                              </Button>
+                            }
+                          >
+                            <InventoryForm initialData={item} settings={settings} />
+                          </GenericModal>
                         </div>
                       </div>
 
@@ -303,16 +311,20 @@ export default function InventoryPage() {
                           {isCoffee && (
                             <GreenCoffeeLotsDialog inventoryId={item.id} inventoryName={item.item_name} />
                           )}
-                          <Dialog>
-                            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-inventory-form">
-                              <DialogTitle className="sr-only">{t('inv_form_edit')}</DialogTitle>
-                              <InventoryForm initialData={item} settings={settings} />
-                            </DialogContent>
-                          </Dialog>
+                          <GenericModal
+                            hideFooter={true}
+                            hideTitle={true}
+                            title={t('inv_form_edit') || "Edit Inventory"}
+                            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+                            trigger={
+                              <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                            }
+                          >
+                            <InventoryForm initialData={item} settings={settings} />
+                          </GenericModal>
                         </td>
                       </tr>
                     )

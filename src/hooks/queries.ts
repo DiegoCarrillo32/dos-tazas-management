@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
   OrderWithCustomer,
   CustomerWithLastPurchase,
+  CustomerRecord,
   InventoryRecord,
   UserSettingsRecord,
   OrderInsertParams,
@@ -217,7 +218,12 @@ export function useB2BOrders(partnerId?: string) {
 export function useCreateOrder() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: OrderInsertParams) => createOrder(params),
+    mutationFn: async (params: OrderInsertParams) => {
+      const res = await createOrder(params)
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.inventory })
@@ -228,8 +234,12 @@ export function useCreateOrder() {
 export function useUpdateOrder() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, params }: { id: string; params: OrderUpdateParams }) =>
-      updateOrder(id, params),
+    mutationFn: async ({ id, params }: { id: string; params: OrderUpdateParams }) => {
+      const res = await updateOrder({ id, params })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
@@ -241,7 +251,12 @@ export function useUpdateOrder() {
 export function useDeleteOrder() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteOrder(id),
+    mutationFn: async (id: string) => {
+      const res = await deleteOrder({ id })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
@@ -253,8 +268,12 @@ export function useDeleteOrder() {
 export function useUpdateFulfillment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: FulfillmentStatus }) =>
-      updateFulfillmentStatus(id, status),
+    mutationFn: async ({ id, status }: { id: string; status: FulfillmentStatus }) => {
+      const res = await updateFulfillmentStatus({ id, status })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
@@ -265,8 +284,12 @@ export function useUpdateFulfillment() {
 export function useUpdatePayment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: PaymentStatus }) =>
-      updatePaymentStatus(id, status),
+    mutationFn: async ({ id, status }: { id: string; status: PaymentStatus }) => {
+      const res = await updatePaymentStatus({ id, status })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.completedOrders })
@@ -277,7 +300,12 @@ export function useUpdatePayment() {
 export function useCreateCustomer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: CustomerInsertParams) => createCustomer(params),
+    mutationFn: async (params: CustomerInsertParams) => {
+      const res = await createCustomer(params)
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data as CustomerRecord
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.customers })
     },
@@ -287,8 +315,12 @@ export function useCreateCustomer() {
 export function useUpdateCustomer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, params }: { id: string; params: CustomerUpdateParams }) =>
-      updateCustomer(id, params),
+    mutationFn: async ({ id, params }: { id: string; params: CustomerUpdateParams }) => {
+      const res = await updateCustomer({ id, params })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data as CustomerRecord
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.customers })
       qc.invalidateQueries({ queryKey: queryKeys.orders })
@@ -300,7 +332,12 @@ export function useUpdateCustomer() {
 export function useDeleteCustomer() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteCustomer(id),
+    mutationFn: async (id: string) => {
+      const res = await deleteCustomer({ id })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.customers })
       qc.invalidateQueries({ queryKey: queryKeys.orders })

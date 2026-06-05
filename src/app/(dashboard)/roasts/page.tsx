@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Plus, Flame, Edit, Search } from 'lucide-react'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { RoastBatchForm } from '@/components/RoastBatchForm'
 import { useRoastBatches } from '@/hooks/queries'
 import { TableRowSkeleton } from '@/components/Skeletons'
+import { GenericModal } from '@/components/ui/GenericModal'
 
 export default function RoastsPage() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -27,17 +27,21 @@ export default function RoastsPage() {
         title="Roast Batches"
         subtitle="Manage and log your production roasts."
         action={
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger render={
-              <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-full px-6 shadow-sm shadow-warm-roast/20 transition-all" />
-            }>
-              <Plus className="mr-2 h-4 w-4" /> Log Roast
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none">
-              <DialogTitle className="sr-only">Log Roast</DialogTitle>
-              <RoastBatchForm onSuccess={() => setIsAddOpen(false)} onCancel={() => setIsAddOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          <GenericModal
+            isOpen={isAddOpen}
+            onOpenChange={setIsAddOpen}
+            hideFooter={true}
+            hideTitle={true}
+            title="Log Roast"
+            contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
+            trigger={
+              <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-full px-6 shadow-sm shadow-warm-roast/20 transition-all">
+                <Plus className="mr-2 h-4 w-4" /> Log Roast
+              </Button>
+            }
+          >
+            <RoastBatchForm onSuccess={() => setIsAddOpen(false)} onCancel={() => setIsAddOpen(false)} />
+          </GenericModal>
         }
       />
 
@@ -85,18 +89,20 @@ export default function RoastsPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Dialog>
-                        <DialogTrigger render={
-                          <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />
-                        }>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none">
-                          <DialogTitle className="sr-only">Edit Roast</DialogTitle>
-                          <RoastBatchForm initialData={batch} />
-                        </DialogContent>
-                      </Dialog>
+                      <GenericModal
+                        hideFooter={true}
+                        hideTitle={true}
+                        title="Edit Roast"
+                        contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
+                        trigger={
+                          <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                        }
+                      >
+                        <RoastBatchForm initialData={batch} />
+                      </GenericModal>
                     </div>
                   </div>
 
@@ -214,18 +220,20 @@ export default function RoastsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Dialog>
-                          <DialogTrigger render={
-                            <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />
-                          }>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none">
-                            <DialogTitle className="sr-only">Edit Roast</DialogTitle>
-                            <RoastBatchForm initialData={batch} />
-                          </DialogContent>
-                        </Dialog>
+                        <GenericModal
+                          hideFooter={true}
+                          hideTitle={true}
+                          title="Edit Roast"
+                          contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
+                          trigger={
+                            <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                          }
+                        >
+                          <RoastBatchForm initialData={batch} />
+                        </GenericModal>
                       </td>
                     </tr>
                   )

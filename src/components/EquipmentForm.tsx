@@ -3,6 +3,7 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { equipmentSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -13,13 +14,7 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import { useCreateEquipment, useUpdateEquipment } from '@/hooks/queries'
 import { toast } from 'sonner'
 
-const equipmentSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  type: z.string().min(1, 'Type is required'),
-  manufacturer: z.string().optional(),
-  model: z.string().optional(),
-  purchase_date: z.string().optional(),
-})
+
 
 type EquipmentFormValues = z.infer<typeof equipmentSchema>
 

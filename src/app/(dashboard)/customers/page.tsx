@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import { useCustomers, useDeleteCustomer } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Users, Edit, Search, Trash2 } from 'lucide-react'
 import { CustomerForm } from '@/components/CustomerForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
+import { GenericModal } from '@/components/ui/GenericModal'
 
 export default function CustomersPage() {
   const { t } = useTranslation()
@@ -19,6 +19,18 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean
+    title?: string
+    message?: string
+    onConfirm?: () => void
+    confirmVariant?: "default" | "destructive"
+  }>({ isOpen: false })
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, confirmVariant: "default" | "destructive" = "default") => {
+    setModalState({ isOpen: true, title, message, onConfirm, confirmVariant })
+  }
 
   if (isLoading) {
     return <TableSkeleton cols={6} rows={4} />
@@ -56,16 +68,20 @@ export default function CustomersPage() {
           <p className="text-expresso/70 font-medium text-sm">{t('customers_subtitle')}</p>
         </div>
         
-        <Dialog>
-          <DialogTrigger render={<Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6" />}>
-            <Plus className="h-5 w-5" />
-            <span className="hidden sm:inline font-bold">{t('customers_new')}</span>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="new-customer-form">
-            <DialogTitle className="sr-only">{t('customers_new_title')}</DialogTitle>
-            <CustomerForm />
-          </DialogContent>
-        </Dialog>
+        <GenericModal
+          hideFooter={true}
+          hideTitle={true}
+          title={t('customers_new_title') || "New Customer"}
+          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+          trigger={
+            <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
+              <Plus className="h-5 w-5" />
+              <span className="hidden sm:inline font-bold">{t('customers_new')}</span>
+            </Button>
+          }
+        >
+          <CustomerForm />
+        </GenericModal>
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
@@ -137,24 +153,31 @@ export default function CustomersPage() {
                     <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
                       <div className="font-bold text-expresso text-base">{customer.full_name}</div>
                       <div className="flex items-center gap-1">
-                        <Dialog>
-                          <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
-                            <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
-                            <CustomerForm initialData={customer} />
-                          </DialogContent>
-                        </Dialog>
+                        <GenericModal
+                          hideFooter={true}
+                          hideTitle={true}
+                          title={t('cust_form_edit') || "Edit Customer"}
+                          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+                          trigger={
+                            <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                            </Button>
+                          }
+                        >
+                          <CustomerForm initialData={customer} />
+                        </GenericModal>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
                           onClick={() => {
-                            if (confirm(t('delete_confirm') || 'Are you sure you want to delete this customer?')) {
-                              deleteMutation.mutate(customer.id)
-                            }
+                            showConfirm(
+                              "Delete Customer",
+                              t('delete_confirm') || 'Are you sure you want to delete this customer?',
+                              () => deleteMutation.mutate(customer.id),
+                              "destructive"
+                            )
                           }}
                           disabled={deleteMutation.isPending}
                         >
@@ -257,24 +280,31 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-1">
-                          <Dialog>
-                            <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-customer-form">
-                              <DialogTitle className="sr-only">{t('cust_form_edit')}</DialogTitle>
-                              <CustomerForm initialData={customer} />
-                            </DialogContent>
-                          </Dialog>
+                          <GenericModal
+                            hideFooter={true}
+                            hideTitle={true}
+                            title={t('cust_form_edit') || "Edit Customer"}
+                            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+                            trigger={
+                              <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                            }
+                          >
+                            <CustomerForm initialData={customer} />
+                          </GenericModal>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
                             onClick={() => {
-                              if (confirm(t('delete_confirm') || 'Are you sure you want to delete this customer?')) {
-                                deleteMutation.mutate(customer.id)
-                              }
+                              showConfirm(
+                                "Delete Customer",
+                                t('delete_confirm') || 'Are you sure you want to delete this customer?',
+                                () => deleteMutation.mutate(customer.id),
+                                "destructive"
+                              )
                             }}
                             disabled={deleteMutation.isPending}
                           >
@@ -354,6 +384,16 @@ export default function CustomersPage() {
           )}
         </CardContent>
       </Card>
+
+      <GenericModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        title={modalState.title}
+        onConfirm={modalState.onConfirm}
+        confirmVariant={modalState.confirmVariant}
+      >
+        <p>{modalState.message}</p>
+      </GenericModal>
     </div>
   )
 }

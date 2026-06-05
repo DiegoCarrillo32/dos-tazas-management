@@ -3,6 +3,7 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { greenCoffeeLotSchema } from '@/lib/schemas'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -12,13 +13,7 @@ import type { GreenCoffeeLotRecord } from '@/types'
 import { useCreateGreenCoffeeLot, useUpdateGreenCoffeeLot } from '@/hooks/queries'
 import { toast } from 'sonner'
 
-const greenCoffeeLotSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  origin: z.string().optional(),
-  varietal: z.string().optional(),
-  process: z.string().optional(),
-  altitude: z.string().optional(),
-})
+
 
 type GreenCoffeeLotFormValues = z.infer<typeof greenCoffeeLotSchema>
 

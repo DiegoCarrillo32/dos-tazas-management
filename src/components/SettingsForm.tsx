@@ -4,6 +4,7 @@ import { useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { settingsSchema } from '@/lib/schemas'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,17 +19,7 @@ import type { Language } from '@/i18n/dictionaries'
 import { useTheme } from '@/providers/ThemeProvider'
 import { toast } from 'sonner'
 
-const settingsSchema = z.object({
-  business_name: z.string().optional(),
-  roast_loss_percentage: z.number().min(0).max(100),
-  currency_symbol: z.string().max(3, 'Max 3 chars').min(1, 'Required'),
-  cost_per_bag: z.number().min(0),
-  cost_per_sticker: z.number().min(0),
-  cost_electricity: z.number().min(0),
-  cost_fuel: z.number().min(0),
-  cost_roasting_time: z.number().min(0),
-  worker_name: z.string().optional(),
-})
+
 
 type SettingsFormValues = z.infer<typeof settingsSchema>
 

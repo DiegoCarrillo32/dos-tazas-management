@@ -5,13 +5,13 @@ import { useOrders, useCustomers, useInventory, useSettings } from '@/hooks/quer
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Plus, Briefcase, Users, ShoppingCart, Calculator } from 'lucide-react'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { OrderForm } from '@/components/OrderForm'
 import { TableRowSkeleton } from '@/components/Skeletons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InvitePartnerDialog } from '@/components/InvitePartnerDialog'
 import { PartnersList } from '@/components/PartnersList'
 import { OrderDetailsModal } from '@/components/OrderDetailsModal'
+import { GenericModal } from '@/components/ui/GenericModal'
 import { useTranslation } from '@/i18n/LanguageProvider'
 
 export default function B2BPage() {
@@ -50,24 +50,28 @@ export default function B2BPage() {
           <div className="flex items-center gap-2">
             <InvitePartnerDialog />
 
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger render={
-                <Button className="bg-white text-coffee-fruit hover:bg-warm-roast/10 border border-coffee-fruit/20 rounded-full px-6 shadow-sm transition-all" />
-              }>
-                <Plus className="mr-2 h-4 w-4" /> {t('orders_new') || "New B2B Order"}
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto">
-                <DialogTitle className="sr-only">New B2B Order</DialogTitle>
-                <OrderForm 
-                  customers={customers || []} 
-                  inventoryItems={coffeeInventory} 
-                  settings={settings} 
-                  isB2B={true}
-                  onSuccess={() => setIsAddOpen(false)}
-                  onCancel={() => setIsAddOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
+            <GenericModal
+              isOpen={isAddOpen}
+              onOpenChange={setIsAddOpen}
+              hideFooter={true}
+              hideTitle={true}
+              title="New B2B Order"
+              contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+              trigger={
+                <Button className="bg-white text-coffee-fruit hover:bg-warm-roast/10 border border-coffee-fruit/20 rounded-full px-6 shadow-sm transition-all">
+                  <Plus className="mr-2 h-4 w-4" /> {t('orders_new') || "New B2B Order"}
+                </Button>
+              }
+            >
+              <OrderForm 
+                customers={customers || []} 
+                inventoryItems={coffeeInventory} 
+                settings={settings} 
+                isB2B={true}
+                onSuccess={() => setIsAddOpen(false)}
+                onCancel={() => setIsAddOpen(false)}
+              />
+            </GenericModal>
           </div>
         }
       />
@@ -154,20 +158,24 @@ export default function B2BPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <Dialog>
-                            <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5">
+                          <GenericModal
+                            hideFooter={true}
+                            hideTitle={true}
+                            title="Order Details"
+                            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+                            trigger={
+                              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5">
                                 Edit
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto" closeButtonClassName="text-white/70 hover:text-white hover:bg-white/10">
-                              <DialogTitle className="sr-only">Order Details</DialogTitle>
-                              <OrderDetailsModal 
-                                order={order} 
-                                customers={customers || []} 
-                                inventoryItems={coffeeInventory} 
-                                settings={settings} 
-                              />
-                            </DialogContent>
-                          </Dialog>
+                              </button>
+                            }
+                          >
+                            <OrderDetailsModal 
+                              order={order} 
+                              customers={customers || []} 
+                              inventoryItems={coffeeInventory} 
+                              settings={settings} 
+                            />
+                          </GenericModal>
                         </td>
                       </tr>
                     ))

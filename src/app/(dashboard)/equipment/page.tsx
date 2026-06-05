@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useEquipment } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Settings, Edit, Search } from 'lucide-react'
@@ -11,6 +10,7 @@ import { EquipmentForm } from '@/components/EquipmentForm'
 import { MaintenanceLogsDialog } from '@/components/MaintenanceLogsDialog'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
+import { GenericModal } from '@/components/ui/GenericModal'
 
 export default function EquipmentPage() {
   const { t } = useTranslation()
@@ -56,16 +56,20 @@ export default function EquipmentPage() {
           <p className="text-expresso/70 font-medium text-sm">Manage your roasters, espresso machines, and grinders</p>
         </div>
         
-        <Dialog>
-          <DialogTrigger render={<Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6" />}>
-            <Plus className="h-5 w-5" />
-            <span className="hidden sm:inline font-bold">Add Equipment</span>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="new-equipment-form">
-            <DialogTitle className="sr-only">Add Equipment</DialogTitle>
-            <EquipmentForm />
-          </DialogContent>
-        </Dialog>
+        <GenericModal
+          hideFooter={true}
+          hideTitle={true}
+          title="Add Equipment"
+          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+          trigger={
+            <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
+              <Plus className="h-5 w-5" />
+              <span className="hidden sm:inline font-bold">Add Equipment</span>
+            </Button>
+          }
+        >
+          <EquipmentForm />
+        </GenericModal>
       </div>
 
       <Card className="shadow-lg border-warm-roast/10">
@@ -139,16 +143,20 @@ export default function EquipmentPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <MaintenanceLogsDialog equipmentId={item.id} equipmentName={item.name} />
-                      <Dialog>
-                        <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-equipment-form">
-                          <DialogTitle className="sr-only">Edit Equipment</DialogTitle>
-                          <EquipmentForm initialData={item} />
-                        </DialogContent>
-                      </Dialog>
+                      <GenericModal
+                        hideFooter={true}
+                        hideTitle={true}
+                        title="Edit Equipment"
+                        contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+                        trigger={
+                          <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                        }
+                      >
+                        <EquipmentForm initialData={item} />
+                      </GenericModal>
                     </div>
                   </div>
 
@@ -227,16 +235,20 @@ export default function EquipmentPage() {
                       </td>
                       <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                         <MaintenanceLogsDialog equipmentId={item.id} equipmentName={item.name} />
-                        <Dialog>
-                          <DialogTrigger render={<Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full" />}>
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none" aria-describedby="edit-equipment-form">
-                            <DialogTitle className="sr-only">Edit Equipment</DialogTitle>
-                            <EquipmentForm initialData={item} />
-                          </DialogContent>
-                        </Dialog>
+                        <GenericModal
+                          hideFooter={true}
+                          hideTitle={true}
+                          title="Edit Equipment"
+                          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+                          trigger={
+                            <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                          }
+                        >
+                          <EquipmentForm initialData={item} />
+                        </GenericModal>
                       </td>
                     </tr>
                   ))

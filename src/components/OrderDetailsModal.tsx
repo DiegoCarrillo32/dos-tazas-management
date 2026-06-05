@@ -18,6 +18,7 @@ import { OrderForm } from "@/components/OrderForm";
 import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useDeleteOrder } from "@/hooks/queries";
+import { GenericModal } from "@/components/ui/GenericModal";
 
 interface OrderDetailsModalProps {
   order: OrderWithCustomer;
@@ -38,14 +39,31 @@ export function OrderDetailsModal({
   const [isEditing, setIsEditing] = useState(false);
   const deleteMutation = useDeleteOrder();
 
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean
+    title?: string
+    message?: string
+    onConfirm?: () => void
+    confirmVariant?: "default" | "destructive"
+  }>({ isOpen: false });
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, confirmVariant: "default" | "destructive" = "default") => {
+    setModalState({ isOpen: true, title, message, onConfirm, confirmVariant });
+  };
+
   const handleDelete = () => {
-    if (window.confirm(t('delete_confirm') || 'Are you sure you want to delete this order?')) {
-      deleteMutation.mutate(order.id, {
-        onSuccess: () => {
-          if (onClose) onClose();
-        },
-      });
-    }
+    showConfirm(
+      "Delete Order",
+      t('delete_confirm') || 'Are you sure you want to delete this order?',
+      () => {
+        deleteMutation.mutate(order.id, {
+          onSuccess: () => {
+            if (onClose) onClose();
+          },
+        });
+      },
+      "destructive"
+    );
   };
 
   if (isEditing) {
@@ -295,6 +313,16 @@ export function OrderDetailsModal({
           </Button>
         </div>
       </div>
+
+      <GenericModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        title={modalState.title}
+        onConfirm={modalState.onConfirm}
+        confirmVariant={modalState.confirmVariant}
+      >
+        <p>{modalState.message}</p>
+      </GenericModal>
     </div>
   );
 }

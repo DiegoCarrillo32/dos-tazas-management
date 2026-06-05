@@ -2,7 +2,10 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { FulfillmentStatus, PaymentStatus, OrderInsertParams, OrderUpdateParams, OrderWithCustomer } from '@/types'
+import type { FulfillmentStatus, PaymentStatus, OrderWithCustomer } from '@/types'
+import { authActionClient } from '@/lib/safe-action'
+import { orderSchema } from '@/lib/schemas'
+import * as z from 'zod'
 
 export async function fetchOrders(): Promise<OrderWithCustomer[]> {
   const supabase = await createClient()
@@ -34,14 +37,9 @@ export async function fetchOrders(): Promise<OrderWithCustomer[]> {
   })) as OrderWithCustomer[]
 }
 
-export async function createOrder(params: OrderInsertParams) {
-  const supabase = await createClient()
-
-  // Get the current user's ID from the session
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('You must be logged in to create an order.')
-  }
+export const createOrder = authActionClient
+  .schema(orderSchema)
+  .action(async ({ parsedInput: params, ctx: { user, supabase } }) => {
 
   // Handle B2B auto customer resolution
   let customerId = params.customer_id
@@ -143,10 +141,11 @@ export async function createOrder(params: OrderInsertParams) {
 
   revalidatePath('/', 'layout')
   return data
-}
+})
 
-export async function updateFulfillmentStatus(orderId: string, status: FulfillmentStatus) {
-  const supabase = await createClient()
+export const updateFulfillmentStatus = authActionClient
+  .schema(z.object({ id: z.string(), status: z.custom<FulfillmentStatus>() }))
+  .action(async ({ parsedInput: { id: orderId, status }, ctx: { supabase } }) => {
 
   const { data, error } = await supabase
     .from('orders')
@@ -162,10 +161,11 @@ export async function updateFulfillmentStatus(orderId: string, status: Fulfillme
 
   revalidatePath('/', 'layout')
   return data
-}
+})
 
-export async function updatePaymentStatus(orderId: string, status: PaymentStatus) {
-  const supabase = await createClient()
+export const updatePaymentStatus = authActionClient
+  .schema(z.object({ id: z.string(), status: z.custom<PaymentStatus>() }))
+  .action(async ({ parsedInput: { id: orderId, status }, ctx: { supabase } }) => {
 
   const { data, error } = await supabase
     .from('orders')
@@ -181,7 +181,7 @@ export async function updatePaymentStatus(orderId: string, status: PaymentStatus
 
   revalidatePath('/', 'layout')
   return data
-}
+})
 
 export async function fetchCompletedOrders(): Promise<OrderWithCustomer[]> {
   const supabase = await createClient()
@@ -214,8 +214,9 @@ export async function fetchCompletedOrders(): Promise<OrderWithCustomer[]> {
   })) as OrderWithCustomer[]
 }
 
-export async function updateOrder(orderId: string, params: OrderUpdateParams) {
-  const supabase = await createClient()
+export const updateOrder = authActionClient
+  .schema(z.object({ id: z.string(), params: orderSchema.partial() }))
+  .action(async ({ parsedInput: { id: orderId, params }, ctx: { supabase } }) => {
 
   // 1. Fetch original order details to reconcile inventory
   const { data: oldOrder, error: fetchError } = await supabase
@@ -364,10 +365,11 @@ export async function updateOrder(orderId: string, params: OrderUpdateParams) {
 
   revalidatePath('/', 'layout')
   return data
-}
+})
 
-export async function deleteOrder(orderId: string) {
-  const supabase = await createClient()
+export const deleteOrder = authActionClient
+  .schema(z.object({ id: z.string() }))
+  .action(async ({ parsedInput: { id: orderId }, ctx: { supabase } }) => {
 
   // 1. Fetch original order details to reconcile inventory
   const { data: oldOrder, error: fetchError } = await supabase
@@ -419,4 +421,4 @@ export async function deleteOrder(orderId: string) {
 
   revalidatePath('/', 'layout')
   return { success: true }
-}
+})
