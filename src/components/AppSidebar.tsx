@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Calculator,
   Settings,
   BarChart3,
   Users,
@@ -12,6 +13,9 @@ import {
   Flame,
   Briefcase,
   Wrench,
+  LayoutDashboard,
+  RefreshCw,
+  ShoppingCart,
   LucideProps,
 } from "lucide-react";
 
@@ -69,6 +73,7 @@ const sections: NavSection[] = [
     items: [
       { titleKey: "nav_inventory" as DictionaryKey, url: "/inventory", icon: Package },
       { titleKey: "nav_roasts" as DictionaryKey, url: "/roasts", icon: Flame },
+      { titleKey: "nav_calculator" as DictionaryKey, url: "/calculator", icon: Calculator },
       { titleKey: "nav_equipment" as DictionaryKey, url: "/equipment", icon: Wrench },
     ],
   },
@@ -81,11 +86,36 @@ const sections: NavSection[] = [
     ],
   },
   {
+    labelKey: "sidebar_section_partner" as DictionaryKey,
+    items: [
+      { titleKey: "nav_partner_dashboard" as DictionaryKey, url: "/dashboard", icon: LayoutDashboard },
+      { titleKey: "nav_partner_roasting" as DictionaryKey, url: "/roasting", icon: Flame },
+      { titleKey: "nav_partner_orders" as DictionaryKey, url: "/orders", icon: ShoppingCart },
+      { titleKey: "nav_partner_recurring" as DictionaryKey, url: "/recurring", icon: RefreshCw },
+    ],
+  },
+  {
     labelKey: "sidebar_section_system" as DictionaryKey,
     items: [
       { titleKey: "nav_settings" as DictionaryKey, url: "/settings", icon: Settings },
     ],
   },
+];
+
+// Partner role: own-data modules plus the B2B inquiry pages for the roaster that invited them
+const partnerAllowedKeys: DictionaryKey[] = [
+  "nav_dashboard",
+  "nav_analytics",
+  "nav_history",
+  "nav_inventory",
+  "nav_roasts",
+  "nav_calculator",
+  "nav_equipment",
+  "nav_settings",
+  "nav_partner_dashboard",
+  "nav_partner_roasting",
+  "nav_partner_orders",
+  "nav_partner_recurring",
 ];
 
 export function AppSidebar({
@@ -106,13 +136,19 @@ export function AppSidebar({
     
     if (userRole === "worker") {
       // Workers can only see Orders, Tracker, History, Settings
-      allowedItems = section.items.filter(item => 
+      allowedItems = section.items.filter(item =>
         ['nav_dashboard', 'nav_tracker', 'nav_history', 'nav_settings'].includes(item.titleKey)
       );
+    } else if (userRole === "partner") {
+      allowedItems = section.items.filter(item => partnerAllowedKeys.includes(item.titleKey));
     } else {
       // Roasters don't see Tracker yet (or they do if they want to track themselves, but let's hide it)
-      allowedItems = section.items.filter(item => item.titleKey !== 'nav_tracker');
-      
+      // The partner section is for partner accounts only
+      allowedItems = section.items.filter(item =>
+        item.titleKey !== 'nav_tracker' &&
+        !item.titleKey.startsWith('nav_partner_')
+      );
+
       // Add team module for roasters if we need it
     }
     

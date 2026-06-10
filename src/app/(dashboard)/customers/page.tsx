@@ -10,6 +10,7 @@ import { CustomerForm } from '@/components/CustomerForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { PageHeader } from '@/components/PageHeader'
 
 export default function CustomersPage() {
   const { t } = useTranslation()
@@ -62,27 +63,26 @@ export default function CustomersPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-heading text-expresso">{t('customers_title')}</h1>
-          <p className="text-expresso/70 font-medium text-sm">{t('customers_subtitle')}</p>
-        </div>
-        
-        <GenericModal
-          hideFooter={true}
-          hideTitle={true}
-          title={t('customers_new_title') || "New Customer"}
-          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
-          trigger={
-            <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
-              <Plus className="h-5 w-5" />
-              <span className="hidden sm:inline font-bold">{t('customers_new')}</span>
-            </Button>
-          }
-        >
-          <CustomerForm />
-        </GenericModal>
-      </div>
+      <PageHeader
+        title={t('customers_title')}
+        subtitle={t('customers_subtitle')}
+        action={
+          <GenericModal
+            hideFooter={true}
+            hideTitle={true}
+            title={t('customers_new_title') || "New Customer"}
+            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+            trigger={
+              <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
+                <Plus className="h-5 w-5" />
+                <span className="hidden sm:inline font-bold">{t('customers_new')}</span>
+              </Button>
+            }
+          >
+            <CustomerForm />
+          </GenericModal>
+        }
+      />
 
       <Card className="shadow-lg border-warm-roast/10">
         <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -117,14 +117,14 @@ export default function CustomersPage() {
             
             {/* Page Size Select */}
             <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-              <span className="text-xs text-expresso/60 font-semibold">{t('pag_page_size')}:</span>
+              <span className="text-xs text-expresso/60 font-bold">{t('pag_page_size')}:</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(Number(e.target.value))
                   setCurrentPage(1)
                 }}
-                className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-semibold"
+                className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-bold"
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -148,7 +148,7 @@ export default function CustomersPage() {
             ) : (
               <div className="flex flex-col gap-4 p-4 bg-warm-roast/5">
                 {paginatedItems.map((customer) => (
-                  <div key={customer.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                  <div key={customer.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
                     {/* Header */}
                     <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
                       <div className="font-bold text-expresso text-base">{customer.full_name}</div>
@@ -161,7 +161,7 @@ export default function CustomersPage() {
                           trigger={
                             <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
                                 <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
+                                <span className="sr-only">{t('edit')}</span>
                             </Button>
                           }
                         >
@@ -173,8 +173,8 @@ export default function CustomersPage() {
                           className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
                           onClick={() => {
                             showConfirm(
-                              "Delete Customer",
-                              t('delete_confirm') || 'Are you sure you want to delete this customer?',
+                              t('customers_delete_title'),
+                              t('customers_delete_confirm'),
                               () => deleteMutation.mutate(customer.id),
                               "destructive"
                             )
@@ -182,7 +182,7 @@ export default function CustomersPage() {
                           disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
+                          <span className="sr-only">{t('delete')}</span>
                         </Button>
                       </div>
                     </div>
@@ -288,7 +288,7 @@ export default function CustomersPage() {
                             trigger={
                               <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
                                 <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
+                                <span className="sr-only">{t('edit')}</span>
                               </Button>
                             }
                           >
@@ -300,8 +300,8 @@ export default function CustomersPage() {
                             className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-full"
                             onClick={() => {
                               showConfirm(
-                                "Delete Customer",
-                                t('delete_confirm') || 'Are you sure you want to delete this customer?',
+                                t('customers_delete_title'),
+                                t('customers_delete_confirm'),
                                 () => deleteMutation.mutate(customer.id),
                                 "destructive"
                               )
@@ -309,7 +309,7 @@ export default function CustomersPage() {
                             disabled={deleteMutation.isPending}
                           >
                             <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
+                            <span className="sr-only">{t('delete')}</span>
                           </Button>
                         </div>
                       </td>
@@ -323,7 +323,7 @@ export default function CustomersPage() {
           {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 border-t border-warm-roast/10 bg-warm-roast/5 rounded-b-lg">
-              <div className="text-xs text-expresso/60 font-semibold">
+              <div className="text-xs text-expresso/60 font-bold">
                 {showingText}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">

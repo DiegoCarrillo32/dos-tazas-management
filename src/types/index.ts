@@ -100,6 +100,13 @@ export type AnalyticsSummary = {
   totalProfit: number
 }
 
+// Roasting-service revenue, tracked separately from product-sales revenue.
+export type RoastingAnalytics = {
+  roastingRevenue: number
+  roastingOrders: number
+  roastedGrams: number
+}
+
 export type RevenueDataPoint = {
   date: string
   revenue: number
@@ -288,6 +295,53 @@ export type B2BPricingInsertParams = Omit<B2BPricingRecord, 'id' | 'created_at'>
 export type B2BPricingUpdateParams = Partial<Omit<B2BPricingRecord, 'id' | 'created_at' | 'partner_id' | 'inventory_id'>>
 export type B2BRecurringOrderInsertParams = Omit<B2BRecurringOrderRecord, 'id' | 'created_at'>
 export type B2BRecurringOrderUpdateParams = Partial<Omit<B2BRecurringOrderRecord, 'id' | 'created_at'>>
+
+// ============================================================
+// Roasting Orders (B2B roasting service requests)
+// ============================================================
+
+export type RoastingOrderStatus = 'pending' | 'accepted' | 'completed' | 'cancelled'
+
+// Persisted snapshot of the roasting calculator's line items (CRC, null = N/A).
+export type RoastingCostBreakdown = {
+  labor: number
+  energy: number
+  greenCoffee: number | null
+  packaging: number | null
+  grinding: number | null
+}
+
+export type RoastingOrderRecord = {
+  id: string
+  partner_id: string
+  roaster_user_id: string
+  quantity_grams: number
+  quantity_basis: 'GREEN_INPUT' | 'ROASTED_OUTPUT'
+  green_source: 'CLIENT_PROVIDED' | 'WE_PROVIDE'
+  green_tier_id: string | null
+  packaging: 'CLIENT_HANDLES' | 'WE_PACKAGE'
+  bag_option_id: string | null
+  bag_size_id: string | null
+  grinding: 'CLIENT_HANDLES' | 'WE_GRIND'
+  machine_id: string
+  green_grams_in: number
+  roasted_grams_out: number
+  batches_needed: number
+  hours_required: number
+  bags_needed: number | null
+  cost_breakdown: RoastingCostBreakdown
+  total_cost: number
+  notes: string | null
+  status: RoastingOrderStatus
+  created_at: string
+}
+
+// Joined with the partner company (used on the roaster's incoming view).
+export type RoastingOrderWithPartner = RoastingOrderRecord & {
+  b2b_partners?: {
+    company_name: string
+  } | null
+}
 
 // ============================================================
 // Team & Time Tracker Types

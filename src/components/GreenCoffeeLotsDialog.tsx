@@ -29,7 +29,7 @@ export function GreenCoffeeLotsDialog({ inventoryId, inventoryName }: GreenCoffe
       trigger={
         <Button variant="ghost" size="sm" className="text-warm-roast hover:text-coffee-fruit hover:bg-warm-roast/10 h-8 px-2 gap-1 rounded-full">
           <Leaf className="h-4 w-4" />
-          <span className="text-xs font-semibold">Lots</span>
+          <span className="text-xs font-bold">Lots</span>
         </Button>
       }
       contentClassName="sm:max-w-[600px] bg-white-pergamino dark:bg-card p-4 sm:p-6 border-warm-roast/10 shadow-2xl overflow-hidden"
@@ -48,7 +48,7 @@ export function GreenCoffeeLotsDialog({ inventoryId, inventoryName }: GreenCoffe
 
       <div className="py-2">
         {isAdding ? (
-          <div className="bg-white rounded-lg border border-warm-roast/10 p-4">
+          <div className="bg-card rounded-lg border border-warm-roast/10 p-4">
             <GreenCoffeeLotForm 
               inventoryId={inventoryId} 
               onCancel={() => setIsAdding(false)} 
@@ -63,7 +63,7 @@ export function GreenCoffeeLotsDialog({ inventoryId, inventoryName }: GreenCoffe
               <p className="text-sm text-expresso/60 text-center py-8">No lot details found for this green coffee inventory.</p>
             ) : (
               lots.map(lot => (
-                <div key={lot.id} className="bg-white rounded-lg border border-warm-roast/10 p-4 flex flex-col gap-2">
+                <div key={lot.id} className="bg-card rounded-lg border border-warm-roast/10 p-4 flex flex-col gap-2">
                   {editingId === lot.id ? (
                     <GreenCoffeeLotForm 
                       inventoryId={inventoryId} 
@@ -82,10 +82,10 @@ export function GreenCoffeeLotsDialog({ inventoryId, inventoryName }: GreenCoffe
                         </Button>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm text-expresso/80 mt-2">
-                        <div><span className="font-semibold text-expresso/60">Origin:</span> {lot.origin || '-'}</div>
-                        <div><span className="font-semibold text-expresso/60">Varietal:</span> {lot.varietal || '-'}</div>
-                        <div><span className="font-semibold text-expresso/60">Process:</span> <span className="capitalize">{lot.process || '-'}</span></div>
-                        <div><span className="font-semibold text-expresso/60">Altitude:</span> {lot.altitude || '-'}</div>
+                        <div><span className="font-bold text-expresso/60">Origin:</span> {lot.origin || '-'}</div>
+                        <div><span className="font-bold text-expresso/60">Varietal:</span> {lot.varietal || '-'}</div>
+                        <div><span className="font-bold text-expresso/60">Process:</span> <span className="capitalize">{lot.process || '-'}</span></div>
+                        <div><span className="font-bold text-expresso/60">Altitude:</span> {lot.altitude || '-'}</div>
                       </div>
                     </>
                   )}

@@ -1,18 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useOrders, useCustomers, useInventory, useSettings } from '@/hooks/queries'
+import { useOrders, useCustomers, useInventory, useSettings, useRoastingOrders } from '@/hooks/queries'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Plus, Briefcase, Users, ShoppingCart, Calculator } from 'lucide-react'
+import { Plus, Briefcase, Users, ShoppingCart, Calculator, Flame } from 'lucide-react'
 import { OrderForm } from '@/components/OrderForm'
 import { TableRowSkeleton } from '@/components/Skeletons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InvitePartnerDialog } from '@/components/InvitePartnerDialog'
 import { PartnersList } from '@/components/PartnersList'
 import { OrderDetailsModal } from '@/components/OrderDetailsModal'
+import { RoastingOrderDetailsModal } from '@/components/RoastingOrderDetailsModal'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { useTranslation } from '@/i18n/LanguageProvider'
+import type { DictionaryKey } from '@/i18n/dictionaries'
 
 export default function B2BPage() {
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -22,6 +24,13 @@ export default function B2BPage() {
   const { data: customers, isLoading: loadingCustomers } = useCustomers()
   const { data: inventoryItems, isLoading: loadingInventory } = useInventory()
   const { data: settings } = useSettings()
+  const { data: roastingOrders, isLoading: loadingRoasting } = useRoastingOrders()
+
+  const crcFormatter = new Intl.NumberFormat('es-CR', {
+    style: 'currency',
+    currency: 'CRC',
+    maximumFractionDigits: 0,
+  })
 
   const isLoading = loadingOrders || loadingCustomers || loadingInventory
 
@@ -58,7 +67,7 @@ export default function B2BPage() {
               title="New B2B Order"
               contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
               trigger={
-                <Button className="bg-white text-coffee-fruit hover:bg-warm-roast/10 border border-coffee-fruit/20 rounded-full px-6 shadow-sm transition-all">
+                <Button className="bg-card text-coffee-fruit hover:bg-warm-roast/10 border border-coffee-fruit/20 rounded-full px-6 shadow-sm transition-all">
                   <Plus className="mr-2 h-4 w-4" /> {t('orders_new') || "New B2B Order"}
                 </Button>
               }
@@ -77,7 +86,7 @@ export default function B2BPage() {
       />
 
       <Tabs defaultValue="partners" className="w-full space-y-6">
-        <TabsList className="bg-white border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1 max-w-[400px]">
+        <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1 max-w-[540px]">
           <TabsTrigger value="partners" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <Users className="w-4 h-4 mr-1 shrink-0" />
             {t('b2b_partners_tab') || "Partners"}
@@ -85,6 +94,10 @@ export default function B2BPage() {
           <TabsTrigger value="orders" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <ShoppingCart className="w-4 h-4 mr-1 shrink-0" />
             {t('b2b_orders_tab') || "Orders"}
+          </TabsTrigger>
+          <TabsTrigger value="roasting" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+            <Flame className="w-4 h-4 mr-1 shrink-0" />
+            {t('b2b_roasting_tab')}
           </TabsTrigger>
           <TabsTrigger value="schedule" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <Calculator className="w-4 h-4 mr-1 shrink-0" />
@@ -97,10 +110,10 @@ export default function B2BPage() {
         </TabsContent>
 
         <TabsContent value="orders" className="m-0 animate-in fade-in duration-300 outline-none">
-          <div className="bg-white rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
+          <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left min-w-[800px]">
-                <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
+                <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
                   <tr>
                     <th scope="col" className="px-6 py-4">Company</th>
                     <th scope="col" className="px-6 py-4">Order Info</th>
@@ -125,7 +138,7 @@ export default function B2BPage() {
                     </tr>
                   ) : (
                     b2bOrders.map((order) => (
-                      <tr key={order.id} className="bg-white border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
+                      <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
                         <td className="px-6 py-4 font-bold text-coffee-fruit">
                           {order.company_name || 'B2B Client'}
                           <div className="text-xs font-normal text-expresso/60 mt-0.5">
@@ -145,7 +158,7 @@ export default function B2BPage() {
                           {(order.amount_grams / 1000).toFixed(2)} kg
                           <span className="text-xs text-expresso/60 ml-1">({order.bag_count} bags)</span>
                         </td>
-                        <td className="px-6 py-4 font-semibold text-warm-roast">
+                        <td className="px-6 py-4 font-bold text-warm-roast">
                           {settings?.currency_symbol || '$'}{Number(order.total_price).toFixed(2)}
                         </td>
                         <td className="px-6 py-4">
@@ -186,8 +199,84 @@ export default function B2BPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="roasting" className="m-0 animate-in fade-in duration-300 outline-none">
+          <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left min-w-[800px]">
+                <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">{t('roasting_col_company')}</th>
+                    <th scope="col" className="px-6 py-4">{t('roasting_col_date')}</th>
+                    <th scope="col" className="px-6 py-4">{t('roasting_col_output')}</th>
+                    <th scope="col" className="px-6 py-4">{t('roasting_col_service_cost')}</th>
+                    <th scope="col" className="px-6 py-4">{t('roasting_col_status')}</th>
+                    <th scope="col" className="px-6 py-4 text-right">{t('roasting_col_actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingRoasting ? (
+                    <TableRowSkeleton cols={6} rows={3} />
+                  ) : !roastingOrders || roastingOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-expresso/50">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Flame className="h-8 w-8 opacity-20" />
+                          <p>{t('roasting_roaster_empty')}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    roastingOrders.map((order) => (
+                      <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
+                        <td className="px-6 py-4 font-bold text-coffee-fruit">
+                          {order.b2b_partners?.company_name || t('roasting_unknown_partner')}
+                        </td>
+                        <td className="px-6 py-4 text-expresso">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 font-medium text-expresso">
+                          {(order.roasted_grams_out / 1000).toFixed(2)} kg
+                          <span className="text-xs text-expresso/60 ml-1">({order.batches_needed} batches)</span>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-warm-roast">
+                          {crcFormatter.format(Number(order.total_cost))}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            order.status === 'accepted' ? 'bg-orange-100 text-orange-800' :
+                            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {t(`roasting_status_${order.status}` as DictionaryKey)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <GenericModal
+                            hideFooter={true}
+                            hideTitle={true}
+                            title={t('roasting_order_details')}
+                            contentClassName="sm:max-w-[520px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+                            trigger={
+                              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors h-9 px-3 text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5">
+                                {t('roasting_col_view')}
+                              </button>
+                            }
+                          >
+                            <RoastingOrderDetailsModal order={order} />
+                          </GenericModal>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+
         <TabsContent value="schedule" className="m-0 animate-in fade-in duration-300 outline-none">
-          <div className="bg-white rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 p-6 max-w-2xl">
+          <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 p-6 max-w-2xl">
             <h3 className="text-xl font-heading text-expresso border-b border-warm-roast/10 pb-4 mb-4">
               Roast-to-Order Schedule
             </h3>
@@ -208,11 +297,11 @@ export default function B2BPage() {
                     <div key={invId} className="flex flex-col bg-white-pergamino/30 p-4 rounded-xl border border-warm-roast/10">
                       <span className="font-bold text-lg text-coffee-fruit">{inv?.item_name || 'Unknown Bean'}</span>
                       <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
-                        <div className="bg-white p-3 rounded-lg border border-warm-roast/5 shadow-sm">
+                        <div className="bg-card p-3 rounded-lg border border-warm-roast/5 shadow-sm">
                           <span className="block text-xs font-bold text-expresso/50 uppercase tracking-wider mb-1">Roasted Needed</span>
                           <span className="text-xl font-medium text-expresso">{(amountNeeded / 1000).toFixed(2)} <span className="text-sm">kg</span></span>
                         </div>
-                        <div className="bg-white p-3 rounded-lg border border-warm-roast/5 shadow-sm">
+                        <div className="bg-card p-3 rounded-lg border border-warm-roast/5 shadow-sm">
                           <span className="block text-xs font-bold text-expresso/50 uppercase tracking-wider mb-1">Green Needed</span>
                           <span className="text-xl font-medium text-warm-roast">{(greenCoffeeNeeded / 1000).toFixed(2)} <span className="text-sm">kg</span></span>
                         </div>

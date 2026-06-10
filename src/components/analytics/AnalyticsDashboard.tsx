@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { DollarSign, Package, Coffee, Coins } from 'lucide-react'
+import { DollarSign, Package, Coffee, Coins, Flame, Hammer } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -33,7 +33,8 @@ import {
   fetchAnalyticsSummary,
   fetchRevenueTimeSeries,
   fetchTopRoastLevels,
-  fetchTopPrepMethods
+  fetchTopPrepMethods,
+  fetchRoastingAnalytics
 } from '@/actions/analytics'
 import type {
   AnalyticsSummary,
@@ -42,7 +43,8 @@ import type {
   AnalyticsFilters,
   FulfillmentStatus,
   PaymentStatus,
-  UserSettingsRecord
+  UserSettingsRecord,
+  RoastingAnalytics
 } from '@/types'
 
 interface AnalyticsDashboardProps {
@@ -50,17 +52,22 @@ interface AnalyticsDashboardProps {
   initialRevenue: RevenueDataPoint[]
   initialRoast: BreakdownItem[]
   initialPrep: BreakdownItem[]
+  initialRoasting: RoastingAnalytics
   settings?: UserSettingsRecord
   defaultStartDate?: string
   defaultEndDate?: string
 }
-const DEFAULT_CARD_ORDER = ['revenue', 'cost', 'profit', 'margin', 'coffee_sold', 'total_orders']
+const DEFAULT_CARD_ORDER = [
+  'revenue', 'cost', 'profit', 'margin', 'coffee_sold', 'total_orders',
+  'roasting_revenue', 'roasting_jobs',
+]
 
 export function AnalyticsDashboard({
   initialSummary,
   initialRevenue,
   initialRoast,
   initialPrep,
+  initialRoasting,
   settings,
   defaultStartDate,
   defaultEndDate
@@ -72,6 +79,7 @@ export function AnalyticsDashboard({
   const [revenue, setRevenue] = useState(initialRevenue)
   const [roastData, setRoastData] = useState(initialRoast)
   const [prepData, setPrepData] = useState(initialPrep)
+  const [roasting, setRoasting] = useState(initialRoasting)
 
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER)
   const [isMounted, setIsMounted] = useState(false)
@@ -174,6 +182,23 @@ export function AnalyticsDashboard({
       icon: Package,
       color: "text-expresso",
       className: "col-span-12 sm:col-span-6 lg:col-span-4",
+    },
+    roasting_revenue: {
+      id: 'roasting_revenue',
+      title: t('analytics_roasting_revenue'),
+      value: `${currencySymbol}${roasting.roastingRevenue.toFixed(2)}`,
+      subtitle: `${(roasting.roastedGrams / 1000).toFixed(2)} kg ${t('analytics_roasting_roasted')}`,
+      icon: Flame,
+      color: "text-coffee-fruit",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+    },
+    roasting_jobs: {
+      id: 'roasting_jobs',
+      title: t('analytics_roasting_jobs'),
+      value: roasting.roastingOrders.toString(),
+      icon: Hammer,
+      color: "text-warm-roast",
+      className: "col-span-12 sm:col-span-6 lg:col-span-4",
     }
   }
 
@@ -192,16 +217,18 @@ export function AnalyticsDashboard({
     }
 
     startTransition(async () => {
-      const [newSummary, newRevenue, newRoast, newPrep] = await Promise.all([
+      const [newSummary, newRevenue, newRoast, newPrep, newRoasting] = await Promise.all([
         fetchAnalyticsSummary(filters),
         fetchRevenueTimeSeries(filters),
         fetchTopRoastLevels(filters),
-        fetchTopPrepMethods(filters)
+        fetchTopPrepMethods(filters),
+        fetchRoastingAnalytics(filters)
       ])
       setSummary(newSummary)
       setRevenue(newRevenue)
       setRoastData(newRoast)
       setPrepData(newPrep)
+      setRoasting(newRoasting)
     })
   }
 
@@ -212,16 +239,18 @@ export function AnalyticsDashboard({
     setFulfillmentFilter('all')
 
     startTransition(async () => {
-      const [newSummary, newRevenue, newRoast, newPrep] = await Promise.all([
+      const [newSummary, newRevenue, newRoast, newPrep, newRoasting] = await Promise.all([
         fetchAnalyticsSummary({}),
         fetchRevenueTimeSeries({}),
         fetchTopRoastLevels({}),
-        fetchTopPrepMethods({})
+        fetchTopPrepMethods({}),
+        fetchRoastingAnalytics({})
       ])
       setSummary(newSummary)
       setRevenue(newRevenue)
       setRoastData(newRoast)
       setPrepData(newPrep)
+      setRoasting(newRoasting)
     })
   }
 
@@ -235,7 +264,7 @@ export function AnalyticsDashboard({
       <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-5 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           <div className="space-y-1.5 w-full min-w-0">
-            <Label className="text-foreground text-xs font-semibold">{t('filter_start_date')}</Label>
+            <Label className="text-foreground text-xs font-bold">{t('filter_start_date')}</Label>
             <Input
               type="date"
               value={startDate}
@@ -244,7 +273,7 @@ export function AnalyticsDashboard({
             />
           </div>
           <div className="space-y-1.5 w-full min-w-0">
-            <Label className="text-foreground text-xs font-semibold">{t('filter_end_date')}</Label>
+            <Label className="text-foreground text-xs font-bold">{t('filter_end_date')}</Label>
             <Input
               type="date"
               value={endDate}
@@ -253,7 +282,7 @@ export function AnalyticsDashboard({
             />
           </div>
           <div className="space-y-1.5 w-full min-w-0">
-            <Label className="text-foreground text-xs font-semibold">{t('filter_payment')}</Label>
+            <Label className="text-foreground text-xs font-bold">{t('filter_payment')}</Label>
             <Select value={paymentFilter} onValueChange={(val) => setPaymentFilter((val || 'all') as PaymentStatus | 'all')}>
               <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">
                 <SelectValue placeholder={t('filter_all')} />
@@ -266,7 +295,7 @@ export function AnalyticsDashboard({
             </Select>
           </div>
           <div className="space-y-1.5 w-full min-w-0">
-            <Label className="text-foreground text-xs font-semibold">{t('filter_fulfillment')}</Label>
+            <Label className="text-foreground text-xs font-bold">{t('filter_fulfillment')}</Label>
             <Select value={fulfillmentFilter} onValueChange={(val) => setFulfillmentFilter((val || 'all') as FulfillmentStatus | 'all')}>
               <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">
                 <SelectValue placeholder={t('filter_all')} />

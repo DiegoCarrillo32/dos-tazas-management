@@ -453,7 +453,7 @@ export function OrderForm({
                         }
                       }
                     }}>
-                      <SelectTrigger className="w-full bg-white border-warm-roast/30 focus:ring-coffee-fruit">
+                      <SelectTrigger className="w-full bg-card border-warm-roast/30 focus:ring-coffee-fruit">
                         <SelectValue placeholder="Select a connected partner" />
                       </SelectTrigger>
                       <SelectContent>

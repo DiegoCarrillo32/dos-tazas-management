@@ -2,7 +2,8 @@ import {
   fetchAnalyticsSummary,
   fetchRevenueTimeSeries,
   fetchTopRoastLevels,
-  fetchTopPrepMethods
+  fetchTopPrepMethods,
+  fetchRoastingAnalytics
 } from '@/actions/analytics'
 import { fetchSettings } from '@/actions/settings'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
@@ -17,11 +18,12 @@ export default async function AnalyticsPage() {
 
   const defaultFilters = { startDate: defaultStartDate, endDate: defaultEndDate }
 
-  const [summary, revenue, roastData, prepData, settings] = await Promise.all([
+  const [summary, revenue, roastData, prepData, roasting, settings] = await Promise.all([
     fetchAnalyticsSummary(defaultFilters),
     fetchRevenueTimeSeries(defaultFilters),
     fetchTopRoastLevels(defaultFilters),
     fetchTopPrepMethods(defaultFilters),
+    fetchRoastingAnalytics(defaultFilters),
     fetchSettings()
   ])
 
@@ -32,6 +34,7 @@ export default async function AnalyticsPage() {
         initialRevenue={revenue}
         initialRoast={roastData}
         initialPrep={prepData}
+        initialRoasting={roasting}
         settings={settings}
         defaultStartDate={defaultStartDate}
         defaultEndDate={defaultEndDate}

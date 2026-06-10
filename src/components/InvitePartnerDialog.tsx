@@ -84,7 +84,7 @@ export function InvitePartnerDialog() {
             You can now manage their custom pricing and standing orders internally. If you want them to have their own portal access, share this link with them.
           </p>
           
-          <div className="mt-6 flex items-center justify-between p-3 bg-white border border-warm-roast/20 rounded-lg">
+          <div className="mt-6 flex items-center justify-between p-3 bg-card border border-warm-roast/20 rounded-lg">
             <code className="text-coffee-fruit font-mono font-bold text-lg">{inviteCode}</code>
             <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}

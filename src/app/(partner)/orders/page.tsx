@@ -18,7 +18,7 @@ export default function PartnerOrders() {
       <div className="bg-card rounded-2xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left min-w-[800px]">
-            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
+            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
               <tr>
                 <th scope="col" className="px-6 py-4">Date</th>
                 <th scope="col" className="px-6 py-4">Coffee Details</th>
@@ -55,7 +55,7 @@ export default function PartnerOrders() {
                       {(order.amount_grams / 1000).toFixed(2)} kg
                       <span className="text-xs text-expresso/60 ml-1">({order.bag_count} bags)</span>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-warm-roast">
+                    <td className="px-6 py-4 font-bold text-warm-roast">
                       ${Number(order.total_price).toFixed(2)}
                     </td>
                     <td className="px-6 py-4">

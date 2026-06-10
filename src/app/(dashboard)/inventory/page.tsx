@@ -11,6 +11,7 @@ import { GreenCoffeeLotsDialog } from '@/components/GreenCoffeeLotsDialog'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { PageHeader } from '@/components/PageHeader'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
@@ -56,27 +57,26 @@ export default function InventoryPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-heading text-expresso">{t('inventory_title')}</h1>
-          <p className="text-expresso/70 font-medium text-sm">{t('inventory_subtitle')}</p>
-        </div>
-        
-        <GenericModal
-          hideFooter={true}
-          hideTitle={true}
-          title={t('inventory_add_title') || "Add Inventory"}
-          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
-          trigger={
-            <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
-              <Plus className="h-5 w-5" />
-              <span className="hidden sm:inline font-bold">{t('inventory_add')}</span>
-            </Button>
-          }
-        >
-          <InventoryForm settings={settings} />
-        </GenericModal>
-      </div>
+      <PageHeader
+        title={t('inventory_title')}
+        subtitle={t('inventory_subtitle')}
+        action={
+          <GenericModal
+            hideFooter={true}
+            hideTitle={true}
+            title={t('inventory_add_title') || "Add Inventory"}
+            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+            trigger={
+              <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
+                <Plus className="h-5 w-5" />
+                <span className="hidden sm:inline font-bold">{t('inventory_add')}</span>
+              </Button>
+            }
+          >
+            <InventoryForm settings={settings} />
+          </GenericModal>
+        }
+      />
 
       <Card className="shadow-lg border-warm-roast/10">
         <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col gap-4">
@@ -88,8 +88,8 @@ export default function InventoryPage() {
               </CardTitle>
               <CardDescription className="text-expresso/60">
                 {filteredItems.length === items.length
-                  ? `${items.length} items`
-                  : `${filteredItems.length} found (${items.length} total)`}
+                  ? t('list_items_count').replace('{count}', String(items.length))
+                  : t('list_filtered_count').replace('{filtered}', String(filteredItems.length)).replace('{total}', String(items.length))}
               </CardDescription>
             </div>
 
@@ -112,14 +112,14 @@ export default function InventoryPage() {
 
               {/* Page size select */}
               <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                <span className="text-xs text-expresso/60 font-semibold">{t('pag_page_size')}:</span>
+                <span className="text-xs text-expresso/60 font-bold">{t('pag_page_size')}:</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
                     setPageSize(Number(e.target.value))
                     setCurrentPage(1)
                   }}
-                  className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-semibold"
+                  className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-bold"
                 >
                   <option value={5}>5</option>
                   <option value={10}>10</option>
@@ -174,7 +174,7 @@ export default function InventoryPage() {
                   const isLowStock = isCoffee && item.stock_grams < 5000
 
                   return (
-                    <div key={item.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                    <div key={item.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
                       {/* Header */}
                       <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
                         <div>
@@ -195,7 +195,7 @@ export default function InventoryPage() {
                             trigger={
                               <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
                                   <Edit className="h-4 w-4" />
-                                  <span className="sr-only">Edit</span>
+                                  <span className="sr-only">{t('edit')}</span>
                               </Button>
                             }
                           >
@@ -210,9 +210,9 @@ export default function InventoryPage() {
                           <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
                             {t('inventory_col_raw')}
                           </div>
-                          <div className={`font-semibold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
+                          <div className={`font-bold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
                             {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
-                            {isLowStock && <span className="text-red-500 text-xs ml-1 font-normal">⚠ Low</span>}
+                            {isLowStock && <span className="text-red-500 text-xs ml-1 font-normal">⚠ {t('inventory_low')}</span>}
                           </div>
                         </div>
 
@@ -220,7 +220,7 @@ export default function InventoryPage() {
                           <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
                             {t('inventory_col_cost')}
                           </div>
-                          <div className="font-semibold text-expresso">
+                          <div className="font-bold text-expresso">
                             {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic font-normal">N/A</span>}
                           </div>
                         </div>
@@ -291,7 +291,7 @@ export default function InventoryPage() {
                           {item.category.replace('_', ' ')}
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`font-semibold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
+                          <span className={`font-bold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
                             {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
                           </span>
                         </td>
@@ -319,7 +319,7 @@ export default function InventoryPage() {
                             trigger={
                               <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
                                 <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
+                                <span className="sr-only">{t('edit')}</span>
                               </Button>
                             }
                           >
@@ -337,7 +337,7 @@ export default function InventoryPage() {
           {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 border-t border-warm-roast/10 bg-warm-roast/5 rounded-b-lg">
-              <div className="text-xs text-expresso/60 font-semibold">
+              <div className="text-xs text-expresso/60 font-bold">
                 {showingText}
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">

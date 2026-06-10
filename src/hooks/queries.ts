@@ -30,6 +30,8 @@ import type {
   B2BRecurringOrderRecord,
   B2BRecurringOrderInsertParams,
   B2BRecurringOrderUpdateParams,
+  RoastingOrderWithPartner,
+  RoastingOrderStatus,
 } from '@/types'
 import {
   createOrder,
@@ -81,6 +83,12 @@ import {
   deleteRecurringOrder,
   confirmOrderFromTemplate,
 } from '@/actions/b2bRecurring'
+import {
+  createRoastingOrder,
+  cancelRoastingOrder,
+  updateRoastingOrderStatus,
+  type RoastingOrderInput,
+} from '@/actions/roastingOrders'
 import type { FulfillmentStatus, PaymentStatus, UserSettingsUpdateParams } from '@/types'
 
 // ─── Query Keys ──────────────────────────────────────────────
@@ -98,6 +106,7 @@ export const queryKeys = {
   b2bPartnerPricing: (partnerId: string) => ['b2b_pricing', partnerId] as const,
   b2bRecurringOrders: (partnerId: string) => ['b2b_recurring_orders', partnerId] as const,
   b2bOrders: (partnerId?: string) => ['b2b_orders', partnerId || 'all'] as const,
+  roastingOrders: ['roasting_orders'] as const,
   teamMembers: ['team_members'] as const,
   teamTimeLogs: ['team_time_logs'] as const,
   workerTimeLogs: ['worker_time_logs'] as const,
@@ -213,7 +222,45 @@ export function useB2BOrders(partnerId?: string) {
   })
 }
 
+export function useRoastingOrders() {
+  return useQuery<RoastingOrderWithPartner[]>({
+    queryKey: queryKeys.roastingOrders,
+    queryFn: () => fetchJson('/api/roasting-orders'),
+  })
+}
+
 // ─── Mutation Hooks ──────────────────────────────────────────
+
+export function useCreateRoastingOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: RoastingOrderInput) => createRoastingOrder(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.roastingOrders })
+    },
+  })
+}
+
+export function useCancelRoastingOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => cancelRoastingOrder(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.roastingOrders })
+    },
+  })
+}
+
+export function useUpdateRoastingOrderStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: RoastingOrderStatus }) =>
+      updateRoastingOrderStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.roastingOrders })
+    },
+  })
+}
 
 export function useCreateOrder() {
   const qc = useQueryClient()

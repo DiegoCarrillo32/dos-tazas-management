@@ -166,7 +166,7 @@ export function OrderDetailsModal({
             <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">
               {t('order_form_roast_level')}
             </div>
-            <div className="flex items-center gap-2 text-foreground font-semibold">
+            <div className="flex items-center gap-2 text-foreground font-bold">
               <Coffee className="h-4 w-4 text-warm-roast" />
               {order.roast_level}
             </div>
@@ -175,7 +175,7 @@ export function OrderDetailsModal({
             <div className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">
               {t('order_form_preparation')}
             </div>
-            <div className="flex items-center gap-2 text-foreground font-semibold">
+            <div className="flex items-center gap-2 text-foreground font-bold">
               <span className="text-warm-roast font-bold leading-none">♨</span>
               {order.preparation_method}
             </div>
@@ -197,37 +197,37 @@ export function OrderDetailsModal({
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('order_cost_coffee')}:</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-foreground">
                   {settings?.currency_symbol || '$'}{(order.cost_breakdown?.coffee ?? 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('order_cost_bags')}:</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-foreground">
                   {settings?.currency_symbol || '$'}{(order.cost_breakdown?.bag ?? 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('order_cost_stickers')}:</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-foreground">
                   {settings?.currency_symbol || '$'}{(order.cost_breakdown?.sticker ?? 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('order_cost_electricity')}:</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-foreground">
                   {settings?.currency_symbol || '$'}{(order.cost_breakdown?.electricity ?? 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('order_cost_fuel')}:</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-foreground">
                   {settings?.currency_symbol || '$'}{(order.cost_breakdown?.fuel ?? 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('order_cost_roasting')}:</span>
-                <span className="font-semibold text-foreground">
+                <span className="font-bold text-foreground">
                   {settings?.currency_symbol || '$'}{(order.cost_breakdown?.roasting_time ?? 0).toFixed(2)}
                 </span>
               </div>

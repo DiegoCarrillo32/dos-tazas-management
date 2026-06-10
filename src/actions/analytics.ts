@@ -5,7 +5,8 @@ import type {
   AnalyticsFilters,
   AnalyticsSummary,
   RevenueDataPoint,
-  BreakdownItem
+  BreakdownItem,
+  RoastingAnalytics
 } from '@/types'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,6 +89,37 @@ export async function fetchRevenueTimeSeries(
       orders: vals.orders
     }
   })
+}
+
+export async function fetchRoastingAnalytics(
+  filters: AnalyticsFilters = {}
+): Promise<RoastingAnalytics> {
+  const supabase = await createClient()
+
+  // Roasting orders are dated by created_at and have their own lifecycle, so
+  // only the date range applies here (payment/fulfillment filters are
+  // order-specific). Cancelled orders are excluded from revenue.
+  let query = supabase
+    .from('roasting_orders')
+    .select('total_cost, roasted_grams_out, status, created_at')
+
+  if (filters.startDate) query = query.gte('created_at', filters.startDate)
+  if (filters.endDate) query = query.lte('created_at', filters.endDate)
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error fetching roasting analytics:', error)
+    return { roastingRevenue: 0, roastingOrders: 0, roastedGrams: 0 }
+  }
+
+  const active = (data || []).filter((o) => o.status !== 'cancelled')
+
+  return {
+    roastingRevenue: active.reduce((sum, o) => sum + Number(o.total_cost), 0),
+    roastingOrders: active.length,
+    roastedGrams: active.reduce((sum, o) => sum + Number(o.roasted_grams_out), 0)
+  }
 }
 
 export async function fetchTopRoastLevels(

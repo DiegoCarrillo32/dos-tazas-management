@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useCompletedOrders, useCustomers, useInventory, useSettings } from '@/hooks/queries'
 import { OrderCard } from '@/components/OrderCard'
-import { History, CheckCircle, Search } from 'lucide-react'
+import { CheckCircle, Search } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PageHeader } from '@/components/PageHeader'
 
 export default function HistoryPage() {
   const { t } = useTranslation()
@@ -57,15 +58,7 @@ export default function HistoryPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-heading text-expresso flex items-center gap-3">
-            <History className="h-8 w-8 text-coffee-fruit" />
-            {t('history_title')}
-          </h1>
-          <p className="text-expresso/70 font-medium text-sm">{t('history_subtitle')}</p>
-        </div>
-      </div>
+      <PageHeader title={t('history_title')} subtitle={t('history_subtitle')} />
 
       {/* Search and Page Size Controls */}
       <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
@@ -83,14 +76,14 @@ export default function HistoryPage() {
 
         {/* Page Size Select */}
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-          <span className="text-xs text-expresso/60 font-semibold">{t('pag_page_size')}:</span>
+          <span className="text-xs text-expresso/60 font-bold">{t('pag_page_size')}:</span>
           <select
             value={pageSize}
             onChange={(e) => {
               setPageSize(Number(e.target.value))
               setCurrentPage(1)
             }}
-            className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-semibold"
+            className="text-xs bg-warm-roast/5 border border-warm-roast/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-warm-roast/30 focus:border-warm-roast text-expresso font-bold"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
@@ -117,7 +110,7 @@ export default function HistoryPage() {
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 mt-6 bg-warm-roast/5 rounded-lg border border-warm-roast/10">
-          <div className="text-xs text-expresso/60 font-semibold">
+          <div className="text-xs text-expresso/60 font-bold">
             {showingText}
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">

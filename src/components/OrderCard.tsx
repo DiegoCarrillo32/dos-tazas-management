@@ -72,9 +72,9 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
       <Card 
         ref={setNodeRef}
         style={style}
-        className="w-full h-[320px] flex flex-col shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group"
+        className="w-full min-h-[320px] flex flex-col shadow-md hover:shadow-lg transition-shadow border-warm-roast/20 overflow-hidden group"
       >
-        <button type="button" onClick={() => setIsOpen(true)} className="cursor-grab active:cursor-grabbing text-left w-full flex-1 flex flex-col overflow-hidden" {...attributes} {...listeners}>
+        <button type="button" onClick={() => setIsOpen(true)} className="cursor-grab active:cursor-grabbing text-left w-full flex-1 flex flex-col" {...attributes} {...listeners}>
           <CardHeader className="bg-white-pergamino border-b border-warm-roast/10 pt-4 pb-4 relative">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-expresso/5 p-1.5 rounded-md">
               <Maximize2 className="h-4 w-4 text-expresso/50" />
@@ -110,7 +110,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
               <div className="flex items-center gap-2 text-sm text-expresso bg-coffee-fruit/5 px-2.5 py-1.5 rounded-lg border border-coffee-fruit/10">
                 <Coffee className="h-4 w-4 text-coffee-fruit" />
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-xs text-expresso/60 font-semibold">{t('order_form_coffee_bean').split(' (')[0]}:</span>
+                  <span className="text-xs text-expresso/60 font-bold">{t('order_form_coffee_bean').split(' (')[0]}:</span>
                   <span className="font-bold">{order.inventory.item_name}</span>
                 </div>
               </div>
@@ -118,11 +118,11 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-warm-roast/5 p-2 rounded-lg border border-warm-roast/10 flex flex-col justify-center">
                 <span className="text-expresso/50 font-bold uppercase tracking-wider text-[10px]">{t('order_form_roast_level')}</span>
-                <span className="font-semibold text-expresso mt-0.5">{order.roast_level}</span>
+                <span className="font-bold text-expresso mt-0.5">{order.roast_level}</span>
               </div>
               <div className="bg-warm-roast/5 p-2 rounded-lg border border-warm-roast/10 flex flex-col justify-center">
                 <span className="text-expresso/50 font-bold uppercase tracking-wider text-[10px]">{t('order_form_preparation')}</span>
-                <span className="font-semibold text-expresso mt-0.5">{order.preparation_method}</span>
+                <span className="font-bold text-expresso mt-0.5">{order.preparation_method}</span>
               </div>
             </div>
 
@@ -150,7 +150,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
             fulfillmentMutation.mutate({ id: order.id, status: newStatus });
           }}
         >
-          <SelectTrigger size="sm" className={`flex-1 h-7 py-0 text-[0.8rem] font-semibold px-2.5 border-transparent transition-colors rounded-[12px] [&>svg]:size-3.5 ${fulfillmentColors[fulfillment]}`}>
+          <SelectTrigger size="sm" className={`flex-1 h-7 py-0 text-[0.8rem] font-bold px-2.5 border-transparent transition-colors rounded-[12px] [&>svg]:size-3.5 ${fulfillmentColors[fulfillment]}`}>
             <SelectValue>{fulfillment === 'pending' ? t('orders_pending') : fulfillment === 'roasted' ? t('orders_roasted') : t('orders_delivered')}</SelectValue>
           </SelectTrigger>
           <SelectContent>

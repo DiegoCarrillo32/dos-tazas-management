@@ -330,7 +330,7 @@ export default function TeamPage() {
             title="Invite New Worker"
             contentClassName="sm:max-w-[400px]"
             trigger={
-              <Button className="bg-white dark:bg-card text-coffee-fruit hover:bg-warm-roast/10 dark:hover:bg-warm-roast/30 border border-coffee-fruit/20 dark:border-border rounded-full px-6 shadow-sm transition-all">
+              <Button className="bg-card text-coffee-fruit hover:bg-warm-roast/10 dark:hover:bg-warm-roast/30 border border-coffee-fruit/20 dark:border-border rounded-full px-6 shadow-sm transition-all">
                 <Plus className="mr-2 h-4 w-4" /> Invite Worker
               </Button>
             }
@@ -393,7 +393,7 @@ export default function TeamPage() {
                   <select 
                     value={managedStatus} 
                     onChange={e => setManagedStatus(e.target.value as TeamMemberStatus)}
-                    className="w-full p-2 border border-warm-roast/20 dark:border-border rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none bg-white dark:bg-card"
+                    className="w-full p-2 border border-warm-roast/20 dark:border-border rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none bg-card"
                   >
                     <option value="active">Active</option>
                     <option value="pending">Pending</option>
@@ -452,7 +452,7 @@ export default function TeamPage() {
 
       <Tabs defaultValue="roster" className="w-full space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <TabsList className="bg-white dark:bg-card border border-warm-roast/10 dark:border-border rounded-xl p-1 h-auto flex flex-row gap-1 w-full overflow-x-auto no-scrollbar sm:w-auto">
+        <TabsList className="bg-card border border-warm-roast/10 dark:border-border rounded-xl p-1 h-auto flex flex-row gap-1 w-full overflow-x-auto no-scrollbar sm:w-auto">
           <TabsTrigger value="roster" className="whitespace-nowrap rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:dark:bg-primary/20 data-[state=active]:text-coffee-fruit data-[state=active]:dark:text-primary text-expresso/70 dark:text-muted-foreground transition-all py-2 text-xs sm:text-sm">
             <Users className="w-4 h-4 mr-1 shrink-0 inline" /> Roster
           </TabsTrigger>
@@ -475,7 +475,7 @@ export default function TeamPage() {
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <Calendar className="w-4 h-4 text-expresso/60" />
           <Select value={selectedMonth} onValueChange={(val) => setSelectedMonth(val || 'all')}>
-            <SelectTrigger className="w-[180px] bg-white dark:bg-card border-warm-roast/20 dark:border-border h-9 text-sm">
+            <SelectTrigger className="w-[180px] bg-card border-warm-roast/20 dark:border-border h-9 text-sm">
               <SelectValue placeholder="Select Month" />
             </SelectTrigger>
             <SelectContent>
@@ -489,9 +489,9 @@ export default function TeamPage() {
       </div>
 
         <TabsContent value="roster" className="m-0 animate-in fade-in duration-300">
-          <div className="bg-white rounded-xl shadow-sm border border-warm-roast/10 overflow-x-auto">
+          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-x-auto">
             <table className="w-full text-sm text-left min-w-[600px]">
-              <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
+              <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
                 <tr>
                   <th scope="col" className="px-6 py-4">Status</th>
                   <th scope="col" className="px-6 py-4">Name</th>
@@ -545,9 +545,9 @@ export default function TeamPage() {
               Mark Selected as Paid ({selectedLogIds.size})
             </Button>
           </div>
-          <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
+          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
             <table className="w-full text-sm text-left min-w-[800px]">
-              <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-semibold tracking-wider">
+              <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
                 <tr>
                   <th scope="col" className="px-6 py-4 w-12 text-center">
                     <input 
@@ -594,7 +594,7 @@ export default function TeamPage() {
                           {sTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {eTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="px-6 py-4 font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} hrs</td>
-                        <td className="px-6 py-4 font-semibold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</td>
                         <td className="px-6 py-4 text-expresso/60 dark:text-muted-foreground max-w-[200px] truncate">{log.notes || '—'}</td>
                         <td className="px-6 py-4 text-right">
                           <Button 
@@ -619,9 +619,9 @@ export default function TeamPage() {
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-heading text-expresso dark:text-foreground">Paid History</h3>
           </div>
-          <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
+          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
             <table className="w-full text-sm text-left min-w-[800px]">
-              <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-semibold tracking-wider">
+              <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
                 <tr>
                   <th scope="col" className="px-6 py-4">Date</th>
                   <th scope="col" className="px-6 py-4">Worker</th>
@@ -652,7 +652,7 @@ export default function TeamPage() {
                           {sTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {eTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td className="px-6 py-4 font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} hrs</td>
-                        <td className="px-6 py-4 font-semibold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</td>
                         <td className="px-6 py-4 text-expresso/60 dark:text-muted-foreground max-w-[200px] truncate">{log.notes || '—'}</td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
@@ -708,9 +708,9 @@ export default function TeamPage() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
+            <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
               <table className="w-full text-sm text-left min-w-[500px]">
-                <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-semibold tracking-wider">
+                <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
                   <tr>
                     <th scope="col" className="px-6 py-4">Worker Name</th>
                     <th scope="col" className="px-6 py-4 text-right">Total Hours</th>
@@ -726,8 +726,8 @@ export default function TeamPage() {
                       <tr key={stat.id} className="border-b border-warm-roast/5 dark:border-border/50 hover:bg-warm-roast/5 dark:hover:bg-muted/10 transition-colors">
                         <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{stat.name}</td>
                         <td className="px-6 py-4 font-bold text-coffee-fruit dark:text-primary text-right">{stat.totalHours.toFixed(2)} hrs</td>
-                        <td className="px-6 py-4 font-semibold text-yellow-600 dark:text-yellow-500 text-right">{currencySymbol}{stat.totalPending.toFixed(2)}</td>
-                        <td className="px-6 py-4 font-semibold text-green-600 dark:text-green-500 text-right">{currencySymbol}{stat.totalPaid.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold text-yellow-600 dark:text-yellow-500 text-right">{currencySymbol}{stat.totalPending.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold text-green-600 dark:text-green-500 text-right">{currencySymbol}{stat.totalPaid.toFixed(2)}</td>
                       </tr>
                     ))
                   )}
@@ -735,7 +735,7 @@ export default function TeamPage() {
               </table>
             </div>
             
-            <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border p-6 flex flex-col h-[400px]">
+            <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border p-6 flex flex-col h-[400px]">
               <h3 className="text-lg font-heading text-expresso dark:text-foreground mb-4">Worker Earnings</h3>
               {workerStats.length > 0 && workerStats.some(s => s.totalEarnings > 0) ? (
                 <div className="flex-1 min-h-0">

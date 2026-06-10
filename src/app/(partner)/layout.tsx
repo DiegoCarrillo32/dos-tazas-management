@@ -1,5 +1,8 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { PartnerSidebar } from "@/components/PartnerSidebar"
+import { AppSidebar } from "@/components/AppSidebar"
+import { fetchSettings } from "@/actions/settings"
+import { createClient } from "@/utils/supabase/server"
+import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -11,13 +14,37 @@ export default async function PartnerLayout({
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (profile?.role !== 'partner') {
+      redirect('/')
+    }
+  }
+
+  let settings = null
+  try {
+    settings = await fetchSettings()
+  } catch {
+    // Ignore errors if not logged in
+  }
+
+  const businessName = settings?.business_name || "Partner Portal"
+
   return (
     <SidebarProvider>
-      <PartnerSidebar />
+      <AppSidebar businessName={businessName} userRole="partner" />
       <div className="flex flex-1 flex-col overflow-hidden w-full">
         <header className="md:hidden flex h-14 items-center gap-4 border-b border-warm-roast/10 bg-white-pergamino px-4 lg:h-[60px] lg:px-6">
           <SidebarTrigger className="text-expresso" />
-          <span className="font-heading text-lg text-expresso">Partner Portal</span>
+          <span className="font-heading text-lg text-expresso">{businessName}</span>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 w-full">
           {children}

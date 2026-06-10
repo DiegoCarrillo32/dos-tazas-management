@@ -29,7 +29,7 @@ export function MaintenanceLogsDialog({ equipmentId, equipmentName }: Maintenanc
       trigger={
         <Button variant="ghost" size="sm" className="text-warm-roast hover:text-coffee-fruit hover:bg-warm-roast/10 h-8 px-2 gap-1 rounded-full">
           <Wrench className="h-4 w-4" />
-          <span className="text-xs font-semibold">Logs</span>
+          <span className="text-xs font-bold">Logs</span>
         </Button>
       }
       contentClassName="sm:max-w-[600px] bg-white-pergamino dark:bg-card p-4 sm:p-6 border-warm-roast/10 shadow-2xl overflow-hidden"
@@ -48,7 +48,7 @@ export function MaintenanceLogsDialog({ equipmentId, equipmentName }: Maintenanc
 
       <div className="py-2">
         {isAdding ? (
-          <div className="bg-white rounded-lg border border-warm-roast/10 p-4">
+          <div className="bg-card rounded-lg border border-warm-roast/10 p-4">
             <MaintenanceLogForm 
               equipmentId={equipmentId} 
               onCancel={() => setIsAdding(false)} 
@@ -63,7 +63,7 @@ export function MaintenanceLogsDialog({ equipmentId, equipmentName }: Maintenanc
               <p className="text-sm text-expresso/60 text-center py-8">No maintenance logs found for this equipment.</p>
             ) : (
               logs.map(log => (
-                <div key={log.id} className="bg-white rounded-lg border border-warm-roast/10 p-4 flex flex-col gap-2">
+                <div key={log.id} className="bg-card rounded-lg border border-warm-roast/10 p-4 flex flex-col gap-2">
                   {editingId === log.id ? (
                     <MaintenanceLogForm 
                       equipmentId={equipmentId} 
@@ -83,7 +83,7 @@ export function MaintenanceLogsDialog({ equipmentId, equipmentName }: Maintenanc
                         </Button>
                       </div>
                       <p className="text-sm text-expresso/80">{log.description}</p>
-                      {log.cost && <p className="text-xs font-semibold text-warm-roast mt-1">Cost: ${log.cost}</p>}
+                      {log.cost && <p className="text-xs font-bold text-warm-roast mt-1">Cost: ${log.cost}</p>}
                     </>
                   )}
                 </div>

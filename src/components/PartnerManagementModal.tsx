@@ -97,7 +97,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
         </div>
 
         <Tabs defaultValue="pricing" className="w-full space-y-4 max-w-full">
-          <TabsList className="bg-white border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1">
+          <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1">
             <TabsTrigger value="pricing" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
               <DollarSign className="w-4 h-4 mr-1 shrink-0" />
               Pricing
@@ -113,8 +113,8 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
           </TabsList>
 
           <TabsContent value="pricing" className="space-y-4 outline-none">
-            <div className="bg-white p-4 rounded-xl border border-warm-roast/10 space-y-4">
-              <h3 className="font-semibold text-expresso">Add Custom Price Override</h3>
+            <div className="bg-card p-4 rounded-xl border border-warm-roast/10 space-y-4">
+              <h3 className="font-bold text-expresso">Add Custom Price Override</h3>
               <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                 <div className="w-full sm:flex-1 space-y-2">
                   <Label>Coffee Bean</Label>
@@ -149,7 +149,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-warm-roast/10 overflow-hidden">
+            <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left min-w-[800px]">
                   <thead className="bg-white-pergamino text-xs uppercase text-expresso/60">
@@ -188,7 +188,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
 
           <TabsContent value="recurring" className="space-y-4 outline-none w-full max-w-full min-w-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
-              <h3 className="font-semibold text-expresso">Manage Standing Orders</h3>
+              <h3 className="font-bold text-expresso">Manage Standing Orders</h3>
               <GenericModal
                 isOpen={isRecurringFormOpen}
                 onOpenChange={setIsRecurringFormOpen}
@@ -215,13 +215,13 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
             </div>
             
             {recurringOrders?.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-warm-roast/10 px-4 py-8 text-center text-expresso/50">
+              <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 px-4 py-8 text-center text-expresso/50">
                 No standing orders setup by partner.
               </div>
             ) : (
               <div className="space-y-3 w-full">
                 {recurringOrders?.map(order => (
-                  <div key={order.id} className="bg-white rounded-xl shadow-sm border border-warm-roast/10 p-4 space-y-3 w-full">
+                  <div key={order.id} className="bg-card rounded-xl shadow-sm border border-warm-roast/10 p-4 space-y-3 w-full">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-coffee-fruit truncate">
@@ -277,7 +277,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
 
           <TabsContent value="settings" className="space-y-4 outline-none">
             {partner.status === 'pending' && partner.invite_code && (
-              <div className="bg-white p-4 sm:p-6 rounded-xl border border-warm-roast/10 space-y-3">
+              <div className="bg-card p-4 sm:p-6 rounded-xl border border-warm-roast/10 space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="bg-coffee-fruit/10 p-2 rounded-full shrink-0">
                     <Link className="h-5 w-5 text-coffee-fruit" />
@@ -316,7 +316,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
               <div className="space-y-4 pt-4 border-t border-red-200/50">
                 <div className="space-y-2">
                   <div>
-                    <h4 className="font-semibold text-red-900 text-sm">Portal Access</h4>
+                    <h4 className="font-bold text-red-900 text-sm">Portal Access</h4>
                     <p className="text-xs text-red-700/70 mt-0.5">
                       {partner.status === 'revoked' 
                         ? 'They currently cannot log in. You can restore their access.' 
@@ -371,7 +371,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
 
                 <div className="space-y-2 pt-3 border-t border-red-200/50">
                   <div>
-                    <h4 className="font-semibold text-red-900 text-sm">Permanently Delete Partner</h4>
+                    <h4 className="font-bold text-red-900 text-sm">Permanently Delete Partner</h4>
                     <p className="text-xs text-red-700/70 mt-0.5">
                       Deletes their custom pricing, standing orders, and disconnects them. Order history is kept but unlinked.
                     </p>

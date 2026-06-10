@@ -114,7 +114,7 @@ export default function TrackerPage() {
             title="Log Your Hours"
             contentClassName="sm:max-w-[450px]"
             trigger={
-              <Button className="bg-white dark:bg-card text-coffee-fruit hover:bg-warm-roast/10 dark:hover:bg-warm-roast/30 border border-coffee-fruit/20 dark:border-border rounded-full px-6 shadow-sm transition-all">
+              <Button className="bg-card text-coffee-fruit hover:bg-warm-roast/10 dark:hover:bg-warm-roast/30 border border-coffee-fruit/20 dark:border-border rounded-full px-6 shadow-sm transition-all">
                 <Plus className="mr-2 h-4 w-4" /> Log Time
               </Button>
             }
@@ -164,11 +164,11 @@ export default function TrackerPage() {
                     : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                 }`}>
                   {previewedHours > 0 ? (
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                    <p className="text-sm font-bold text-green-700 dark:text-green-400">
                       ⏱ {previewedHours.toFixed(2)} hours will be logged
                     </p>
                   ) : (
-                    <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                    <p className="text-sm font-bold text-red-600 dark:text-red-400">
                       End time must be after start time
                     </p>
                   )}
@@ -199,13 +199,13 @@ export default function TrackerPage() {
         }
       />
 
-      <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
+      <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
         <div className="p-4 border-b border-warm-roast/10 dark:border-border bg-white-pergamino dark:bg-muted/30 flex items-center text-expresso/70 dark:text-muted-foreground">
           <FileText className="w-4 h-4 mr-2" />
-          <h3 className="font-semibold text-sm uppercase tracking-wider">Timesheet History</h3>
+          <h3 className="font-bold text-sm uppercase tracking-wider">Timesheet History</h3>
         </div>
         <table className="w-full text-sm text-left min-w-[800px]">
-          <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino/50 dark:bg-muted/10 border-b border-warm-roast/10 dark:border-border font-semibold tracking-wider">
+          <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino/50 dark:bg-muted/10 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
             <tr>
               <th scope="col" className="px-6 py-4">Date</th>
               <th scope="col" className="px-6 py-4">Time</th>

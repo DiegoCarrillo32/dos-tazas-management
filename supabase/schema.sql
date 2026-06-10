@@ -454,3 +454,67 @@ CREATE POLICY "Workers can view roaster orders"
       AND team_members.worker_user_id = auth.uid()
     )
   );
+
+-- ============================================================
+-- Roasting Orders (B2B roasting service requests)
+-- ============================================================
+-- A partner asks their roaster to roast coffee as a service. Captures the
+-- roasting-service cost breakdown from the roasting calculator. Distinct from a
+-- regular `orders` row (a finished-coffee sale).
+
+CREATE TABLE roasting_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  partner_id UUID NOT NULL REFERENCES b2b_partners(id) ON DELETE CASCADE,
+  roaster_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+  -- Roast configuration (the partner's inputs)
+  quantity_grams INTEGER NOT NULL,
+  quantity_basis TEXT NOT NULL,        -- 'GREEN_INPUT' | 'ROASTED_OUTPUT'
+  green_source TEXT NOT NULL,          -- 'CLIENT_PROVIDED' | 'WE_PROVIDE'
+  green_tier_id TEXT,
+  packaging TEXT NOT NULL,             -- 'CLIENT_HANDLES' | 'WE_PACKAGE'
+  bag_option_id TEXT,
+  bag_size_id TEXT,
+  grinding TEXT NOT NULL,              -- 'CLIENT_HANDLES' | 'WE_GRIND'
+  machine_id TEXT NOT NULL,
+
+  -- Computed snapshot at submission time (authoritative, server-recomputed)
+  green_grams_in INTEGER NOT NULL,
+  roasted_grams_out INTEGER NOT NULL,
+  batches_needed INTEGER NOT NULL,
+  hours_required NUMERIC(10, 2) NOT NULL,
+  bags_needed INTEGER,
+  cost_breakdown JSONB NOT NULL,       -- { labor, energy, greenCoffee, packaging, grinding }
+  total_cost NUMERIC(12, 2) NOT NULL,
+
+  notes TEXT,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'accepted' | 'completed' | 'cancelled'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_roasting_orders_partner ON roasting_orders(partner_id);
+CREATE INDEX idx_roasting_orders_roaster ON roasting_orders(roaster_user_id);
+
+ALTER TABLE roasting_orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Roasters can manage their roasting orders"
+  ON roasting_orders FOR ALL TO authenticated
+  USING (auth.uid() = roaster_user_id)
+  WITH CHECK (auth.uid() = roaster_user_id);
+
+CREATE POLICY "Partners can manage their roasting orders"
+  ON roasting_orders FOR ALL TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM b2b_partners
+      WHERE b2b_partners.id = roasting_orders.partner_id
+      AND b2b_partners.partner_user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM b2b_partners
+      WHERE b2b_partners.id = roasting_orders.partner_id
+      AND b2b_partners.partner_user_id = auth.uid()
+    )
+  );

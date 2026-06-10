@@ -9,8 +9,10 @@ import { RoastBatchForm } from '@/components/RoastBatchForm'
 import { useRoastBatches } from '@/hooks/queries'
 import { TableRowSkeleton } from '@/components/Skeletons'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { useTranslation } from '@/i18n/LanguageProvider'
 
 export default function RoastsPage() {
+  const { t } = useTranslation()
   const [searchTerm, setSearchTerm] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
   const { data: roasts, isLoading } = useRoastBatches()
@@ -24,19 +26,19 @@ export default function RoastsPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <PageHeader
-        title="Roast Batches"
-        subtitle="Manage and log your production roasts."
+        title={t('roasts_title')}
+        subtitle={t('roasts_subtitle')}
         action={
           <GenericModal
             isOpen={isAddOpen}
             onOpenChange={setIsAddOpen}
             hideFooter={true}
             hideTitle={true}
-            title="Log Roast"
+            title={t('roasts_log')}
             contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
             trigger={
               <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-full px-6 shadow-sm shadow-warm-roast/20 transition-all">
-                <Plus className="mr-2 h-4 w-4" /> Log Roast
+                <Plus className="mr-2 h-4 w-4" /> {t('roasts_log')}
               </Button>
             }
           >
@@ -46,12 +48,12 @@ export default function RoastsPage() {
       />
 
       {/* Filters & Search */}
-      <div className="bg-white rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 p-4">
+      <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 p-4">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-expresso/40" />
             <Input
-              placeholder="Search roasts..."
+              placeholder={t('roasts_search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 rounded-full"
@@ -61,17 +63,17 @@ export default function RoastsPage() {
       </div>
 
       {/* Roasts Table */}
-      <div className="bg-white rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
+      <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
         {/* Mobile Card View */}
         <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
           {isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-32 bg-white rounded-xl border border-warm-roast/10 animate-pulse" />
+              <div key={i} className="h-32 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
             ))
           ) : filteredRoasts.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
               <Flame className="h-8 w-8 opacity-20" />
-              <p>No roast batches found</p>
+              <p>{t('roasts_no_found')}</p>
             </div>
           ) : (
             filteredRoasts.map((batch) => {
@@ -79,11 +81,11 @@ export default function RoastsPage() {
                 ? ((batch.weight_out_grams / batch.weight_in_grams) * 100).toFixed(1)
                 : null
               return (
-                <div key={batch.id} className="flex flex-col bg-white rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
+                <div key={batch.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
                   {/* Header */}
                   <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
                     <div>
-                      <div className="font-bold text-expresso text-base mb-1">{batch.green_lot_name || 'Unknown Lot'}</div>
+                      <div className="font-bold text-expresso text-base mb-1">{batch.green_lot_name || t('roasts_unknown_lot')}</div>
                       <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full">
                         {new Date(batch.created_at).toLocaleDateString()}
                       </span>
@@ -92,12 +94,12 @@ export default function RoastsPage() {
                       <GenericModal
                         hideFooter={true}
                         hideTitle={true}
-                        title="Edit Roast"
+                        title={t('roasts_edit')}
                         contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
                         trigger={
                           <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
                             <Edit className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
+                            <span className="sr-only">{t('edit')}</span>
                           </Button>
                         }
                       >
@@ -110,7 +112,7 @@ export default function RoastsPage() {
                   <div className="p-4 grid grid-cols-2 gap-4">
                     <div>
                       <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        Weight In
+                        {t('roasts_col_weight_in')}
                       </div>
                       <div className="font-medium text-expresso text-sm">
                         {batch.weight_in_grams} g
@@ -118,7 +120,7 @@ export default function RoastsPage() {
                     </div>
                     <div>
                       <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        Weight Out
+                        {t('roasts_col_weight_out')}
                       </div>
                       <div className="font-medium text-expresso text-sm">
                         {batch.weight_out_grams} g
@@ -126,7 +128,7 @@ export default function RoastsPage() {
                     </div>
                     <div>
                       <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        Yield
+                        {t('roasts_col_yield')}
                       </div>
                       <div className="font-medium text-sm">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${Number(yieldPercent) < 80 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
@@ -136,7 +138,7 @@ export default function RoastsPage() {
                     </div>
                     <div>
                       <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        Roaster
+                        {t('roasts_col_roaster')}
                       </div>
                       <div className="font-medium text-expresso text-sm truncate" title={batch.equipment_name || ''}>
                         {batch.equipment_name || <span className="text-expresso/40 italic font-normal">—</span>}
@@ -148,7 +150,7 @@ export default function RoastsPage() {
                     <div className="px-4 pb-4">
                       {batch.roast_time_minutes && (
                         <p className="text-xs text-expresso/60 mb-2">
-                          <span className="font-semibold text-expresso">Time:</span> {batch.roast_time_minutes} mins
+                          <span className="font-bold text-expresso">{t('roasts_time_label')}:</span> {batch.roast_time_minutes} {t('roasts_minutes')}
                         </p>
                       )}
                       {batch.notes && (
@@ -167,15 +169,15 @@ export default function RoastsPage() {
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm text-left min-w-[800px]">
-            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-semibold tracking-wider">
+            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
               <tr>
-                <th scope="col" className="px-6 py-4">Date / Time</th>
-                <th scope="col" className="px-6 py-4">Green Coffee Lot</th>
-                <th scope="col" className="px-6 py-4">Roaster</th>
-                <th scope="col" className="px-6 py-4">Weight In (g)</th>
-                <th scope="col" className="px-6 py-4">Weight Out (g)</th>
-                <th scope="col" className="px-6 py-4">Yield (%)</th>
-                <th scope="col" className="px-6 py-4 text-right">Actions</th>
+                <th scope="col" className="px-6 py-4">{t('roasts_col_date')}</th>
+                <th scope="col" className="px-6 py-4">{t('roasts_col_lot')}</th>
+                <th scope="col" className="px-6 py-4">{t('roasts_col_roaster')}</th>
+                <th scope="col" className="px-6 py-4">{t('roasts_col_weight_in')} (g)</th>
+                <th scope="col" className="px-6 py-4">{t('roasts_col_weight_out')} (g)</th>
+                <th scope="col" className="px-6 py-4">{t('roasts_col_yield')} (%)</th>
+                <th scope="col" className="px-6 py-4 text-right">{t('roasts_col_actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -186,7 +188,7 @@ export default function RoastsPage() {
                   <td colSpan={7} className="px-6 py-12 text-center text-expresso/50">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Flame className="h-8 w-8 opacity-20" />
-                      <p>No roast batches found</p>
+                      <p>{t('roasts_no_found')}</p>
                     </div>
                   </td>
                 </tr>
@@ -196,17 +198,17 @@ export default function RoastsPage() {
                     ? ((batch.weight_out_grams / batch.weight_in_grams) * 100).toFixed(1)
                     : null
                   return (
-                    <tr key={batch.id} className="bg-white border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
+                    <tr key={batch.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
                       <td className="px-6 py-4 font-medium text-expresso">
                         <div className="flex flex-col">
                           <span>{new Date(batch.created_at).toLocaleDateString()}</span>
                           {batch.roast_time_minutes && (
-                            <span className="text-xs text-expresso/50">{batch.roast_time_minutes} mins</span>
+                            <span className="text-xs text-expresso/50">{batch.roast_time_minutes} {t('roasts_minutes')}</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-semibold text-coffee-fruit">{batch.green_lot_name || 'Unknown Lot'}</span>
+                        <span className="font-bold text-coffee-fruit">{batch.green_lot_name || t('roasts_unknown_lot')}</span>
                         {batch.notes && <p className="text-xs text-expresso/60 truncate max-w-[200px] mt-1">{batch.notes}</p>}
                       </td>
                       <td className="px-6 py-4 text-expresso/80">
@@ -223,12 +225,12 @@ export default function RoastsPage() {
                         <GenericModal
                           hideFooter={true}
                           hideTitle={true}
-                          title="Edit Roast"
+                          title={t('roasts_edit')}
                           contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
                           trigger={
                             <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
                               <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
+                              <span className="sr-only">{t('edit')}</span>
                             </Button>
                           }
                         >

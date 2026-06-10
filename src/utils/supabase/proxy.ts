@@ -69,6 +69,23 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Roaster-only routes. Partners keep their own inventory, roasts, analytics,
+  // settings, etc. (all user-scoped), but cannot reach the roaster's CRM/team tools.
+  const roasterOnlyPrefixes = ['/b2b', '/customers', '/team', '/tracker']
+  if (user && roasterOnlyPrefixes.some(prefix => path.startsWith(prefix))) {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single()
+
+    if (profile?.role === 'partner') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // IMPORTANT: You *must* return the supabaseResponse object as is.
   // If you're creating a new response object with NextResponse.next(), make
   // sure to:

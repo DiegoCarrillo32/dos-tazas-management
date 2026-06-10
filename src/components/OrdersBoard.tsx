@@ -82,7 +82,7 @@ export function OrdersBoard({ orders, customers, inventoryItems, settings }: { o
       {/* Mobile View: Tabs */}
       <div className="md:hidden">
         <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="bg-white border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1 mb-6">
+          <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1 mb-6">
             <TabsTrigger value="pending" className="flex-1 rounded-lg data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 dark:data-[state=active]:bg-yellow-950/40 dark:data-[state=active]:text-yellow-300 text-expresso/70 transition-all py-2 text-xs sm:text-sm">{t('orders_pending')}</TabsTrigger>
             <TabsTrigger value="roasted" className="flex-1 rounded-lg data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 dark:data-[state=active]:bg-orange-950/40 dark:data-[state=active]:text-orange-300 text-expresso/70 transition-all py-2 text-xs sm:text-sm">{t('orders_roasted')}</TabsTrigger>
             <TabsTrigger value="delivered" className="flex-1 rounded-lg data-[state=active]:bg-green-100 data-[state=active]:text-green-900 dark:data-[state=active]:bg-green-950/40 dark:data-[state=active]:text-green-300 text-expresso/70 transition-all py-2 text-xs sm:text-sm">{t('orders_delivered')}</TabsTrigger>
