@@ -5,8 +5,11 @@ import { TableSkeleton } from '@/components/Skeletons'
 import { Store } from 'lucide-react'
 import type { B2BPartnerRecord } from '@/types'
 import { PartnerManagementModal } from '@/components/PartnerManagementModal'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { useTranslation } from '@/i18n/LanguageProvider'
 
 export function PartnersList() {
+  const { t } = useTranslation()
   const { data: partners, isLoading } = usePartners()
 
   if (isLoading) {
@@ -19,8 +22,8 @@ export function PartnersList() {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-expresso/50 bg-card rounded-xl border border-warm-roast/10 border-dashed">
         <Store className="h-12 w-12 opacity-20 mb-4" />
-        <p className="text-lg font-medium">No partners found</p>
-        <p className="text-sm mt-1">Generate an invite code to connect with your first wholesale client.</p>
+        <p className="text-lg font-medium">{t('partners_no_found')}</p>
+        <p className="text-sm mt-1">{t('partners_no_found_desc')}</p>
       </div>
     )
   }
@@ -31,11 +34,11 @@ export function PartnersList() {
         <table className="w-full text-sm text-left min-w-[800px]">
           <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
             <tr>
-              <th scope="col" className="px-6 py-4">Company</th>
-              <th scope="col" className="px-6 py-4">Contact</th>
-              <th scope="col" className="px-6 py-4">Status</th>
-              <th scope="col" className="px-6 py-4">Connected Since</th>
-              <th scope="col" className="px-6 py-4 text-right">Actions</th>
+              <th scope="col" className="px-6 py-4">{t('common_company')}</th>
+              <th scope="col" className="px-6 py-4">{t('partners_col_contact')}</th>
+              <th scope="col" className="px-6 py-4">{t('common_status')}</th>
+              <th scope="col" className="px-6 py-4">{t('partners_col_since')}</th>
+              <th scope="col" className="px-6 py-4 text-right">{t('common_actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -54,13 +57,13 @@ export function PartnersList() {
                   <div className="text-xs font-normal text-expresso/60 mt-0.5">{partner.contact_phone}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                    partner.status === 'active' ? 'bg-green-100 text-green-800' :
-                    partner.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                  <StatusBadge tone={
+                    partner.status === 'active' ? 'success' :
+                    partner.status === 'pending' ? 'warning' :
+                    'danger'
+                  }>
                     {partner.status}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td className="px-6 py-4 text-expresso/70">
                   {new Date(partner.created_at).toLocaleDateString()}

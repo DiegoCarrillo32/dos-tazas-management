@@ -76,8 +76,8 @@ export function InvitePartnerDialog() {
       
       {inviteCode ? (
         <div className="py-6 space-y-4 text-center animate-in fade-in zoom-in-95 duration-300">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-2">
-            <Check className="h-8 w-8 text-green-600" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-2">
+            <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
           <h3 className="text-lg font-bold text-expresso">Partner Added!</h3>
           <p className="text-sm text-expresso/70">
@@ -99,7 +99,7 @@ export function InvitePartnerDialog() {
           </p>
           
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
+            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 p-3 rounded-lg mb-4">
               {error}
             </div>
           )}

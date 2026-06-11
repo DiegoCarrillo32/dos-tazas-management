@@ -7,8 +7,11 @@ import { Plus, Clock, FileText } from 'lucide-react'
 import { useWorkerTimeLogs, useLogTime, useDeleteTimeLog } from '@/hooks/queries'
 import { calculateHoursWorked, buildTimestamp, previewHours } from '@/utils/tracker-logic'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { useTranslation } from '@/i18n/LanguageProvider'
 
 export default function TrackerPage() {
+  const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const [date, setDate] = useState('')
   const [startTime, setStartTime] = useState('')
@@ -48,7 +51,7 @@ export default function TrackerPage() {
     setFormError('')
 
     if (!date || !startTime || !endTime) {
-      setFormError('Please fill in all fields.')
+      setFormError(t('tracker_fill_fields'))
       return
     }
 
@@ -56,13 +59,13 @@ export default function TrackerPage() {
     const endIso = buildTimestamp(date, endTime)
 
     if (!startIso || !endIso) {
-      setFormError('Invalid date or time values. Please try again.')
+      setFormError(t('tracker_invalid_values'))
       return
     }
 
     const hours = calculateHoursWorked(startIso, endIso)
     if (hours <= 0) {
-      setFormError('End time must be after start time.')
+      setFormError(t('tracker_end_after_start'))
       return
     }
 
@@ -80,20 +83,20 @@ export default function TrackerPage() {
       setFormError('')
     } catch (err) {
       console.error('Failed to log time:', err)
-      setFormError('Failed to save. Please try again.')
+      setFormError(t('tracker_save_failed'))
     }
   }
 
   const handleDelete = (id: string) => {
     showConfirm(
-      "Delete Time Log",
-      "Are you sure you want to delete this time log?",
+      t('tracker_delete_title'),
+      t('tracker_delete_confirm'),
       async () => {
         try {
           await deleteLogMutation.mutateAsync(id)
         } catch (err) {
           console.error(err)
-          showAlert("Error", "Failed to delete log")
+          showAlert(t('tracker_error'), t('tracker_delete_failed'))
         }
       },
       "destructive"
@@ -103,29 +106,29 @@ export default function TrackerPage() {
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <PageHeader
-        title="Time Tracker"
-        subtitle="Log your hours worked and view your timesheet history."
+        title={t('tracker_title')}
+        subtitle={t('tracker_subtitle')}
         action={
           <GenericModal
             isOpen={isOpen}
             onOpenChange={setIsOpen}
             hideFooter={true}
             hideTitle={true}
-            title="Log Your Hours"
+            title={t('tracker_log_hours')}
             contentClassName="sm:max-w-[450px]"
             trigger={
               <Button className="bg-card text-coffee-fruit hover:bg-warm-roast/10 dark:hover:bg-warm-roast/30 border border-coffee-fruit/20 dark:border-border rounded-full px-6 shadow-sm transition-all">
-                <Plus className="mr-2 h-4 w-4" /> Log Time
+                <Plus className="mr-2 h-4 w-4" /> {t('tracker_log_time')}
               </Button>
             }
           >
             <h2 className="text-xl font-heading text-expresso mb-4 flex items-center">
               <Clock className="w-5 h-5 mr-2" />
-              Log Your Hours
+              {t('tracker_log_hours')}
             </h2>
             <form onSubmit={handleLogTime} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-expresso mb-1">Date</label>
+                <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_date')}</label>
                 <input 
                   type="date" 
                   required
@@ -136,7 +139,7 @@ export default function TrackerPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-expresso mb-1">Start Time</label>
+                  <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_start')}</label>
                   <input 
                     type="time" 
                     required
@@ -146,7 +149,7 @@ export default function TrackerPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-expresso mb-1">End Time</label>
+                  <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_end')}</label>
                   <input 
                     type="time" 
                     required
@@ -165,11 +168,11 @@ export default function TrackerPage() {
                 }`}>
                   {previewedHours > 0 ? (
                     <p className="text-sm font-bold text-green-700 dark:text-green-400">
-                      ⏱ {previewedHours.toFixed(2)} hours will be logged
+                      ⏱ {t('tracker_hours_logged').replace('{hours}', previewedHours.toFixed(2))}
                     </p>
                   ) : (
                     <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                      End time must be after start time
+                      {t('tracker_end_after_start')}
                     </p>
                   )}
                 </div>
@@ -178,48 +181,84 @@ export default function TrackerPage() {
                 <p className="text-sm text-red-600 dark:text-red-400 text-center">{formError}</p>
               )}
               <div>
-                <label className="block text-sm font-medium text-expresso mb-1">Notes (Optional)</label>
-                <textarea 
+                <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_notes')}</label>
+                <textarea
                   rows={3}
-                  value={notes} 
-                  onChange={e => setNotes(e.target.value)} 
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
                   className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none resize-none"
-                  placeholder="What did you work on?"
+                  placeholder={t('tracker_notes_placeholder')}
                 />
               </div>
-              <Button 
+              <Button
                 type="submit"
                 disabled={logTimeMutation.isPending || (date && startTime && endTime ? previewedHours <= 0 : false)}
                 className="w-full bg-coffee-fruit text-white hover:bg-coffee-fruit/90"
               >
-                {logTimeMutation.isPending ? 'Saving...' : 'Save Time Log'}
+                {logTimeMutation.isPending ? t('tracker_saving') : t('tracker_save')}
               </Button>
             </form>
           </GenericModal>
         }
       />
 
-      <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
+      <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-hidden">
         <div className="p-4 border-b border-warm-roast/10 dark:border-border bg-white-pergamino dark:bg-muted/30 flex items-center text-expresso/70 dark:text-muted-foreground">
           <FileText className="w-4 h-4 mr-2" />
-          <h3 className="font-bold text-sm uppercase tracking-wider">Timesheet History</h3>
+          <h3 className="font-bold text-sm uppercase tracking-wider">{t('tracker_history')}</h3>
         </div>
-        <table className="w-full text-sm text-left min-w-[800px]">
+
+        {/* Mobile Card View */}
+        <div className="md:hidden flex flex-col gap-3 p-4 bg-warm-roast/5 dark:bg-muted/10">
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 bg-card rounded-xl border border-warm-roast/10 dark:border-border animate-pulse" />
+            ))
+          ) : !timeLogs?.length ? (
+            <div className="px-6 py-8 text-center text-expresso/40 dark:text-muted-foreground">{t('tracker_no_logs')}</div>
+          ) : (
+            timeLogs.map(log => {
+              const hours = calculateHoursWorked(log.start_time, log.end_time)
+              return (
+                <div key={log.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 dark:border-border shadow-sm p-4 gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-expresso dark:text-foreground">{new Date(log.start_time).toLocaleDateString()}</div>
+                      <div className="text-xs text-expresso/60 dark:text-muted-foreground">
+                        {new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                    <StatusBadge tone={log.status === 'paid' ? 'success' : 'warning'}>{log.status}</StatusBadge>
+                  </div>
+                  <div className="font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} {t('tracker_hours_unit')}</div>
+                  {log.notes && <p className="text-xs text-expresso/60 dark:text-muted-foreground bg-warm-roast/5 dark:bg-muted/20 p-2 rounded-lg">{log.notes}</p>}
+                  {log.status === 'pending' && (
+                    <Button onClick={() => handleDelete(log.id)} size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 self-start">
+                      {t('delete')}
+                    </Button>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        <table className="hidden md:table w-full text-sm text-left min-w-[800px]">
           <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino/50 dark:bg-muted/10 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
             <tr>
-              <th scope="col" className="px-6 py-4">Date</th>
-              <th scope="col" className="px-6 py-4">Time</th>
-              <th scope="col" className="px-6 py-4">Hours</th>
-              <th scope="col" className="px-6 py-4">Notes</th>
-              <th scope="col" className="px-6 py-4">Status</th>
-              <th scope="col" className="px-6 py-4 text-right">Actions</th>
+              <th scope="col" className="px-6 py-4">{t('common_date')}</th>
+              <th scope="col" className="px-6 py-4">{t('common_time')}</th>
+              <th scope="col" className="px-6 py-4">{t('common_hours')}</th>
+              <th scope="col" className="px-6 py-4">{t('common_notes')}</th>
+              <th scope="col" className="px-6 py-4">{t('common_status')}</th>
+              <th scope="col" className="px-6 py-4 text-right">{t('common_actions')}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={6} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">{t('loading')}</td></tr>
             ) : !timeLogs?.length ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-expresso/40 dark:text-muted-foreground">No hours logged yet.</td></tr>
+              <tr><td colSpan={6} className="px-6 py-8 text-center text-expresso/40 dark:text-muted-foreground">{t('tracker_no_logs')}</td></tr>
             ) : (
               timeLogs.map(log => {
                 const hours = calculateHoursWorked(log.start_time, log.end_time)
@@ -230,16 +269,14 @@ export default function TrackerPage() {
                     <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground text-sm">
                       {new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="px-6 py-4 font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} hrs</td>
+                    <td className="px-6 py-4 font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} {t('tracker_hours_unit')}</td>
                     <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground text-sm max-w-xs truncate">
-                      {log.notes || <span className="text-expresso/30 dark:text-muted-foreground/50 italic">No notes</span>}
+                      {log.notes || <span className="text-expresso/30 dark:text-muted-foreground/50 italic">{t('tracker_no_notes')}</span>}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                        log.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      }`}>
+                      <StatusBadge tone={log.status === 'paid' ? 'success' : 'warning'}>
                         {log.status}
-                      </span>
+                      </StatusBadge>
                     </td>
                     <td className="px-6 py-4 text-right">
                       {log.status === 'pending' && (
@@ -247,9 +284,9 @@ export default function TrackerPage() {
                           onClick={() => handleDelete(log.id)} 
                           size="sm" 
                           variant="ghost" 
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
-                          Delete
+                          {t('delete')}
                         </Button>
                       )}
                     </td>

@@ -106,7 +106,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
               <RefreshCw className="w-4 h-4 mr-1 shrink-0" />
               Orders
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 rounded-lg data-[state=active]:bg-red-500/10 data-[state=active]:text-red-600 text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+            <TabsTrigger value="settings" className="flex-1 rounded-lg data-[state=active]:bg-red-500/10 data-[state=active]:text-red-600 dark:data-[state=active]:text-red-400 text-expresso/70 transition-all py-2 text-xs sm:text-sm">
               <Settings2 className="w-4 h-4 mr-1 shrink-0" />
               Settings
             </TabsTrigger>
@@ -172,7 +172,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                               variant="ghost" 
                               size="icon"
                               onClick={() => deletePricingMutation.mutate(p.id)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -248,7 +248,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                           )
                         }}
                         disabled={deleteRecurringOrderMutation.isPending}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -300,24 +300,24 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
               </div>
             )}
 
-            <div className="bg-red-50 p-4 sm:p-6 rounded-xl border border-red-200 space-y-5">
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 sm:p-6 rounded-xl border border-red-200 dark:border-red-900/40 space-y-5">
               <div className="flex items-start gap-3">
-                <div className="bg-red-100 p-2 rounded-full shrink-0">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
+                <div className="bg-red-100 dark:bg-red-900/40 p-2 rounded-full shrink-0">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-red-900 text-base sm:text-lg">Danger Zone</h3>
-                  <p className="text-xs sm:text-sm text-red-700/80 mt-1">
+                  <h3 className="font-bold text-red-900 dark:text-red-300 text-base sm:text-lg">Danger Zone</h3>
+                  <p className="text-xs sm:text-sm text-red-700/80 dark:text-red-400/80 mt-1">
                     {"These actions are destructive and will immediately affect this partner's access and data."}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-red-200/50">
+              <div className="space-y-4 pt-4 border-t border-red-200/50 dark:border-red-900/30">
                 <div className="space-y-2">
                   <div>
-                    <h4 className="font-bold text-red-900 text-sm">Portal Access</h4>
-                    <p className="text-xs text-red-700/70 mt-0.5">
+                    <h4 className="font-bold text-red-900 dark:text-red-300 text-sm">Portal Access</h4>
+                    <p className="text-xs text-red-700/70 dark:text-red-400/70 mt-0.5">
                       {partner.status === 'revoked' 
                         ? 'They currently cannot log in. You can restore their access.' 
                         : 'Stops them from logging in, but keeps their order history, pricing, and recurring setup intact.'}
@@ -326,7 +326,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                   {partner.status === 'revoked' ? (
                     <Button 
                       variant="outline" 
-                      className="border-green-300 text-green-700 hover:bg-green-100 w-full sm:w-auto"
+                      className="border-green-300 text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:text-green-400 dark:hover:bg-green-900/20 w-full sm:w-auto"
                       disabled={restorePartnerMutation.isPending}
                       onClick={() => {
                         restorePartnerMutation.mutate(partner.id, {
@@ -344,7 +344,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
                   ) : (
                     <Button 
                       variant="outline" 
-                      className="border-red-300 text-red-700 hover:bg-red-100 w-full sm:w-auto"
+                      className="border-red-300 text-red-700 hover:bg-red-100 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/20 w-full sm:w-auto"
                       disabled={revokePartnerMutation.isPending}
                       onClick={() => {
                         showConfirm(

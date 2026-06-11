@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Plus, Users, Clock, Check, Copy, Pencil, Calendar, CheckSquare } from 'lucide-react'
@@ -77,22 +77,27 @@ export default function TeamPage() {
 
   // DND State
   const DEFAULT_CARD_ORDER = ['total_payroll', 'pending_pay', 'paid_history']
-  const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER)
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-    const saved = localStorage.getItem('dos_tazas_team_stats_order')
-    if (saved) {
-      try {
+  const [cardOrder, setCardOrder] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_CARD_ORDER
+    try {
+      const saved = window.localStorage.getItem('dos_tazas_team_stats_order')
+      if (saved) {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed) && parsed.length === DEFAULT_CARD_ORDER.length) {
-          setCardOrder(parsed)
+          return parsed
         }
-      } catch { }
-    }
-  }, [])
+      }
+    } catch { }
+    return DEFAULT_CARD_ORDER
+  })
+  const [activeId, setActiveId] = useState<string | null>(null)
+  // Hydration-safe mounted flag: false on the server and during the first
+  // client render, true afterwards — without calling setState in an effect.
+  const isMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -438,7 +443,7 @@ export default function TeamPage() {
                     onClick={handleDeleteMember}
                     disabled={deleteMemberMutation.isPending}
                     variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/40 dark:hover:bg-red-900/20"
                   >
                     Delete
                   </Button>
@@ -600,8 +605,8 @@ export default function TeamPage() {
                           <Button 
                             onClick={() => handleMarkPaid(log.id)} 
                             size="sm" 
-                            variant="outline" 
-                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            variant="outline"
+                            className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-900/40 dark:hover:bg-green-900/20"
                           >
                             <Check className="h-4 w-4 mr-1" /> Mark Paid
                           </Button>
@@ -758,7 +763,7 @@ export default function TeamPage() {
                       <Tooltip 
                         cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                        formatter={(value: any) => [`${currencySymbol}${Number(value).toFixed(2)}`, 'Earnings']}
+                        formatter={(value) => [`${currencySymbol}${Number(value).toFixed(2)}`, 'Earnings']}
                       />
                       <Bar dataKey="totalEarnings" fill="#d97757" radius={[4, 4, 0, 0]} maxBarSize={60} />
                     </BarChart>

@@ -6,9 +6,9 @@ import { OrderCard } from '@/components/OrderCard'
 import { CheckCircle, Search } from 'lucide-react'
 import { PageSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/ui/pagination'
 
 export default function HistoryPage() {
   const { t } = useTranslation()
@@ -94,7 +94,7 @@ export default function HistoryPage() {
       </div>
 
       {filteredOrders.length === 0 ? (
-        <div className="text-center py-20 bg-white-pergamino rounded-xl border-2 border-dashed border-warm-roast/20">
+        <div className="text-center py-20 bg-card rounded-xl border-2 border-dashed border-warm-roast/20">
           <CheckCircle className="h-16 w-16 text-warm-roast/30 mx-auto mb-4" />
           <h3 className="text-xl font-heading text-expresso mb-2">{t('history_no_orders')}</h3>
           <p className="text-expresso/60">{t('history_no_orders_desc')}</p>
@@ -108,67 +108,13 @@ export default function HistoryPage() {
       )}
 
       {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 mt-6 bg-warm-roast/5 rounded-lg border border-warm-roast/10">
-          <div className="text-xs text-expresso/60 font-bold">
-            {showingText}
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={activePage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
-            >
-              {t('pag_previous')}
-            </Button>
-            {Array.from({ length: totalPages }).map((_, idx) => {
-              const page = idx + 1;
-              // Show current page, first, last, and pages around current page
-              if (
-                page === 1 ||
-                page === totalPages ||
-                Math.abs(page - activePage) <= 1
-              ) {
-                return (
-                  <Button
-                    key={page}
-                    variant={activePage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className={`h-8 w-8 p-0 text-xs font-bold ${
-                      activePage === page
-                        ? "bg-warm-roast hover:bg-coffee-fruit text-white"
-                        : "text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
-                    }`}
-                  >
-                    {page}
-                  </Button>
-                );
-              }
-              if (
-                page === 2 ||
-                page === totalPages - 1
-              ) {
-                return (
-                  <span key={page} className="px-1 text-expresso/40 text-xs select-none">...</span>
-                );
-              }
-              return null;
-            })}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={activePage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
-            >
-              {t('pag_next')}
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        currentPage={activePage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        showingText={showingText}
+        className="mt-6 rounded-lg border border-warm-roast/10"
+      />
     </div>
   )
 }

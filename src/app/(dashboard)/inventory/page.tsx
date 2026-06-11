@@ -12,6 +12,7 @@ import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
+import { Pagination } from '@/components/ui/pagination'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
@@ -335,66 +336,12 @@ export default function InventoryPage() {
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 gap-4 border-t border-warm-roast/10 bg-warm-roast/5 rounded-b-lg">
-              <div className="text-xs text-expresso/60 font-bold">
-                {showingText}
-              </div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={activePage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
-                >
-                  {t('pag_previous')}
-                </Button>
-                {Array.from({ length: totalPages }).map((_, idx) => {
-                  const page = idx + 1;
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    Math.abs(page - activePage) <= 1
-                  ) {
-                    return (
-                      <Button
-                        key={page}
-                        variant={activePage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className={`h-8 w-8 p-0 text-xs font-bold ${
-                          activePage === page
-                            ? "bg-warm-roast hover:bg-coffee-fruit text-white"
-                            : "text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
-                        }`}
-                      >
-                        {page}
-                      </Button>
-                    );
-                  }
-                  if (
-                    page === 2 ||
-                    page === totalPages - 1
-                  ) {
-                    return (
-                      <span key={page} className="px-1 text-expresso/40 text-xs select-none">...</span>
-                    );
-                  }
-                  return null;
-                })}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={activePage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
-                >
-                  {t('pag_next')}
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={activePage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            showingText={showingText}
+          />
         </CardContent>
       </Card>
     </div>

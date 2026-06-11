@@ -19,6 +19,7 @@ import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRe
 import { useTranslation } from "@/i18n/LanguageProvider";
 import { useDeleteOrder } from "@/hooks/queries";
 import { GenericModal } from "@/components/ui/GenericModal";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 interface OrderDetailsModalProps {
   order: OrderWithCustomer;
@@ -121,32 +122,30 @@ export function OrderDetailsModal({
       <div className="p-6 space-y-6">
         {/* Status Badges */}
         <div className="flex gap-3">
-          <div
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
+          <StatusBadge
+            tone={
               order.fulfillment_status === "pending"
-                ? "bg-yellow-100 text-yellow-800"
+                ? "warning"
                 : order.fulfillment_status === "roasted"
-                  ? "bg-orange-100 text-orange-800"
-                  : "bg-green-100 text-green-800"
-            }`}
+                  ? "accent"
+                  : "success"
+            }
+            className="px-3 py-1 rounded-full text-sm"
           >
             {fulfillmentIcons[order.fulfillment_status]}
             <span className="capitalize">
               {order.fulfillment_status === 'pending' ? t('orders_pending') : order.fulfillment_status === 'roasted' ? t('orders_roasted') : t('orders_delivered')}
             </span>
-          </div>
-          <div
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-              order.payment_status === "paid"
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-red-100 text-red-800"
-            }`}
+          </StatusBadge>
+          <StatusBadge
+            tone={order.payment_status === "paid" ? "emerald" : "danger"}
+            className="px-3 py-1 rounded-full text-sm"
           >
             <DollarSign className="h-4 w-4" />
             <span className="capitalize">
               {order.payment_status === "pending" ? t('order_unpaid') : t('order_paid')}
             </span>
-          </div>
+          </StatusBadge>
         </div>
 
         {/* Coffee Details */}
@@ -255,9 +254,9 @@ export function OrderDetailsModal({
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">{t('order_margin')}</span>
-                      <span className={`font-bold px-2 py-0.5 rounded text-xs ${isPositive ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      <StatusBadge tone={isPositive ? 'emerald' : 'danger'} className="font-bold">
                         {margin.toFixed(1)}%
-                      </span>
+                      </StatusBadge>
                     </div>
                   </div>
                 );
@@ -296,7 +295,7 @@ export function OrderDetailsModal({
             variant="ghost"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2 mr-auto"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 gap-2 mr-auto"
           >
             <Trash2 className="h-4 w-4" />
             {t('delete')}

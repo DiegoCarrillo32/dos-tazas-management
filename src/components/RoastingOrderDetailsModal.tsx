@@ -7,19 +7,15 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import type { DictionaryKey } from '@/i18n/dictionaries'
 import type { RoastingOrderWithPartner, RoastingOrderStatus } from '@/types'
 import { defaultRoastingConfig } from '@/config/roastingConfig'
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge'
+import { formatCRC } from '@/lib/format'
 import { toast } from 'sonner'
 
-const crcFormatter = new Intl.NumberFormat('es-CR', {
-  style: 'currency',
-  currency: 'CRC',
-  maximumFractionDigits: 0,
-})
-
-const statusStyles: Record<RoastingOrderStatus, string> = {
-  pending: 'bg-blue-100 text-blue-800',
-  accepted: 'bg-orange-100 text-orange-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+const statusTones: Record<RoastingOrderStatus, StatusTone> = {
+  pending: 'info',
+  accepted: 'accent',
+  completed: 'success',
+  cancelled: 'danger',
 }
 
 const statusKeys: Record<RoastingOrderStatus, DictionaryKey> = {
@@ -85,9 +81,9 @@ export function RoastingOrderDetailsModal({ order, onClose }: RoastingOrderDetai
             {order.b2b_partners?.company_name || t('roasting_unknown_partner')}
           </p>
         </div>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusStyles[order.status]}`}>
+        <StatusBadge tone={statusTones[order.status]}>
           {t(statusKeys[order.status])}
-        </span>
+        </StatusBadge>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -116,13 +112,13 @@ export function RoastingOrderDetailsModal({ order, onClose }: RoastingOrderDetai
         {lineItems.map((item) => (
           <div key={item.key} className="flex justify-between text-sm text-expresso/80 py-1">
             <span>{t(item.key)}</span>
-            <span className="font-medium text-expresso">{crcFormatter.format(item.value!)}</span>
+            <span className="font-medium text-expresso">{formatCRC(item.value!)}</span>
           </div>
         ))}
         <div className="flex justify-between items-center rounded-xl bg-coffee-fruit/10 px-4 py-3 mt-2">
           <span className="font-bold text-expresso">{t('calc_total')}</span>
           <span className="text-2xl font-heading text-coffee-fruit">
-            {crcFormatter.format(Number(order.total_cost))}
+            {formatCRC(order.total_cost)}
           </span>
         </div>
       </div>
@@ -137,7 +133,7 @@ export function RoastingOrderDetailsModal({ order, onClose }: RoastingOrderDetai
             variant="outline"
             onClick={() => runUpdate('cancelled', 'roasting_order_cancelled')}
             disabled={updateMutation.isPending}
-            className="text-red-600 border-red-200 hover:bg-red-50 gap-1 rounded-full"
+            className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/40 dark:hover:bg-red-900/20 gap-1 rounded-full"
           >
             <X className="h-4 w-4" /> {t('roasting_action_cancel')}
           </Button>

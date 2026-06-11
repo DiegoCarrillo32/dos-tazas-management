@@ -9,6 +9,7 @@ import { RoastBatchForm } from '@/components/RoastBatchForm'
 import { useRoastBatches } from '@/hooks/queries'
 import { TableRowSkeleton } from '@/components/Skeletons'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { useTranslation } from '@/i18n/LanguageProvider'
 
 export default function RoastsPage() {
@@ -131,9 +132,9 @@ export default function RoastsPage() {
                         {t('roasts_col_yield')}
                       </div>
                       <div className="font-medium text-sm">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${Number(yieldPercent) < 80 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        <StatusBadge tone={Number(yieldPercent) < 80 ? 'danger' : 'success'}>
                           {yieldPercent ? `${yieldPercent}%` : '—'}
-                        </span>
+                        </StatusBadge>
                       </div>
                     </div>
                     <div>
@@ -217,9 +218,9 @@ export default function RoastsPage() {
                       <td className="px-6 py-4 font-medium">{batch.weight_in_grams}</td>
                       <td className="px-6 py-4 font-medium">{batch.weight_out_grams}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${Number(yieldPercent) < 80 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        <StatusBadge tone={Number(yieldPercent) < 80 ? 'danger' : 'success'}>
                           {yieldPercent ? `${yieldPercent}%` : '—'}
-                        </span>
+                        </StatusBadge>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <GenericModal
