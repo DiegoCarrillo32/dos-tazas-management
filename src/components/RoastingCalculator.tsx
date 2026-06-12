@@ -119,7 +119,7 @@ export function RoastingCalculator({
               placeholder="0"
               className="rounded-lg border-warm-roast/30 focus:ring-coffee-fruit"
             />
-            <Select value={unit} onValueChange={(v) => setUnit(v as 'g' | 'kg')}>
+            <Select value={unit} onValueChange={(v) => setUnit(v as 'g' | 'kg')} items={{ g: t('calc_unit_grams'), kg: t('calc_unit_kg') }}>
               <SelectTrigger className="w-28 border-warm-roast/30 focus:ring-coffee-fruit">
                 <SelectValue />
               </SelectTrigger>
@@ -133,7 +133,7 @@ export function RoastingCalculator({
 
         <div className="space-y-2">
           <Label className="text-expresso">{t('calc_basis_label')}</Label>
-          <Select value={basis} onValueChange={(v) => setBasis(v as QuantityBasis)}>
+          <Select value={basis} onValueChange={(v) => setBasis(v as QuantityBasis)} items={{ ROASTED_OUTPUT: t('calc_basis_roasted'), GREEN_INPUT: t('calc_basis_green') }}>
             <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
               <SelectValue />
             </SelectTrigger>
@@ -146,7 +146,7 @@ export function RoastingCalculator({
 
         <div className="space-y-2">
           <Label className="text-expresso">{t('calc_green_source_label')}</Label>
-          <Select value={greenSource} onValueChange={(v) => setGreenSource(v as GreenSource)}>
+          <Select value={greenSource} onValueChange={(v) => setGreenSource(v as GreenSource)} items={{ CLIENT_PROVIDED: t('calc_source_client'), WE_PROVIDE: t('calc_source_us') }}>
             <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
               <SelectValue />
             </SelectTrigger>
@@ -160,7 +160,14 @@ export function RoastingCalculator({
         {greenSource === 'WE_PROVIDE' && (
           <div className="space-y-2">
             <Label className="text-expresso">{t('calc_coffee_select_label')}</Label>
-            <Select value={greenTierId} onValueChange={(v) => v && setGreenTierId(v)}>
+            <Select
+              value={greenTierId}
+              onValueChange={(v) => v && setGreenTierId(v)}
+              items={config.greenCoffee.providedByUs.map((tier) => ({
+                value: tier.id,
+                label: `${tier.label} — ${crcFormatter.format(tier.pricePerKg)}/kg`,
+              }))}
+            >
               <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
                 <SelectValue />
               </SelectTrigger>
@@ -177,7 +184,7 @@ export function RoastingCalculator({
 
         <div className="space-y-2">
           <Label className="text-expresso">{t('calc_packaging_label')}</Label>
-          <Select value={packaging} onValueChange={(v) => setPackaging(v as PackagingOption)}>
+          <Select value={packaging} onValueChange={(v) => setPackaging(v as PackagingOption)} items={{ CLIENT_HANDLES: t('calc_packaging_client'), WE_PACKAGE: t('calc_packaging_us') }}>
             <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
               <SelectValue />
             </SelectTrigger>
@@ -192,7 +199,14 @@ export function RoastingCalculator({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-expresso">{t('calc_bag_type_label')}</Label>
-              <Select value={bagOptionId} onValueChange={(v) => v && setBagOptionId(v)}>
+              <Select
+                value={bagOptionId}
+                onValueChange={(v) => v && setBagOptionId(v)}
+                items={config.bags.map((bag) => ({
+                  value: bag.id,
+                  label: `${bag.label} — ${crcFormatter.format(bag.pricePerUnit)}`,
+                }))}
+              >
                 <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
                   <SelectValue />
                 </SelectTrigger>
@@ -207,7 +221,11 @@ export function RoastingCalculator({
             </div>
             <div className="space-y-2">
               <Label className="text-expresso">{t('calc_bag_size_label')}</Label>
-              <Select value={bagSizeId} onValueChange={(v) => v && setBagSizeId(v)}>
+              <Select
+                value={bagSizeId}
+                onValueChange={(v) => v && setBagSizeId(v)}
+                items={selectedBag?.sizes.map((size) => ({ value: size.id, label: size.label })) ?? []}
+              >
                 <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
                   <SelectValue />
                 </SelectTrigger>
@@ -224,7 +242,7 @@ export function RoastingCalculator({
         {config.grindingEnabled && (
           <div className="space-y-2">
             <Label className="text-expresso">{t('calc_grinding_label')}</Label>
-            <Select value={grinding} onValueChange={(v) => setGrinding(v as GrindingOption)}>
+            <Select value={grinding} onValueChange={(v) => setGrinding(v as GrindingOption)} items={{ CLIENT_HANDLES: t('calc_grinding_client'), WE_GRIND: t('calc_grinding_us') }}>
               <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
                 <SelectValue />
               </SelectTrigger>
@@ -238,7 +256,17 @@ export function RoastingCalculator({
 
         <div className="space-y-2">
           <Label className="text-expresso">{t('calc_machine_label')}</Label>
-          <Select value={machinePreference} onValueChange={(v) => v && setMachinePreference(v)}>
+          <Select
+            value={machinePreference}
+            onValueChange={(v) => v && setMachinePreference(v)}
+            items={[
+              { value: MACHINE_AUTO_SELECT, label: t('calc_machine_auto') },
+              ...config.machines.map((machine) => ({
+                value: machine.id,
+                label: machine.name + (machine.isSampleOnly ? ` (${t('calc_machine_sample_badge')})` : ''),
+              })),
+            ]}
+          >
             <SelectTrigger className="border-warm-roast/30 focus:ring-coffee-fruit">
               <SelectValue />
             </SelectTrigger>
