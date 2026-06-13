@@ -119,6 +119,15 @@ describe('Type shapes and data contracts', () => {
         varietal: 'Heirloom',
         process: 'Washed',
         altitude: '1900-2100 masl',
+        harvest_date: '2024-10-01',
+        crop_year: '2024/2025',
+        quantity_kg: 300,
+        quantity_shipped_kg: 50,
+        cupping_score: 87.5,
+        moisture_content: 11.2,
+        screen_size: '15/16',
+        bag_count: 12,
+        bag_weight_kg: 25,
         created_at: '2024-02-01T00:00:00Z',
       }
       expect(lot.origin).toBe('Ethiopia')
@@ -136,6 +145,15 @@ describe('Type shapes and data contracts', () => {
         varietal: null,
         process: null,
         altitude: null,
+        harvest_date: null,
+        crop_year: null,
+        quantity_kg: null,
+        quantity_shipped_kg: 0,
+        cupping_score: null,
+        moisture_content: null,
+        screen_size: null,
+        bag_count: null,
+        bag_weight_kg: null,
         created_at: '2024-02-01T00:00:00Z',
       }
       expect(lot.origin).toBeNull()

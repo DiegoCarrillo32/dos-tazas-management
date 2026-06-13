@@ -1,18 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useInventory, useSettings } from '@/hooks/queries'
+import { useInventory, useSettings, useDeleteInventoryItem } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, PackageSearch, Coffee, Edit, Search } from 'lucide-react'
+import { Plus, PackageSearch, Coffee, Edit, Search, Trash2, Leaf, ShoppingBag, Wrench } from 'lucide-react'
 import { InventoryForm } from '@/components/InventoryForm'
 import { GreenCoffeeLotsDialog } from '@/components/GreenCoffeeLotsDialog'
+import { InventorySummaryHeader } from '@/components/InventorySummaryHeader'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
+import { toast } from 'sonner'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
@@ -23,6 +25,8 @@ export default function InventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  const deleteMutation = useDeleteInventoryItem()
 
   if (loadingInventory || loadingSettings) {
     return <TableSkeleton cols={6} rows={4} />
@@ -58,6 +62,8 @@ export default function InventoryPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
+      <InventorySummaryHeader items={items} />
+
       <PageHeader
         title={t('inventory_title')}
         subtitle={t('inventory_subtitle')}
@@ -134,24 +140,25 @@ export default function InventoryPage() {
           {/* Category Tabs */}
           <div className="flex gap-1.5 overflow-x-auto pb-1.5 md:pb-0 scrollbar-none border-t border-warm-roast/5 pt-3">
             {[
-              { id: 'all', label: t('pag_all') },
-              { id: 'green_coffee', label: t('inv_form_cat_green') },
-              { id: 'merchandise', label: t('inv_form_cat_merch') },
-              { id: 'equipment', label: t('inv_form_cat_equipment') }
-            ].map(tab => (
+              { id: 'all',          label: t('pag_all'),                 Icon: PackageSearch },
+              { id: 'green_coffee', label: t('inv_form_cat_green'),      Icon: Leaf },
+              { id: 'supplies',     label: t('inv_form_cat_merch'),      Icon: ShoppingBag },
+              { id: 'equipment',    label: t('inv_form_cat_equipment'),  Icon: Wrench },
+            ].map(({ id, label, Icon }) => (
               <button
-                key={tab.id}
+                key={id}
                 onClick={() => {
-                  setCategoryFilter(tab.id)
+                  setCategoryFilter(id)
                   setCurrentPage(1)
                 }}
-                className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all shrink-0 border cursor-pointer ${
-                  categoryFilter === tab.id
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full transition-all shrink-0 border cursor-pointer ${
+                  categoryFilter === id
                     ? 'bg-warm-roast text-white border-warm-roast shadow-sm'
                     : 'bg-warm-roast/5 text-expresso/70 border-warm-roast/10 hover:bg-warm-roast/10'
                 }`}
               >
-                {tab.label}
+                <Icon className="h-3 w-3" />
+                {label}
               </button>
             ))}
           </div>
@@ -172,7 +179,9 @@ export default function InventoryPage() {
                 {paginatedItems.map((item) => {
                   const isCoffee = item.category === 'green_coffee'
                   const roastedYield = isCoffee ? Math.floor(item.stock_grams * lossRatio) : null
-                  const isLowStock = isCoffee && item.stock_grams < 5000
+                  const lowStockThresholdG = (item.low_stock_threshold_kg ?? 5) * 1000
+                  const isLowStock = isCoffee && item.stock_grams < lowStockThresholdG
+                  const CategoryIcon = isCoffee ? Leaf : item.category === 'equipment' ? Wrench : ShoppingBag
 
                   return (
                     <div key={item.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
@@ -180,7 +189,8 @@ export default function InventoryPage() {
                       <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
                         <div>
                           <div className="font-bold text-expresso text-base mb-1">{item.item_name}</div>
-                          <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full capitalize">
+                          <span className="flex items-center gap-1 text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full w-fit capitalize">
+                            <CategoryIcon className="h-3 w-3" />
                             {item.category.replace('_', ' ')}
                           </span>
                         </div>
@@ -195,13 +205,29 @@ export default function InventoryPage() {
                             contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
                             trigger={
                               <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
-                                  <Edit className="h-4 w-4" />
-                                  <span className="sr-only">{t('edit')}</span>
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">{t('edit')}</span>
                               </Button>
                             }
                           >
                             <InventoryForm initialData={item} settings={settings} />
                           </GenericModal>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (!confirm(t('inv_delete_confirm').replace('{name}', item.item_name))) return
+                              deleteMutation.mutate(item.id, {
+                                onSuccess: () => toast.success(t('inv_toast_deleted').replace('{name}', item.item_name)),
+                                onError: (err) => toast.error(err.message || t('inv_toast_delete_error')),
+                              })
+                            }}
+                            disabled={deleteMutation.isPending}
+                            className="text-expresso/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
                         </div>
                       </div>
 
@@ -209,10 +235,10 @@ export default function InventoryPage() {
                       <div className="p-4 grid grid-cols-2 gap-4">
                         <div>
                           <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                            {t('inventory_col_raw')}
+                            {isCoffee ? t('inventory_col_raw') : t('inv_col_units')}
                           </div>
                           <div className={`font-bold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
-                            {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
+                            {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : `${item.stock_grams} units`}
                             {isLowStock && <span className="text-red-500 text-xs ml-1 font-normal">⚠ {t('inventory_low')}</span>}
                           </div>
                         </div>
@@ -222,7 +248,7 @@ export default function InventoryPage() {
                             {t('inventory_col_cost')}
                           </div>
                           <div className="font-bold text-expresso">
-                            {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic font-normal">N/A</span>}
+                            {item.cost_per_kg ? `${item.cost_currency || settings?.currency_symbol || '$'}${item.cost_per_kg}` : <span className="text-expresso/40 italic font-normal">N/A</span>}
                           </div>
                         </div>
 
@@ -280,7 +306,9 @@ export default function InventoryPage() {
                   paginatedItems.map((item) => {
                     const isCoffee = item.category === 'green_coffee'
                     const roastedYield = isCoffee ? Math.floor(item.stock_grams * lossRatio) : null
-                    const isLowStock = isCoffee && item.stock_grams < 5000
+                    const lowStockThresholdG = (item.low_stock_threshold_kg ?? 5) * 1000
+                    const isLowStock = isCoffee && item.stock_grams < lowStockThresholdG
+                    const CategoryIcon = isCoffee ? Leaf : item.category === 'equipment' ? Wrench : ShoppingBag
 
                     return (
                       <tr key={item.id} className="border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors group">
@@ -288,12 +316,16 @@ export default function InventoryPage() {
                           {item.item_name}
                           {item.notes && <p className="text-xs text-expresso/50 font-normal mt-1 truncate max-w-[200px]">{item.notes}</p>}
                         </td>
-                        <td className="px-6 py-4 text-expresso/80 capitalize">
-                          {item.category.replace('_', ' ')}
+                        <td className="px-6 py-4">
+                          <span className="flex items-center gap-1.5 text-expresso/80 capitalize w-fit">
+                            <CategoryIcon className="h-3.5 w-3.5 text-expresso/40" />
+                            {item.category.replace('_', ' ')}
+                          </span>
                         </td>
                         <td className="px-6 py-4">
                           <span className={`font-bold ${isLowStock ? 'text-red-500' : 'text-expresso'}`}>
-                            {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : item.stock_grams}
+                            {isCoffee ? `${(item.stock_grams / 1000).toFixed(2)} kg` : `${item.stock_grams} units`}
+                            {isLowStock && <span className="text-red-500 text-xs ml-1 font-normal">⚠ {t('inventory_low')}</span>}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -306,7 +338,7 @@ export default function InventoryPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-expresso/70">
-                          {item.cost_per_kg ? `$${item.cost_per_kg}` : <span className="text-expresso/40 italic">N/A</span>}
+                          {item.cost_per_kg ? `${item.cost_currency || settings?.currency_symbol || '$'}${item.cost_per_kg}` : <span className="text-expresso/40 italic">N/A</span>}
                         </td>
                         <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
                           {isCoffee && (
@@ -326,6 +358,22 @@ export default function InventoryPage() {
                           >
                             <InventoryForm initialData={item} settings={settings} />
                           </GenericModal>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (!confirm(t('inv_delete_confirm').replace('{name}', item.item_name))) return
+                              deleteMutation.mutate(item.id, {
+                                onSuccess: () => toast.success(t('inv_toast_deleted').replace('{name}', item.item_name)),
+                                onError: (err) => toast.error(err.message || t('inv_toast_delete_error')),
+                              })
+                            }}
+                            disabled={deleteMutation.isPending}
+                            className="text-expresso/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
                         </td>
                       </tr>
                     )

@@ -29,20 +29,34 @@ interface InventoryFormProps {
 export function InventoryForm({ initialData, settings, onSuccess, onCancel, inline = false }: InventoryFormProps) {
   const { t } = useTranslation()
 
-  const { register, handleSubmit, control, watch, formState: { errors }, reset } = useForm<InventoryFormValues>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors }, reset } = useForm<InventoryFormValues>({
     resolver: zodResolver(inventorySchema),
     defaultValues: {
       item_name: initialData?.item_name || '',
       category: initialData?.category || 'green_coffee',
       stock_grams: initialData?.stock_grams ?? ('' as unknown as number),
       cost_per_kg: initialData?.cost_per_kg ?? ('' as unknown as number),
+      cost_currency: initialData?.cost_currency ?? null,
       notes: initialData?.notes || '',
+      low_stock_threshold_kg: initialData?.low_stock_threshold_kg ?? ('' as unknown as number),
     }
   })
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const category = watch('category')
   const stockGrams = watch('stock_grams')
+  const costCurrency = watch('cost_currency')
+
+  const defaultSymbol = settings?.currency_symbol || '$'
+  const usdSymbol = '$'
+  // Available currency options: user's default + USD (deduplicated)
+  const currencyOptions = defaultSymbol === usdSymbol
+    ? [{ symbol: usdSymbol, label: 'USD' }]
+    : [
+        { symbol: defaultSymbol, label: 'Default' },
+        { symbol: usdSymbol, label: 'USD' },
+      ]
+  const activeCurrency = costCurrency ?? defaultSymbol
 
   const createMutation = useCreateInventoryItem()
   const updateMutation = useUpdateInventoryItem()
@@ -61,11 +75,13 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
       category: data.category,
       stock_grams: data.stock_grams,
       cost_per_kg: data.cost_per_kg || null,
-      notes: data.notes || null
+      cost_currency: data.cost_currency || null,
+      notes: data.notes || null,
+      low_stock_threshold_kg: data.low_stock_threshold_kg || null,
     }
 
     const onMutationSuccess = () => {
-      toast.success(initialData ? 'Inventory updated successfully' : 'Inventory added successfully')
+      toast.success(initialData ? t('inv_toast_updated') : t('inv_toast_created'))
       if (onSuccess) onSuccess()
       if (!onSuccess && !initialData) {
         reset()
@@ -73,7 +89,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
     }
 
     const onMutationError = (err: Error) => {
-      toast.error(err.message || 'Failed to save inventory item')
+      toast.error(err.message || t('inv_toast_error'))
     }
 
     if (initialData?.id) {
@@ -138,7 +154,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="green_coffee">{t('inv_form_cat_green')}</SelectItem>
-                    <SelectItem value="merch">{t('inv_form_cat_merch')}</SelectItem>
+                    <SelectItem value="supplies">{t('inv_form_cat_merch')}</SelectItem>
                     <SelectItem value="equipment">{t('inv_form_cat_equipment')}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -149,14 +165,39 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
 
           <div className="space-y-2">
             <Label htmlFor="cost_per_kg" className="text-expresso">{t('inv_form_cost')}</Label>
-            <Input 
-              id="cost_per_kg" 
-              type="number"
-              step="0.01"
-              placeholder="0.00" 
-              {...register('cost_per_kg', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-              className=""
-            />
+            <div className="flex gap-1">
+              {currencyOptions.length > 1 && (
+                <div className="flex rounded-md border border-warm-roast/30 overflow-hidden shrink-0">
+                  {currencyOptions.map((opt) => (
+                    <button
+                      key={opt.symbol}
+                      type="button"
+                      onClick={() => setValue('cost_currency', activeCurrency === opt.symbol ? null : opt.symbol)}
+                      className={`px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                        activeCurrency === opt.symbol
+                          ? 'bg-warm-roast text-white'
+                          : 'bg-transparent text-expresso/60 hover:bg-warm-roast/10'
+                      }`}
+                    >
+                      {opt.symbol}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {currencyOptions.length === 1 && (
+                <span className="inline-flex items-center px-2.5 rounded-md border border-warm-roast/30 text-xs font-bold text-expresso/60 bg-warm-roast/5">
+                  {activeCurrency}
+                </span>
+              )}
+              <Input
+                id="cost_per_kg"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                {...register('cost_per_kg', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                className="flex-1"
+              />
+            </div>
             {errors.cost_per_kg && <p className="text-red-500 text-xs font-medium">{errors.cost_per_kg.message}</p>}
           </div>
         </div>
@@ -181,11 +222,28 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
           )}
         </div>
 
+        {category === 'green_coffee' && (
+          <div className="space-y-2">
+            <Label htmlFor="low_stock_threshold_kg" className="text-expresso">
+              {t('inv_form_low_stock_threshold')}
+            </Label>
+            <Input
+              id="low_stock_threshold_kg"
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="e.g. 50 — alert when available lots drop below this"
+              {...register('low_stock_threshold_kg', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+            />
+            {errors.low_stock_threshold_kg && <p className="text-red-500 text-xs font-medium">{errors.low_stock_threshold_kg.message}</p>}
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="notes" className="text-expresso">{t('inv_form_notes')}</Label>
-          <Input 
-            id="notes" 
-            placeholder={t('inv_form_notes_placeholder')} 
+          <Input
+            id="notes"
+            placeholder={t('inv_form_notes_placeholder')}
             {...register('notes')}
             className=""
           />

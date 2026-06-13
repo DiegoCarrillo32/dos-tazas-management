@@ -20,6 +20,15 @@ export const greenCoffeeLotSchema = z.object({
   varietal: z.string().optional(),
   process: z.string().optional(),
   altitude: z.string().optional(),
+  harvest_date: z.string().optional(),
+  crop_year: z.string().optional(),
+  quantity_kg: z.number().min(0, 'Must be 0 or more').nullable().optional(),
+  quantity_shipped_kg: z.number().min(0, 'Must be 0 or more').optional(),
+  cupping_score: z.number().min(0).max(100).nullable().optional(),
+  moisture_content: z.number().min(0).max(100).nullable().optional(),
+  screen_size: z.string().optional(),
+  bag_count: z.number().int().min(0).nullable().optional(),
+  bag_weight_kg: z.number().min(0).nullable().optional(),
 })
 
 export const inventorySchema = z.object({
@@ -27,7 +36,9 @@ export const inventorySchema = z.object({
   category: z.string().min(1, 'Category is required'),
   stock_grams: z.number().min(0, 'Quantity cannot be negative'),
   cost_per_kg: z.number().nullable().optional(),
+  cost_currency: z.string().nullable().optional(),
   notes: z.string().optional(),
+  low_stock_threshold_kg: z.number().min(0).nullable().optional(),
 })
 
 export const maintenanceSchema = z.object({

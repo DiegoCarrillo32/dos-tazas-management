@@ -129,7 +129,9 @@ export type InventoryRecord = {
   category: string
   stock_grams: number
   cost_per_kg: number | null
+  cost_currency: string | null
   notes: string | null
+  low_stock_threshold_kg: number | null
   created_at: string
 }
 
@@ -138,7 +140,9 @@ export type InventoryInsertParams = {
   category?: string
   stock_grams: number
   cost_per_kg?: number | null
+  cost_currency?: string | null
   notes?: string | null
+  low_stock_threshold_kg?: number | null
 }
 
 export type InventoryUpdateParams = Partial<InventoryInsertParams>
@@ -209,6 +213,15 @@ export type GreenCoffeeLotRecord = {
   varietal: string | null
   process: string | null
   altitude: string | null
+  harvest_date: string | null
+  crop_year: string | null
+  quantity_kg: number | null
+  quantity_shipped_kg: number
+  cupping_score: number | null
+  moisture_content: number | null
+  screen_size: string | null
+  bag_count: number | null
+  bag_weight_kg: number | null
   created_at: string
 }
 

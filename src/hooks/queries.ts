@@ -44,6 +44,7 @@ import { createCustomer, updateCustomer, deleteCustomer } from '@/actions/custom
 import {
   createInventoryItem,
   updateInventoryItem,
+  deleteInventoryItem,
 } from '@/actions/inventory'
 import {
   createEquipment,
@@ -59,6 +60,7 @@ import {
   createGreenCoffeeLot,
   updateGreenCoffeeLot,
   deleteGreenCoffeeLot,
+  shipGreenCoffeeLot,
 } from '@/actions/greenCoffeeLots'
 import {
   createRoastBatch,
@@ -101,6 +103,7 @@ export const queryKeys = {
   equipment: ['equipment'] as const,
   maintenanceLogs: (equipmentId: string) => ['maintenance_logs', equipmentId] as const,
   greenCoffeeLots: (inventoryId: string) => ['green_coffee_lots', inventoryId] as const,
+  allGreenCoffeeLots: ['green_coffee_lots', 'all'] as const,
   roastBatches: ['roast_batches'] as const,
   b2bPartners: ['b2b_partners'] as const,
   b2bPartnerPricing: (partnerId: string) => ['b2b_pricing', partnerId] as const,
@@ -178,6 +181,13 @@ export function useGreenCoffeeLots(inventoryId: string) {
     queryKey: queryKeys.greenCoffeeLots(inventoryId),
     queryFn: () => fetchJson(`/api/inventory/${inventoryId}/lots`),
     enabled: !!inventoryId,
+  })
+}
+
+export function useAllGreenCoffeeLots() {
+  return useQuery<GreenCoffeeLotRecord[]>({
+    queryKey: queryKeys.allGreenCoffeeLots,
+    queryFn: () => fetchJson('/api/inventory/all-lots'),
   })
 }
 
@@ -414,6 +424,17 @@ export function useUpdateInventoryItem() {
   })
 }
 
+export function useDeleteInventoryItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteInventoryItem(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.inventory })
+      qc.invalidateQueries({ queryKey: queryKeys.allGreenCoffeeLots })
+    },
+  })
+}
+
 export function useUpdateSettings() {
   const qc = useQueryClient()
   return useMutation({
@@ -492,6 +513,7 @@ export function useCreateGreenCoffeeLot(inventoryId: string) {
     mutationFn: (params: GreenCoffeeLotInsertParams) => createGreenCoffeeLot(params),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.greenCoffeeLots(inventoryId) })
+      qc.invalidateQueries({ queryKey: queryKeys.allGreenCoffeeLots })
     },
   })
 }
@@ -503,6 +525,7 @@ export function useUpdateGreenCoffeeLot(inventoryId: string) {
       updateGreenCoffeeLot(id, params),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.greenCoffeeLots(inventoryId) })
+      qc.invalidateQueries({ queryKey: queryKeys.allGreenCoffeeLots })
     },
   })
 }
@@ -513,6 +536,19 @@ export function useDeleteGreenCoffeeLot(inventoryId: string) {
     mutationFn: (id: string) => deleteGreenCoffeeLot(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.greenCoffeeLots(inventoryId) })
+      qc.invalidateQueries({ queryKey: queryKeys.allGreenCoffeeLots })
+    },
+  })
+}
+
+export function useShipGreenCoffeeLot(inventoryId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, kgToShip }: { id: string; kgToShip: number }) =>
+      shipGreenCoffeeLot(id, kgToShip),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.greenCoffeeLots(inventoryId) })
+      qc.invalidateQueries({ queryKey: queryKeys.allGreenCoffeeLots })
     },
   })
 }
