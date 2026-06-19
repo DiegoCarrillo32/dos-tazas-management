@@ -1,7 +1,12 @@
-version: '3.8'
+version: "3.8"
 
 services:
   web:
+    labels:
+      - "hub.enable=true"
+      - "hub.name=Dos Tazas Management"
+      - "hub.port=5174"
+      - "hub.tags=Dev"
     build:
       context: .
       dockerfile: Dockerfile

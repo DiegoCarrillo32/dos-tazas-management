@@ -1,3 +1,14 @@
+import type { TimeLogRecord } from '@/types'
+
+/**
+ * Returns the effective hours for a log: adjusted_hours when set by admin,
+ * otherwise the clock-derived value.
+ */
+export function resolveHours(log: TimeLogRecord): number {
+  if (log.adjusted_hours != null) return log.adjusted_hours
+  return calculateHoursWorked(log.start_time, log.end_time)
+}
+
 /**
  * Builds a UTC ISO string from separate date and time inputs.
  * @param dateStr - Date string in YYYY-MM-DD format (from input type="date")

@@ -384,6 +384,9 @@ export type TimeLogRecord = {
   start_time: string
   end_time: string
   notes: string | null
+  adjusted_hours: number | null
+  adjustment_note: string | null
+  rate_snapshot: number | null
   status: TimeLogStatus
   created_at: string
   team_members?: {

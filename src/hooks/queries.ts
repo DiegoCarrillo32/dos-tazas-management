@@ -705,7 +705,7 @@ export function useConfirmOrderFromTemplate() {
 // Team & Time Tracker Hooks
 // ============================================================
 import { getTeamMembers, generateTeamInvite, updateTeamMember, deleteTeamMember } from '@/actions/team'
-import { getTeamTimeLogs, getWorkerTimeLogs, logTime, markTimeLogsPaid, deleteTimeLog } from '@/actions/tracker'
+import { getTeamTimeLogs, getWorkerTimeLogs, logTime, markTimeLogsPaid, deleteTimeLog, updateTimeLogHours, updateWorkerTimeLog, addTimeLogForWorker, revertTimeLogToPending } from '@/actions/tracker'
 import { TeamMemberRecord, TimeLogRecord, TeamMemberUpdateParams } from '@/types'
 
 export function useTeamMembers() {
@@ -786,6 +786,70 @@ export function useDeleteTimeLog() {
     mutationFn: (logId: string) => deleteTimeLog(logId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workerTimeLogs })
+      qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
+    },
+  })
+}
+
+export function useUpdateTimeLogHours() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      logId,
+      adjustedHours,
+      adjustmentNote,
+    }: {
+      logId: string
+      adjustedHours: number | null
+      adjustmentNote: string | null
+    }) => updateTimeLogHours(logId, adjustedHours, adjustmentNote),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
+    },
+  })
+}
+
+export function useUpdateWorkerTimeLog() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      logId,
+      params,
+    }: {
+      logId: string
+      params: { start_time: string; end_time: string; notes: string | null }
+    }) => updateWorkerTimeLog(logId, params),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.workerTimeLogs })
+    },
+  })
+}
+
+export function useAddTimeLogForWorker() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      workerId,
+      startTime,
+      endTime,
+      notes,
+    }: {
+      workerId: string
+      startTime: string
+      endTime: string
+      notes: string | null
+    }) => addTimeLogForWorker(workerId, startTime, endTime, notes),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
+    },
+  })
+}
+
+export function useRevertTimeLogToPending() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (logId: string) => revertTimeLogToPending(logId),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
     },
   })

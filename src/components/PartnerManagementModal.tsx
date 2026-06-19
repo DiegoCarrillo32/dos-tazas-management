@@ -87,7 +87,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
             Manage
           </Button>
         }
-        contentClassName="sm:w-full sm:max-w-[700px] bg-white-pergamino p-4 sm:p-6 border-warm-roast/10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+        contentClassName="sm:w-full sm:max-w-[700px] bg-white-pergamino p-4 sm:p-6 border-warm-roast/10 shadow-2xl max-h-[90vh] overflow-y-auto"
         hideTitle={true}
         hideFooter={true}
         title={`Manage ${partner.company_name}`}
@@ -151,7 +151,7 @@ export function PartnerManagementModal({ partner }: { partner: B2BPartnerRecord 
 
             <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left min-w-[800px]">
+                <table className="w-full text-sm text-left min-w-[450px]">
                   <thead className="bg-white-pergamino text-xs uppercase text-expresso/60">
                     <tr>
                       <th className="px-4 sm:px-6 py-3">Coffee Bean</th>
