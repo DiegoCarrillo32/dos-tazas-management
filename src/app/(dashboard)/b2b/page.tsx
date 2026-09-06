@@ -15,11 +15,16 @@ import { RoastingOrderDetailsModal } from '@/components/RoastingOrderDetailsModa
 import { GenericModal } from '@/components/ui/GenericModal'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatCurrency, formatCRC, formatKg } from '@/lib/format'
+import { aggregatePendingB2BOrders, calculateGreenCoffeeNeeded } from '@/utils/calculations'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { DictionaryKey } from '@/i18n/dictionaries'
+import type { OrderWithCustomer } from '@/types'
 
 export default function B2BPage() {
   const [isAddOpen, setIsAddOpen] = useState(false)
+  // OrderDetailsModal needs an onClose to make its Close button (and the
+  // post-delete dismiss) work, so these dialogs are controlled by order id.
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null)
   const { t } = useTranslation()
   
   const { data: orders, isLoading: loadingOrders } = useOrders()
@@ -35,16 +40,19 @@ export default function B2BPage() {
   // Filter for B2B orders (those with a partner_id or company_name)
   const b2bOrders = (orders || []).filter(o => !!o.company_name || !!o.partner_id)
 
-  // Calculate Roast-to-Order Schedule (aggregate pending B2B orders by inventory_id)
+  // Roast-to-Order Schedule: aggregate pending B2B orders by bean.
   const pendingB2B = b2bOrders.filter(o => o.fulfillment_status === 'pending')
-  const scheduleData = pendingB2B.reduce((acc, order) => {
-    if (order.inventory_id) {
-      acc[order.inventory_id] = (acc[order.inventory_id] || 0) + order.amount_grams
-    }
-    return acc
-  }, {} as Record<string, number>)
+  const scheduleData = aggregatePendingB2BOrders(b2bOrders)
+  // Orders with no bean can't be scheduled — count them so the totals below
+  // don't quietly under-report what still has to be roasted.
+  const unscheduledCount = pendingB2B.filter(o => !o.inventory_id).length
 
   const roastLoss = settings?.roast_loss_percentage ?? 20
+
+  const fulfillmentLabel = (status: OrderWithCustomer['fulfillment_status']) =>
+    status === 'delivered' ? t('orders_delivered')
+      : status === 'roasted' ? t('orders_roasted')
+        : t('orders_pending')
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -52,7 +60,7 @@ export default function B2BPage() {
         title={t('b2b_title') || "Wholesale / B2B Portal"}
         subtitle={t('b2b_subtitle') || "Manage large orders for wholesale clients and generate roast schedules."}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">
             <InvitePartnerDialog />
 
             <GenericModal
@@ -82,22 +90,22 @@ export default function B2BPage() {
       />
 
       <Tabs defaultValue="partners" className="w-full space-y-6">
-        <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto w-full flex flex-row gap-1 max-w-[540px]">
-          <TabsTrigger value="partners" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+        <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto group-data-horizontal/tabs:h-auto w-full grid grid-cols-2 sm:flex sm:flex-row gap-1 max-w-full sm:max-w-[540px]">
+          <TabsTrigger value="partners" className="flex-1 min-w-0 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <Users className="w-4 h-4 mr-1 shrink-0" />
-            {t('b2b_partners_tab') || "Partners"}
+            <span className="truncate">{t('b2b_partners_tab') || "Partners"}</span>
           </TabsTrigger>
-          <TabsTrigger value="orders" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+          <TabsTrigger value="orders" className="flex-1 min-w-0 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <ShoppingCart className="w-4 h-4 mr-1 shrink-0" />
-            {t('b2b_orders_tab') || "Orders"}
+            <span className="truncate">{t('b2b_orders_tab') || "Orders"}</span>
           </TabsTrigger>
-          <TabsTrigger value="roasting" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+          <TabsTrigger value="roasting" className="flex-1 min-w-0 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <Flame className="w-4 h-4 mr-1 shrink-0" />
-            {t('b2b_roasting_tab')}
+            <span className="truncate">{t('b2b_roasting_tab') || "Roasting"}</span>
           </TabsTrigger>
-          <TabsTrigger value="schedule" className="flex-1 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
+          <TabsTrigger value="schedule" className="flex-1 min-w-0 rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm">
             <Calculator className="w-4 h-4 mr-1 shrink-0" />
-            {t('b2b_schedule_tab') || "Schedule"}
+            <span className="truncate">{t('b2b_schedule_tab') || "Schedule"}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -131,7 +139,7 @@ export default function B2BPage() {
                         order.fulfillment_status === 'roasted' ? 'accent' :
                         'info'
                       }>
-                        {order.fulfillment_status}
+                        {fulfillmentLabel(order.fulfillment_status)}
                       </StatusBadge>
                     </div>
                     <div className="p-4 grid grid-cols-2 gap-3 text-sm">
@@ -151,6 +159,8 @@ export default function B2BPage() {
                       </div>
                       <div className="flex items-end justify-end">
                         <GenericModal
+                          isOpen={openOrderId === order.id}
+                          onOpenChange={(open) => setOpenOrderId(open ? order.id : null)}
                           hideFooter={true}
                           hideTitle={true}
                           title={t('b2b_order_details')}
@@ -161,7 +171,13 @@ export default function B2BPage() {
                             </button>
                           }
                         >
-                          <OrderDetailsModal order={order} customers={customers || []} inventoryItems={coffeeInventory} settings={settings} />
+                          <OrderDetailsModal
+                            order={order}
+                            customers={customers || []}
+                            inventoryItems={coffeeInventory}
+                            settings={settings}
+                            onClose={() => setOpenOrderId(null)}
+                          />
                         </GenericModal>
                       </div>
                     </div>
@@ -227,11 +243,13 @@ export default function B2BPage() {
                             order.fulfillment_status === 'roasted' ? 'accent' :
                             'info'
                           }>
-                            {order.fulfillment_status}
+                            {fulfillmentLabel(order.fulfillment_status)}
                           </StatusBadge>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <GenericModal
+                            isOpen={openOrderId === order.id}
+                            onOpenChange={(open) => setOpenOrderId(open ? order.id : null)}
                             hideFooter={true}
                             hideTitle={true}
                             title={t('b2b_order_details')}
@@ -242,11 +260,12 @@ export default function B2BPage() {
                               </button>
                             }
                           >
-                            <OrderDetailsModal 
-                              order={order} 
-                              customers={customers || []} 
-                              inventoryItems={coffeeInventory} 
-                              settings={settings} 
+                            <OrderDetailsModal
+                              order={order}
+                              customers={customers || []}
+                              inventoryItems={coffeeInventory}
+                              settings={settings}
+                              onClose={() => setOpenOrderId(null)}
                             />
                           </GenericModal>
                         </td>
@@ -412,11 +431,20 @@ export default function B2BPage() {
               <div className="space-y-4">
                 {Object.entries(scheduleData).map(([invId, amountNeeded]) => {
                   const inv = coffeeInventory.find(i => i.id === invId)
-                  const greenCoffeeNeeded = amountNeeded / (1 - roastLoss / 100)
+                  const greenCoffeeNeeded = calculateGreenCoffeeNeeded(amountNeeded, roastLoss)
+                  const stockGrams = inv?.stock_grams ?? 0
+                  const shortfall = greenCoffeeNeeded - stockGrams
                   return (
                     <div key={invId} className="flex flex-col bg-white-pergamino/30 p-4 rounded-xl border border-warm-roast/10">
-                      <span className="font-bold text-lg text-coffee-fruit">{inv?.item_name || t('b2b_unknown_bean')}</span>
-                      <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-bold text-lg text-coffee-fruit">{inv?.item_name || t('b2b_unknown_bean')}</span>
+                        {shortfall > 0 && (
+                          <StatusBadge tone="danger">
+                            {t('b2b_schedule_short').replace('{amount}', formatKg(shortfall))}
+                          </StatusBadge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-3 text-sm">
                         <div className="bg-card p-3 rounded-lg border border-warm-roast/5 shadow-sm">
                           <span className="block text-xs font-bold text-expresso/50 uppercase tracking-wider mb-1">{t('b2b_roasted_needed')}</span>
                           <span className="text-xl font-medium text-expresso">{(amountNeeded / 1000).toFixed(2)} <span className="text-sm">kg</span></span>
@@ -425,11 +453,23 @@ export default function B2BPage() {
                           <span className="block text-xs font-bold text-expresso/50 uppercase tracking-wider mb-1">{t('b2b_green_needed')}</span>
                           <span className="text-xl font-medium text-warm-roast">{(greenCoffeeNeeded / 1000).toFixed(2)} <span className="text-sm">kg</span></span>
                         </div>
+                        <div className="bg-card p-3 rounded-lg border border-warm-roast/5 shadow-sm">
+                          <span className="block text-xs font-bold text-expresso/50 uppercase tracking-wider mb-1">{t('b2b_schedule_stock')}</span>
+                          <span className={`text-xl font-medium ${shortfall > 0 ? 'text-red-600 dark:text-red-400' : 'text-expresso'}`}>
+                            {(stockGrams / 1000).toFixed(2)} <span className="text-sm">kg</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )
                 })}
               </div>
+            )}
+
+            {unscheduledCount > 0 && (
+              <p className="mt-4 text-xs text-expresso/60">
+                {t('b2b_schedule_unassigned').replace('{count}', String(unscheduledCount))}
+              </p>
             )}
           </div>
         </TabsContent>

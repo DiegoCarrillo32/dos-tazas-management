@@ -3,6 +3,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { B2BRecurringOrderRecord, B2BRecurringOrderInsertParams, B2BRecurringOrderUpdateParams, OrderRecord } from '@/types'
+import { findOrCreateB2BCustomer } from '@/utils/b2bCustomer'
+import { calculateOrderCosts, calculateRawGrams } from '@/utils/calculations'
+import { fetchSettings } from '@/actions/settings'
 
 export async function getRecurringOrders(partnerId: string) {
   const supabase = await createClient()
@@ -150,41 +153,51 @@ export async function confirmOrderFromTemplate(recurringId: string) {
 
   const totalPrice = (recurringOrder.amount_grams / 1000) * pricePerKg
 
-  // 3. We need a customer record to associate the order with.
-  // For B2B, the roaster is the user_id, and we need a customer for the partner.
-  // Let's see if one exists for the company name, else create it.
-  // Note: the order is created on behalf of the roaster, so user_id = roaster_user_id.
+  // 3. Every B2B order still needs a customer row; reuse the one backing this
+  // company so standing orders don't spawn duplicates. The order belongs to the
+  // roaster, so it is scoped to their user id.
   const roasterId = recurringOrder.partner.roaster_user_id
 
-  let customerId = ''
+  const customerId = await findOrCreateB2BCustomer(supabase, {
+    userId: roasterId,
+    companyName: recurringOrder.partner.company_name,
+  })
 
-  const { data: existingCustomer } = await supabase
-    .from('customers')
-    .select('id')
-    .eq('user_id', roasterId)
-    .eq('full_name', recurringOrder.partner.company_name)
-    .limit(1)
+  // 4. Mirror createOrder: deduct green coffee and persist the cost breakdown,
+  // otherwise generated orders show no cost and inventory silently drifts.
+  const settings = await fetchSettings()
+  const bagCount = recurringOrder.bag_count ?? 1
+
+  let costPerKg: number | null = null
+
+  const { data: invItem } = await supabase
+    .from('inventory')
+    .select('stock_grams, cost_per_kg')
+    .eq('id', recurringOrder.inventory_id)
     .single()
 
-  if (existingCustomer) {
-    customerId = existingCustomer.id
-  } else {
-    const { data: newCustomer, error: custError } = await supabase
-      .from('customers')
-      .insert({
-        user_id: roasterId,
-        full_name: recurringOrder.partner.company_name,
-      })
-      .select('id')
-      .single()
-      
-    if (custError || !newCustomer) {
-      throw new Error(`Failed to ensure customer record: ${custError?.message}`)
+  if (invItem) {
+    costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
+    const rawGramsUsed = calculateRawGrams(recurringOrder.amount_grams, settings.roast_loss_percentage)
+
+    const newStock = invItem.stock_grams - rawGramsUsed
+    if (newStock < 0) {
+      console.warn(`[Inventory Warning] Stock for item ${recurringOrder.inventory_id} will go negative: ${newStock}g remaining after this standing order.`)
     }
-    customerId = newCustomer.id
+    await supabase
+      .from('inventory')
+      .update({ stock_grams: newStock })
+      .eq('id', recurringOrder.inventory_id)
   }
 
-  // 4. Create the actual order
+  const { costBreakdown, totalCost } = calculateOrderCosts({
+    amountGrams: recurringOrder.amount_grams,
+    bagCount,
+    settings,
+    costPerKg,
+  })
+
+  // 5. Create the actual order
   const { data: newOrder, error: orderError } = await supabase
     .from('orders')
     .insert({
@@ -195,9 +208,13 @@ export async function confirmOrderFromTemplate(recurringId: string) {
       amount_grams: recurringOrder.amount_grams,
       total_price: totalPrice,
       inventory_id: recurringOrder.inventory_id,
-      bag_count: recurringOrder.bag_count,
+      bag_count: bagCount,
       company_name: recurringOrder.partner.company_name,
       partner_id: recurringOrder.partner_id,
+      fulfillment_status: 'pending',
+      payment_status: 'pending',
+      total_cost: totalCost,
+      cost_breakdown: costBreakdown,
     })
     .select()
     .single()
@@ -206,6 +223,6 @@ export async function confirmOrderFromTemplate(recurringId: string) {
     throw new Error(`Failed to create order from template: ${orderError.message}`)
   }
 
-  revalidatePath('/dashboard/orders')
+  revalidatePath('/', 'layout')
   return newOrder as OrderRecord
 }

@@ -9,11 +9,9 @@ import { Button } from '@/components/ui/button'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { RecurringOrderForm } from '@/components/RecurringOrderForm'
 import { StatusBadge } from '@/components/ui/status-badge'
-import { formatKg } from '@/lib/format'
+import { formatKg, formatRecurringSchedule } from '@/lib/format'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { useState } from 'react'
-
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 export default function PartnerRecurringOrders() {
   const { t } = useTranslation()
@@ -49,7 +47,7 @@ export default function PartnerRecurringOrders() {
             <div className="p-6">
               <RecurringOrderForm 
                 partnerId={partnerId} 
-                inventoryItems={inventoryItems || []} 
+                inventoryItems={(inventoryItems || []).filter(i => i.category === 'green_coffee')} 
                 onSuccess={() => setIsDialogOpen(false)} 
                 onCancel={() => setIsDialogOpen(false)} 
               />
@@ -104,8 +102,9 @@ export default function PartnerRecurringOrders() {
                   </div>
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('common_frequency')}</div>
-                    <div className="font-medium text-expresso capitalize">{order.frequency}</div>
-                    <div className="text-xs text-expresso/60">{WEEKDAYS[order.day_of_week] || ''}s</div>
+                    <div className="font-medium text-expresso capitalize">
+                      {formatRecurringSchedule(order.frequency, order.day_of_week, t)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -152,10 +151,7 @@ export default function PartnerRecurringOrders() {
                       <span className="text-xs text-expresso/60 ml-1">({t('common_bags').replace('{count}', String(order.bag_count))})</span>
                     </td>
                     <td className="px-6 py-4 font-medium text-expresso capitalize">
-                      {order.frequency}
-                      <div className="text-xs text-expresso/60">
-                        {WEEKDAYS[order.day_of_week] || ''}s
-                      </div>
+                      {formatRecurringSchedule(order.frequency, order.day_of_week, t)}
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge tone={order.is_active ? 'success' : 'danger'}>

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import type { FulfillmentStatus, PaymentStatus, OrderWithCustomer } from '@/types'
 import { authActionClient } from '@/lib/safe-action'
 import { orderSchema } from '@/lib/schemas'
+import { B2B_AUTO_CUSTOMER_ID, findOrCreateB2BCustomer } from '@/utils/b2bCustomer'
 import * as z from 'zod'
 
 export async function fetchOrders(): Promise<OrderWithCustomer[]> {
@@ -41,41 +42,40 @@ export const createOrder = authActionClient
   .schema(orderSchema)
   .action(async ({ parsedInput: params, ctx: { user, supabase } }) => {
 
-  // Handle B2B auto customer resolution
+  // Handle B2B auto customer resolution. The form submits a sentinel instead of
+  // a customer id: resolve it from the linked partner, or from the typed
+  // company name when the order is a manual (unlinked) B2B entry.
   let customerId = params.customer_id
-  if (params.partner_id && customerId === 'B2B_AUTO') {
-    const { data: partner } = await supabase
-      .from('b2b_partners')
-      .select('company_name, contact_phone, contact_name')
-      .eq('id', params.partner_id)
-      .single()
+  if (customerId === B2B_AUTO_CUSTOMER_ID) {
+    let companyName = params.company_name?.trim() || ''
+    let contactPhone: string | null = null
 
-    if (partner) {
-      const { data: existingCustomer } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('full_name', partner.company_name)
-        .limit(1)
+    if (params.partner_id) {
+      const { data: partner, error: partnerError } = await supabase
+        .from('b2b_partners')
+        .select('company_name, contact_phone')
+        .eq('id', params.partner_id)
         .single()
 
-      if (existingCustomer) {
-        customerId = existingCustomer.id
-      } else {
-        const { data: newCustomer } = await supabase
-          .from('customers')
-          .insert([{
-            full_name: partner.company_name,
-            phone: partner.contact_phone || null,
-            email: null,
-            address: null,
-            user_id: user.id
-          }])
-          .select('id')
-          .single()
-        if (newCustomer) customerId = newCustomer.id
+      if (partnerError || !partner) {
+        throw new Error('The selected partner could not be found.')
       }
+
+      companyName = partner.company_name
+      contactPhone = partner.contact_phone
     }
+
+    if (!companyName) {
+      throw new Error(
+        'Could not resolve a customer for this B2B order — select a partner or enter a company name.'
+      )
+    }
+
+    customerId = await findOrCreateB2BCustomer(supabase, {
+      userId: user.id,
+      companyName,
+      phone: contactPhone,
+    })
   }
 
   // Fetch settings for roasting loss and cost rates

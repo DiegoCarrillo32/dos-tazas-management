@@ -17,6 +17,7 @@ import {
 import { FormCard } from "@/components/ui/form-card";
 import type { InventoryRecord, B2BRecurringOrderInsertParams, B2BRecurringOrderRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
+import type { DictionaryKey } from "@/i18n/dictionaries";
 import { useCreateRecurringOrder, useUpdateRecurringOrder } from '@/hooks/queries';
 import { toast } from "sonner";
 
@@ -29,19 +30,11 @@ const ROAST_LEVELS = [
   { value: "Dark", labelKey: "roast_dark" as const },
 ];
 const FREQUENCIES = [
-  { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Bi-Weekly (Every 2 weeks)" },
-  { value: "monthly", label: "Monthly" },
+  { value: "weekly", labelKey: "freq_weekly" as const },
+  { value: "biweekly", labelKey: "freq_biweekly" as const },
+  { value: "monthly", labelKey: "freq_monthly" as const },
 ];
-const DAYS_OF_WEEK = [
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-  { value: 0, label: "Sunday" },
-];
+const DAYS_OF_WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 
 
@@ -87,7 +80,7 @@ export function RecurringOrderForm({
       preparation_method: data.preparation_method,
       roast_level: data.roast_level,
       amount_grams: data.amount_grams,
-      inventory_id: data.inventory_id || null,
+      inventory_id: data.inventory_id,
       bag_count: data.bag_count,
       frequency: data.frequency,
       day_of_week: data.day_of_week,
@@ -95,7 +88,7 @@ export function RecurringOrderForm({
     };
 
     const onMutationSuccess = () => {
-      toast.success(initialData?.id ? 'Recurring template updated' : 'Recurring template created');
+      toast.success(initialData?.id ? t('pm_standing_updated') : t('pm_standing_created'));
       if (onSuccess) onSuccess();
       if (!onSuccess && !initialData) {
         reset();
@@ -103,7 +96,7 @@ export function RecurringOrderForm({
     };
 
     const onMutationError = (err: Error) => {
-      toast.error(err.message || "Failed to save recurring template");
+      toast.error(err.message || t('rof_save_failed'));
     };
 
     if (initialData?.id) {
@@ -119,7 +112,7 @@ export function RecurringOrderForm({
     }
   };
 
-  const title = initialData?.id ? "Edit Standing Order" : "New Standing Order";
+  const title = initialData?.id ? t('pm_standing_edit') : t('pm_standing_new');
 
   const footer = (
     <>
@@ -142,8 +135,8 @@ export function RecurringOrderForm({
         {isPending
           ? t('loading')
           : initialData?.id
-            ? "Save Changes"
-            : "Create Template"}
+            ? t('rof_save')
+            : t('rof_create')}
       </Button>
     </>
   );
@@ -153,21 +146,17 @@ export function RecurringOrderForm({
       <FormCard title={title} footer={footer}>
         <div className="space-y-2">
           <Label htmlFor="inventory_id" className="text-expresso">
-            {t('order_form_coffee_bean')} <span className="text-expresso/50 font-normal text-xs ml-1">{t('order_form_optional')}</span>
+            {t('order_form_coffee_bean')} <span className="text-red-500">*</span>
           </Label>
           <Controller
             control={control}
             name="inventory_id"
             render={({ field }) => (
-              <Select
-                value={field.value || "none"}
-                onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
-              >
+              <Select value={field.value || undefined} onValueChange={field.onChange}>
                 <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
                   <SelectValue placeholder={t('order_form_select_bean')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Standard Coffee (No specific bean)</SelectItem>
                   {inventoryItems.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
                       {item.item_name}
@@ -177,16 +166,17 @@ export function RecurringOrderForm({
               </Select>
             )}
           />
+          {errors.inventory_id && <p className="text-red-500 text-xs font-medium">{errors.inventory_id.message}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="preparation_method" className="text-expresso">
               {t('order_form_preparation')} <span className="text-red-500">*</span>
             </Label>
             <Input 
               id="preparation_method" 
-              placeholder="e.g. 1 elect perk and 1 auto drip" 
+              placeholder={t('rof_prep_placeholder')} 
               {...register('preparation_method')}
               className=""
             />
@@ -219,7 +209,7 @@ export function RecurringOrderForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="amount_grams" className="text-expresso">
               {t('order_form_amount')} <span className="text-red-500">*</span>
@@ -250,10 +240,10 @@ export function RecurringOrderForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="frequency" className="text-expresso">
-              Schedule <span className="text-red-500">*</span>
+              {t('rof_schedule')} <span className="text-red-500">*</span>
             </Label>
             <Controller
               control={control}
@@ -261,12 +251,12 @@ export function RecurringOrderForm({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
-                    <SelectValue placeholder="Select Frequency" />
+                    <SelectValue placeholder={t('rof_select_frequency')} />
                   </SelectTrigger>
                   <SelectContent>
                     {FREQUENCIES.map((freq) => (
                       <SelectItem key={freq.value} value={freq.value}>
-                        {freq.label}
+                        {t(freq.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -278,7 +268,7 @@ export function RecurringOrderForm({
 
           <div className="space-y-2">
             <Label htmlFor="day_of_week" className="text-expresso">
-              Delivery Day <span className="text-red-500">*</span>
+              {t('rof_delivery_day')} <span className="text-red-500">*</span>
             </Label>
             <Controller
               control={control}
@@ -286,12 +276,12 @@ export function RecurringOrderForm({
               render={({ field }) => (
                 <Select value={field.value.toString()} onValueChange={(v) => field.onChange(Number(v))}>
                   <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
-                    <SelectValue placeholder="Select Day" />
+                    <SelectValue placeholder={t('rof_select_day')} />
                   </SelectTrigger>
                   <SelectContent>
                     {DAYS_OF_WEEK.map((day) => (
-                      <SelectItem key={day.value} value={day.value.toString()}>
-                        {day.label}
+                      <SelectItem key={day} value={day.toString()} className="capitalize">
+                        {t(`weekday_${day}` as DictionaryKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>

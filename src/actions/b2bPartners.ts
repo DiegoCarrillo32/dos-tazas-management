@@ -19,6 +19,12 @@ export async function generateInvite(
     throw new Error('Not authenticated')
   }
 
+  // `required` on the input still accepts whitespace, so trim server-side.
+  const company = companyName?.trim() || ''
+  if (!company) {
+    throw new Error('Company name is required.')
+  }
+
   // Generate a short invite code
   const inviteCode = crypto.randomUUID().slice(0, 8).toUpperCase()
 
@@ -27,10 +33,10 @@ export async function generateInvite(
     .insert({
       roaster_user_id: userData.user.id,
       invite_code: inviteCode,
-      company_name: companyName,
-      contact_name: contactName,
-      contact_phone: contactPhone,
-      invite_email: inviteEmail,
+      company_name: company,
+      contact_name: contactName?.trim() || null,
+      contact_phone: contactPhone?.trim() || null,
+      invite_email: inviteEmail?.trim() || null,
       status: 'pending',
     })
     .select()

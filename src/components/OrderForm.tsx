@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { orderSchema } from "@/lib/schemas";
+import { b2bOrderSchema, orderSchema } from "@/lib/schemas";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,9 @@ import { FormCard } from "@/components/ui/form-card";
 import { GenericModal } from "@/components/ui/GenericModal";
 import type { CustomerRecord, OrderInsertParams, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useCreateOrder, useUpdateOrder, usePartners } from '@/hooks/queries';
+import { useCreateOrder, useUpdateOrder, usePartners, usePartnerPricing } from '@/hooks/queries';
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/format";
 
 const PREPARATION_METHODS = [
   { value: "Whole Bean", labelKey: "prep_whole_bean" as const },
@@ -77,9 +78,12 @@ export function OrderForm({
     setValue,
     register,
     reset,
-    formState: { errors },
+    watch,
+    formState: { errors, touchedFields },
   } = useForm<OrderFormValues>({
-    resolver: zodResolver(orderSchema),
+    // The B2B form has no customer picker, so it needs the extra rule that a
+    // partner or a company name must identify the buyer.
+    resolver: zodResolver(isB2B ? b2bOrderSchema : orderSchema),
     defaultValues: initialData
       ? {
           customer_id: initialData.customer_id,
@@ -115,6 +119,32 @@ export function OrderForm({
 
   const roastLossPercentage = settings?.roast_loss_percentage ?? 20;
 
+  // --- B2B custom pricing ------------------------------------------------
+  // When the roaster has a price/kg on file for this partner + bean, prefill
+  // the total instead of making them do the arithmetic. Only while they have
+  // not typed a price themselves, and never when editing an existing order.
+  const selectedPartnerId = watch('partner_id') || '';
+  const selectedInventoryId = watch('inventory_id') || '';
+  const watchedAmountGrams = watch('amount_grams');
+  const { data: partnerPricing } = usePartnerPricing(isB2B ? selectedPartnerId : '');
+
+  const customPricePerKg = isB2B && selectedInventoryId
+    ? partnerPricing?.find((row) => row.inventory_id === selectedInventoryId)?.price_per_kg ?? null
+    : null;
+
+  const autoTotalPrice = customPricePerKg != null && Number(watchedAmountGrams) > 0
+    ? Math.round((Number(watchedAmountGrams) / 1000) * Number(customPricePerKg) * 100) / 100
+    : null;
+
+  const priceIsUserEdited = !!touchedFields.total_price;
+
+  useEffect(() => {
+    if (initialData?.id) return;
+    if (priceIsUserEdited) return;
+    if (autoTotalPrice == null) return;
+    setValue('total_price', autoTotalPrice);
+  }, [autoTotalPrice, initialData?.id, priceIsUserEdited, setValue]);
+
   const handleCustomerCreated = (newCustomer: CustomerRecord) => {
     setCustomersList((prev) => [...prev, newCustomer]);
     setValue('customer_id', newCustomer.id, { shouldValidate: true });
@@ -136,7 +166,7 @@ export function OrderForm({
     };
 
     const onMutationSuccess = () => {
-      toast.success(initialData?.id ? 'Order updated successfully' : 'Order created successfully');
+      toast.success(initialData?.id ? t('of_order_updated') : t('of_order_created'));
       if (onSuccess) onSuccess();
       if (!onSuccess && !initialData) {
         reset();
@@ -144,7 +174,7 @@ export function OrderForm({
     };
 
     const onMutationError = (err: Error) => {
-      toast.error(err.message || "Failed to save order");
+      toast.error(err.message || t('of_order_failed'));
     };
 
     if (initialData?.id) {
@@ -322,7 +352,7 @@ export function OrderForm({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="preparation_method" className="text-expresso">
               {t('order_form_preparation')} <span className="text-red-500">*</span>
@@ -374,7 +404,7 @@ export function OrderForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="amount_grams" className="text-expresso">
               {t('order_form_amount')} <span className="text-red-500">*</span>
@@ -416,11 +446,16 @@ export function OrderForm({
               {...register('total_price', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
               className=""
             />
+            {customPricePerKg != null && !initialData?.id && (
+              <p className="text-xs text-coffee-fruit">
+                {t('of_price_from_custom').replace('{price}', formatCurrency(customPricePerKg, settings))}
+              </p>
+            )}
             {errors.total_price && <p className="text-red-500 text-xs font-medium">{errors.total_price.message}</p>}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="origin_notes" className="text-expresso">
               {t('order_form_origin_notes')}
@@ -437,27 +472,31 @@ export function OrderForm({
             <div className="space-y-4 col-span-2 mt-2">
               <div className="space-y-2 border border-warm-roast/10 bg-warm-roast/5 p-4 rounded-xl">
                 <Label htmlFor="partner_id" className="text-expresso font-bold">
-                  Link to Connected Partner <span className="text-xs text-expresso/50 font-normal ml-1">(Optional)</span>
+                  {t('of_partner_link')} <span className="text-xs text-expresso/50 font-normal ml-1">{t('order_form_optional')}</span>
                 </Label>
-                <p className="text-xs text-expresso/70 mb-2">If you select a partner, they will be able to see this order in their dashboard.</p>
+                <p className="text-xs text-expresso/70 mb-2">{t('of_partner_link_desc')}</p>
                 <Controller
                   control={control}
                   name="partner_id"
                   render={({ field }) => (
                     <Select value={field.value || "none"} onValueChange={(val) => {
                       field.onChange(val === "none" ? "" : val)
-                      if (val !== "none") {
-                        const selectedPartner = partners.find(p => p.id === val)
-                        if (selectedPartner) {
-                          setValue('company_name', selectedPartner.company_name)
-                        }
+                      if (val === "none") {
+                        // Don't leave the previous partner's name behind on a
+                        // now-unlinked order.
+                        setValue('company_name', '', { shouldValidate: true })
+                        return
+                      }
+                      const selectedPartner = partners.find(p => p.id === val)
+                      if (selectedPartner) {
+                        setValue('company_name', selectedPartner.company_name, { shouldValidate: true })
                       }
                     }}>
                       <SelectTrigger className="w-full bg-card border-warm-roast/30 focus:ring-coffee-fruit">
-                        <SelectValue placeholder="Select a connected partner" />
+                        <SelectValue placeholder={t('of_partner_select')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">No Partner (Manual Entry)</SelectItem>
+                        <SelectItem value="none">{t('of_partner_none')}</SelectItem>
                         {partners.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.company_name}</SelectItem>
                         ))}
@@ -474,12 +513,12 @@ export function OrderForm({
 
               <div className="space-y-2">
                 <Label htmlFor="company_name" className="text-expresso">
-                  Company Name <span className="text-xs text-expresso/50 font-normal ml-1">(Will be filled automatically if partner selected)</span>
+                  {t('common_company')} <span className="text-xs text-expresso/50 font-normal ml-1">{t('of_company_hint')}</span>
                 </Label>
                 <Input
                   id="company_name"
-                  placeholder="e.g. Central Perk Cafe"
-                  {...register('company_name', { required: 'Company name is required for B2B orders' })}
+                  placeholder={t('of_company_placeholder')}
+                  {...register('company_name')}
                   className=""
                 />
                 {errors.company_name && <p className="text-red-500 text-xs font-medium">{errors.company_name.message}</p>}

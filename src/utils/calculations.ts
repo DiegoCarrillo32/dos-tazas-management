@@ -79,8 +79,15 @@ export function calculateGreenCoffeeNeeded(roastedAmountNeeded: number, roastLos
   return Math.ceil(roastedAmountNeeded / lossRatio)
 }
 
+/**
+ * Sum pending wholesale orders by bean, for the roast-to-order schedule.
+ * An order counts as B2B when it carries a company name or is linked to a
+ * partner — the same test the B2B page uses to build its order list.
+ */
 export function aggregatePendingB2BOrders(orders: Partial<OrderRecord>[]): Record<string, number> {
-  const pendingB2B = orders.filter((o) => o.fulfillment_status === 'pending' && !!o.company_name)
+  const pendingB2B = orders.filter(
+    (o) => o.fulfillment_status === 'pending' && (!!o.company_name || !!o.partner_id)
+  )
   return pendingB2B.reduce((acc: Record<string, number>, order) => {
     if (order.inventory_id) {
       acc[order.inventory_id] = (acc[order.inventory_id] || 0) + (order.amount_grams || 0)

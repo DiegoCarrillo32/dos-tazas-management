@@ -697,6 +697,8 @@ export function useConfirmOrderFromTemplate() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.b2bOrders() })
+      // Generating an order now deducts green coffee, so stock is stale too.
+      qc.invalidateQueries({ queryKey: queryKeys.inventory })
     },
   })
 }

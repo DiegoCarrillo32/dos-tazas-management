@@ -1,4 +1,5 @@
-import type { UserSettingsRecord } from "@/types"
+import type { RecurringFrequency, UserSettingsRecord } from "@/types"
+import type { DictionaryKey } from "@/i18n/dictionaries"
 
 type CurrencySettings = Pick<UserSettingsRecord, "currency_symbol"> | null | undefined
 
@@ -43,4 +44,35 @@ export function formatKg(grams: number | null | undefined): string {
   const value = Number(grams ?? 0)
   const safe = Number.isFinite(value) ? value : 0
   return `${(safe / 1000).toFixed(2)} kg`
+}
+
+type Translate = (key: DictionaryKey) => string
+
+/**
+ * Human-readable description of a standing order's cadence, e.g.
+ * "Weekly · monday" or "Monthly · first monday".
+ *
+ * Replaces the `WEEKDAYS[day_of_week] + "s"` string that the b2b and partner
+ * views each hardcoded — that read as "monthly (Mondays)" for monthly
+ * templates, which is not what the schedule means.
+ */
+export function formatRecurringSchedule(
+  frequency: RecurringFrequency,
+  dayOfWeek: number,
+  t: Translate
+): string {
+  const dayKey = `weekday_${Math.min(Math.max(dayOfWeek ?? 0, 0), 6)}` as DictionaryKey
+  const day = t(dayKey)
+
+  const frequencyLabel =
+    frequency === 'biweekly'
+      ? t('freq_biweekly')
+      : frequency === 'monthly'
+        ? t('freq_monthly')
+        : t('freq_weekly')
+
+  const dayLabel =
+    frequency === 'monthly' ? t('sched_first_weekday').replace('{day}', day) : day
+
+  return `${frequencyLabel} · ${dayLabel}`
 }

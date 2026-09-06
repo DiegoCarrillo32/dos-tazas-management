@@ -5,7 +5,12 @@ import {
   aggregatePendingB2BOrders,
   calculateRawGrams,
 } from '@/utils/calculations'
+import { formatRecurringSchedule } from '@/lib/format'
+import { dictionaries } from '@/i18n/dictionaries'
+import type { DictionaryKey } from '@/i18n/dictionaries'
 import type { OrderWithCustomer } from '@/types'
+
+const t = (key: DictionaryKey) => dictionaries.en[key]
 
 /**
  * Tests for the B2B / Wholesale business logic:
@@ -119,6 +124,26 @@ describe('Roast Schedule Aggregation', () => {
 
     const result = aggregatePendingB2BOrders(orders)
     expect(result).toEqual({ 'inv-001': 1000 })
+  })
+
+  it('counts partner-linked orders that carry no company name', () => {
+    // Orders created from a standing order are linked by partner_id; the
+    // company name may be absent, but they still need roasting.
+    const orders = [
+      makeOrder({ id: 'o1', company_name: null, partner_id: 'p-1', inventory_id: 'inv-001', amount_grams: 4000, fulfillment_status: 'pending' }),
+      makeOrder({ id: 'o2', company_name: 'Cafe B', inventory_id: 'inv-001', amount_grams: 1000, fulfillment_status: 'pending' }),
+    ]
+
+    const result = aggregatePendingB2BOrders(orders)
+    expect(result).toEqual({ 'inv-001': 5000 })
+  })
+
+  it('still ignores retail orders with neither a company nor a partner', () => {
+    const orders = [
+      makeOrder({ id: 'o1', company_name: null, partner_id: null, inventory_id: 'inv-001', amount_grams: 2000, fulfillment_status: 'pending' }),
+    ]
+
+    expect(aggregatePendingB2BOrders(orders)).toEqual({})
   })
 
   it('returns empty object when no qualifying orders exist', () => {
@@ -282,5 +307,27 @@ describe('End-to-End Roast Schedule Scenario', () => {
     expect(shortages).toEqual({
       'inv-col': 500, // Short 500g for Colombia
     })
+  })
+})
+
+describe('Recurring Schedule Formatting', () => {
+  it('names the delivery weekday for weekly templates', () => {
+    expect(formatRecurringSchedule('weekly', 1, t)).toBe('Weekly · Monday')
+  })
+
+  it('names the delivery weekday for bi-weekly templates', () => {
+    expect(formatRecurringSchedule('biweekly', 5, t)).toBe('Bi-weekly · Friday')
+  })
+
+  it('does not claim a monthly template repeats every week', () => {
+    // The old code rendered "monthly (Mondays)", which is not what
+    // day_of_week means for a monthly cadence.
+    expect(formatRecurringSchedule('monthly', 1, t)).toBe('Monthly · first Monday')
+  })
+
+  it('handles Sunday (day 0) and clamps out-of-range days', () => {
+    expect(formatRecurringSchedule('weekly', 0, t)).toBe('Weekly · Sunday')
+    expect(formatRecurringSchedule('weekly', 9, t)).toBe('Weekly · Saturday')
+    expect(formatRecurringSchedule('weekly', -2, t)).toBe('Weekly · Sunday')
   })
 })

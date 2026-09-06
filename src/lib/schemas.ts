@@ -61,8 +61,27 @@ export const orderSchema = z.object({
   partner_id: z.string().optional().nullable(),
 })
 
+/**
+ * B2B variant of `orderSchema`. The B2B form has no customer picker — it
+ * submits the `B2B_AUTO` sentinel and the server resolves a customer from the
+ * linked partner or the typed company name — so at least one of those must be
+ * present. Kept separate so the POS form and `orderSchema.partial()` (used by
+ * `updateOrder`) are unaffected.
+ */
+export const b2bOrderSchema = orderSchema.superRefine((data, ctx) => {
+  if (data.customer_id !== 'B2B_AUTO') return
+  if (data.partner_id) return
+  if (!data.company_name || data.company_name.trim() === '') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['company_name'],
+      message: 'Select a partner or enter a company name',
+    })
+  }
+})
+
 export const recurringSchema = z.object({
-  inventory_id: z.string().optional(),
+  inventory_id: z.string().min(1, 'Coffee bean is required'),
   preparation_method: z.string().min(1, 'Preparation method is required'),
   roast_level: z.string().min(1, 'Roast level is required'),
   amount_grams: z.number().min(1, 'Amount must be greater than 0'),

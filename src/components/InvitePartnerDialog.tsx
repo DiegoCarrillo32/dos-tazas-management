@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label'
 import { Copy, Plus, Check } from 'lucide-react'
 import { generateInvite } from '@/actions/b2bPartners'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { useTranslation } from '@/i18n/LanguageProvider'
 
 export function InvitePartnerDialog() {
+  const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [inviteCode, setInviteCode] = useState<string | null>(null)
@@ -33,7 +35,7 @@ export function InvitePartnerDialog() {
       
       setInviteCode(partner.invite_code)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate invite'
+      const message = err instanceof Error ? err.message : t('inv_failed')
       setError(message)
     } finally {
       setIsGenerating(false)
@@ -62,16 +64,16 @@ export function InvitePartnerDialog() {
       }}
       trigger={
         <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-full px-4 shadow-sm transition-all">
-          <Plus className="mr-2 h-4 w-4" /> Add Partner
+          <Plus className="mr-2 h-4 w-4" /> {t('inv_add_partner')}
         </Button>
       }
       contentClassName="sm:max-w-[425px] bg-white-pergamino p-4 sm:p-6 border-warm-roast/10 shadow-2xl overflow-hidden"
       hideTitle={true}
       hideFooter={true}
-      title="Add B2B Partner"
+      title={t('inv_title')}
     >
       <div className="text-xl font-heading text-expresso mb-4">
-        Add B2B Partner
+        {t('inv_title')}
       </div>
       
       {inviteCode ? (
@@ -79,23 +81,23 @@ export function InvitePartnerDialog() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-2">
             <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
-          <h3 className="text-lg font-bold text-expresso">Partner Added!</h3>
+          <h3 className="text-lg font-bold text-expresso">{t('inv_success_title')}</h3>
           <p className="text-sm text-expresso/70">
-            You can now manage their custom pricing and standing orders internally. If you want them to have their own portal access, share this link with them.
+            {t('inv_success_desc')}
           </p>
           
           <div className="mt-6 flex items-center justify-between p-3 bg-card border border-warm-roast/20 rounded-lg">
             <code className="text-coffee-fruit font-mono font-bold text-lg">{inviteCode}</code>
             <Button size="sm" variant="outline" onClick={handleCopy} className="gap-2">
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              {copied ? 'Copied' : 'Copy Link'}
+              {copied ? t('pm_copied') : t('b2b_copy_invite')}
             </Button>
           </div>
         </div>
       ) : (
         <div className="py-4 space-y-4">
           <p className="text-sm text-expresso/70 mb-4">
-            Add a new wholesale client to manage their pricing and standing orders. An optional invite link will be generated if you want to give them portal access.
+            {t('inv_desc')}
           </p>
           
           {error && (
@@ -106,7 +108,7 @@ export function InvitePartnerDialog() {
           
           <form action={handleGenerate} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-expresso text-xs font-bold uppercase tracking-wider">Company Name *</Label>
+              <Label htmlFor="companyName" className="text-expresso text-xs font-bold uppercase tracking-wider">{t('inv_company')} *</Label>
               <Input 
                 id="companyName" 
                 name="companyName" 
@@ -116,9 +118,9 @@ export function InvitePartnerDialog() {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contactName" className="text-expresso text-xs font-bold uppercase tracking-wider">Contact Name</Label>
+                <Label htmlFor="contactName" className="text-expresso text-xs font-bold uppercase tracking-wider">{t('inv_contact')}</Label>
                 <Input 
                   id="contactName" 
                   name="contactName" 
@@ -127,7 +129,7 @@ export function InvitePartnerDialog() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactPhone" className="text-expresso text-xs font-bold uppercase tracking-wider">Phone</Label>
+                <Label htmlFor="contactPhone" className="text-expresso text-xs font-bold uppercase tracking-wider">{t('inv_phone')}</Label>
                 <Input 
                   id="contactPhone" 
                   name="contactPhone" 
@@ -138,7 +140,7 @@ export function InvitePartnerDialog() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-expresso text-xs font-bold uppercase tracking-wider">Email Address (Optional)</Label>
+              <Label htmlFor="email" className="text-expresso text-xs font-bold uppercase tracking-wider">{t('inv_email')}</Label>
               <Input 
                 id="email" 
                 name="email" 
@@ -155,14 +157,14 @@ export function InvitePartnerDialog() {
                 onClick={() => setIsOpen(false)}
                 className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10"
               >
-                Cancel
+                {t('cancel')}
               </Button>
               <Button 
                 type="submit" 
                 disabled={isGenerating}
                 className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-xl shadow-sm"
               >
-                {isGenerating ? 'Adding...' : 'Add Partner'}
+                {isGenerating ? t('inv_adding') : t('inv_add_partner')}
               </Button>
             </div>
           </form>
