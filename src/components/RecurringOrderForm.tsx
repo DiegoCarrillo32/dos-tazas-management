@@ -18,17 +18,11 @@ import { FormCard } from "@/components/ui/form-card";
 import type { InventoryRecord, B2BRecurringOrderInsertParams, B2BRecurringOrderRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
 import type { DictionaryKey } from "@/i18n/dictionaries";
+import { PREPARATION_METHODS, ROAST_LEVELS } from "@/config/orderOptions";
 import { useCreateRecurringOrder, useUpdateRecurringOrder } from '@/hooks/queries';
 import { toast } from "sonner";
 
 
-const ROAST_LEVELS = [
-  { value: "Light", labelKey: "roast_light" as const },
-  { value: "Medium-Light", labelKey: "roast_medium_light" as const },
-  { value: "Medium", labelKey: "roast_medium" as const },
-  { value: "Medium-Dark", labelKey: "roast_medium_dark" as const },
-  { value: "Dark", labelKey: "roast_dark" as const },
-];
 const FREQUENCIES = [
   { value: "weekly", labelKey: "freq_weekly" as const },
   { value: "biweekly", labelKey: "freq_biweekly" as const },
@@ -174,11 +168,31 @@ export function RecurringOrderForm({
             <Label htmlFor="preparation_method" className="text-expresso">
               {t('order_form_preparation')} <span className="text-red-500">*</span>
             </Label>
-            <Input 
-              id="preparation_method" 
-              placeholder={t('rof_prep_placeholder')} 
-              {...register('preparation_method')}
-              className=""
+            <Controller
+              control={control}
+              name="preparation_method"
+              render={({ field }) => (
+                <Select value={field.value || undefined} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
+                    <SelectValue placeholder={t('order_form_select_method')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PREPARATION_METHODS.map((method) => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {t(method.labelKey)}
+                      </SelectItem>
+                    ))}
+                    {/* Keep a legacy free-text value selectable so editing an
+                        older template doesn't silently blank the field. */}
+                    {initialData?.preparation_method
+                      && !PREPARATION_METHODS.some(m => m.value === initialData.preparation_method) && (
+                      <SelectItem value={initialData.preparation_method}>
+                        {initialData.preparation_method}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.preparation_method && <p className="text-red-500 text-xs font-medium">{errors.preparation_method.message}</p>}
           </div>

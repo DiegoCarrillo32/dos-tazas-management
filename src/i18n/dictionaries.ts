@@ -687,7 +687,6 @@ export const dictionaries = {
     rof_select_day: "Select day",
     rof_create: "Create Template",
     rof_save: "Save Changes",
-    rof_prep_placeholder: "e.g. 1 elec perk and 1 auto drip",
     rof_save_failed: "Failed to save standing order",
 
     // B2B order form
@@ -1397,7 +1396,6 @@ export const dictionaries = {
     rof_select_day: "Seleccionar día",
     rof_create: "Crear Plantilla",
     rof_save: "Guardar Cambios",
-    rof_prep_placeholder: "ej. 1 percolador y 1 goteo automático",
     rof_save_failed: "No se pudo guardar el pedido fijo",
 
     // B2B order form

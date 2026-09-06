@@ -27,21 +27,7 @@ import { useTranslation } from "@/i18n/LanguageProvider";
 import { useCreateOrder, useUpdateOrder, usePartners, usePartnerPricing } from '@/hooks/queries';
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
-
-const PREPARATION_METHODS = [
-  { value: "Whole Bean", labelKey: "prep_whole_bean" as const },
-  { value: "Elec Perk", labelKey: "prep_elec_perk" as const },
-  { value: "Drip", labelKey: "prep_drip" as const },
-  { value: "Auto-Drip", labelKey: "prep_auto_drip" as const },
-  { value: "Coarse", labelKey: "prep_coarse" as const },
-];
-const ROAST_LEVELS = [
-  { value: "Light", labelKey: "roast_light" as const },
-  { value: "Medium-Light", labelKey: "roast_medium_light" as const },
-  { value: "Medium", labelKey: "roast_medium" as const },
-  { value: "Medium-Dark", labelKey: "roast_medium_dark" as const },
-  { value: "Dark", labelKey: "roast_dark" as const },
-];
+import { PREPARATION_METHODS, ROAST_LEVELS } from "@/config/orderOptions";
 
 
 
