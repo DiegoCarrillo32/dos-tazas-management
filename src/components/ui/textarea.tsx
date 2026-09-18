@@ -1,16 +1,26 @@
+"use client"
+
 import * as React from "react"
+import { Textarea as DesignSystemTextarea } from "dos-tazas-design-system"
 
 import { cn } from "@/lib/utils"
 
-function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+/** The app's textarea is the design system's textarea; see `input.tsx` for why `aria-invalid` is bridged. */
+function Textarea({
+  className,
+  "aria-invalid": ariaInvalid,
+  ...props
+}: React.ComponentProps<typeof DesignSystemTextarea>) {
+  const invalid =
+    props.invalid ?? (ariaInvalid !== undefined && ariaInvalid !== false && ariaInvalid !== "false")
+
   return (
-    <textarea
+    <DesignSystemTextarea
       data-slot="textarea"
-      className={cn(
-        "flex field-sizing-content min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        className
-      )}
+      aria-invalid={ariaInvalid}
       {...props}
+      invalid={invalid}
+      className={cn("field-sizing-content text-base md:text-sm", className)}
     />
   )
 }

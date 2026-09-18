@@ -1,13 +1,13 @@
-import { cn } from "@/lib/utils"
+import * as React from "react"
+import { Skeleton as DesignSystemSkeleton } from "dos-tazas-design-system"
 
-function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="skeleton"
-      className={cn("animate-pulse rounded-md bg-muted", className)}
-      {...props}
-    />
-  )
+/**
+ * The app's skeleton is the design system's skeleton — warm-roast tinted rather
+ * than the neutral `bg-muted` it used to be, which is what makes a loading list
+ * read as this brand instead of a generic one.
+ */
+function Skeleton(props: React.ComponentProps<typeof DesignSystemSkeleton>) {
+  return <DesignSystemSkeleton data-slot="skeleton" {...props} />
 }
 
 export { Skeleton }

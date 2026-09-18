@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Tailwind skips node_modules by default; the design system's components are
+   plain TSX using these same tokens, so their utilities must be emitted too. */
+@source "../../node_modules/dos-tazas-design-system/src/design-system/components";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {

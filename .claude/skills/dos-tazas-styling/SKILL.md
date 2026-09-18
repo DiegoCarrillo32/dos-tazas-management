@@ -69,10 +69,46 @@ Section/card titles: `text-xl font-heading text-expresso` (or `text-lg` inline).
 
 - Page content wrapper: `w-full max-w-7xl mx-auto`; header rows use `flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6`. Mobile-first: actions often collapse labels behind `hidden sm:inline`.
 
+## Where components come from
+
+This app consumes the **Dos Tazas Design System** as a real dependency:
+`dos-tazas-design-system`, pinned to a commit of
+`github:DiegoCarrillo32/dos-tazas-design-system`. It ships untranspiled TSX, so
+`next.config.ts` lists it in `transpilePackages` and `globals.css` has an
+`@source` line pointing at it — without that line Tailwind skips `node_modules`
+and the design system's utilities are never emitted.
+
+Two ways to reach it, and the choice is mechanical:
+
+1. **A primitive the app already has** — import from `@/components/ui/*` as
+   before. `button`, `input`, `textarea`, `card`, `status-badge`, `badge`,
+   `skeleton` and `separator` are thin adapters over the design system's
+   `Button`, `Input`, `Textarea`, `Surface`, `StatusPill`, `Badge`, `Skeleton`
+   and `Divider`. They keep the shadcn prop vocabulary (`variant="ghost"`,
+   `size="icon-sm"`) and translate it, so call sites did not have to move. Edit
+   the adapter, never re-style the design system component at the call site.
+2. **Anything else** — import straight from `dos-tazas-design-system`. It has
+   seventeen components the app has no equivalent for: `Alert`, `Avatar`,
+   `Checkbox`, `EmptyState`, `IconButton`, `Progress`, `RadioGroup`,
+   `SegmentedControl`, `Spinner`, `StatCard`, `Stepper`, `Switch`, `Accordion`,
+   `Breadcrumb`, `DataTable`, `QuantityStepper` and `RoastLevelMeter`. Reach for
+   one of these before hand-rolling markup.
+
+Still the app's own, with no design system counterpart — leave them alone:
+`GenericModal`, `dialog`, `sheet`, `popover`, `command`, `sidebar`, `sonner`,
+`form-card`, `input-group`, `label`, and `select` (the design system's `Select`
+is a native one and defers to this app's richer `@base-ui` version). `tabs`,
+`tooltip` and `pagination` also stay: the app's versions carry styling, base-ui
+composition and i18n the design system's do not.
+
+The browsable reference — tokens, every component with a live preview, and the
+brand book — is the Design System artifact:
+https://claude.ai/artifact/VjWnCLqMBrtu9b4fECAL6u
+
 ## Component conventions
 
-- **Stack**: shadcn (style `base-nova`, built on `@base-ui/react` — *not* Radix), Tailwind v4, `lucide-react` icons, `class-variance-authority` for variants, `sonner` for toasts, `recharts` for charts.
-- UI primitives live in `src/components/ui/` (lowercase filenames, e.g. `button.tsx`); feature components in `src/components/` (PascalCase, e.g. `OrderCard.tsx`). Check `src/components/ui/` for an existing primitive before adding one; add new primitives via the shadcn CLI rather than hand-writing Radix-style code.
+- **Stack**: the Dos Tazas Design System over Tailwind v4, alongside shadcn (style `base-nova`, built on `@base-ui/react` — *not* Radix) for the primitives listed above as the app's own, `lucide-react` icons, `class-variance-authority` for variants, `sonner` for toasts, `recharts` for charts.
+- UI primitives live in `src/components/ui/` (lowercase filenames, e.g. `button.tsx`); feature components in `src/components/` (PascalCase, e.g. `OrderCard.tsx`). Check the design system first, then `src/components/ui/`, before adding a primitive; a genuinely new *shared* component belongs in the design system repo, not here.
 - Always merge classes with `cn()` from `@/lib/utils` — never string-concatenate `className`.
 - Dialogs/modals: use `GenericModal` (`src/components/ui/GenericModal.tsx`), not raw `Dialog` composition. Forms inside cards use `FormCard` (`src/components/ui/form-card.tsx`).
 - Loading states: skeleton components from `src/components/Skeletons.tsx` (e.g. `PageSkeleton`), not spinners.

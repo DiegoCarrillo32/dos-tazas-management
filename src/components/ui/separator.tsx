@@ -1,22 +1,27 @@
 "use client"
 
-import { Separator as SeparatorPrimitive } from "@base-ui/react/separator"
+import * as React from "react"
+import { Divider } from "dos-tazas-design-system"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * The app's separator is the design system's `Divider`.
+ *
+ * Kept under the `Separator` name for the sidebar, and still accepting
+ * `orientation`; `Divider` also takes a `label` for the "or" rule, which the
+ * old base-ui separator could not draw.
+ */
 function Separator({
   className,
   orientation = "horizontal",
   ...props
-}: SeparatorPrimitive.Props) {
+}: React.ComponentProps<typeof Divider>) {
   return (
-    <SeparatorPrimitive
+    <Divider
       data-slot="separator"
       orientation={orientation}
-      className={cn(
-        "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",
-        className
-      )}
+      className={cn(className)}
       {...props}
     />
   )

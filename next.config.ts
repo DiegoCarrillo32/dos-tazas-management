@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   turbopack: {},
   output: "standalone",
+  // The design system ships untranspiled TSX so Tailwind can scan it.
+  transpilePackages: ["dos-tazas-design-system"],
 };
 
 export default withSerwist(nextConfig);
