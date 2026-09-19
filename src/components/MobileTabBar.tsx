@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { MoreHorizontal } from "lucide-react"
 
-import { useSidebar } from "@/components/ui/sidebar"
 import { useTranslation } from "@/i18n/LanguageProvider"
 import { primaryNavForRole } from "@/components/nav-items"
+import { MobileMoreSheet } from "@/components/MobileMoreSheet"
 import { cn } from "@/lib/utils"
 
 /**
@@ -16,12 +17,13 @@ import { cn } from "@/lib/utils"
  */
 export function MobileTabBar({ userRole = "roaster" }: { userRole?: string }) {
   const { t } = useTranslation()
-  const { setOpenMobile } = useSidebar()
   const pathname = usePathname()
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const items = primaryNavForRole(userRole)
 
   return (
+    <>
     <nav
       aria-label={t("sidebar_order_management")}
       className={cn(
@@ -67,8 +69,13 @@ export function MobileTabBar({ userRole = "roaster" }: { userRole?: string }) {
 
       <button
         type="button"
-        onClick={() => setOpenMobile(true)}
-        className="relative flex h-[60px] flex-1 basis-0 flex-col items-center justify-center gap-1 rounded-xl text-expresso/55 transition-colors hover:text-expresso"
+        onClick={() => setMoreOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={moreOpen}
+        className={cn(
+          "relative flex h-[60px] flex-1 basis-0 flex-col items-center justify-center gap-1 rounded-xl transition-colors",
+          moreOpen ? "text-coffee-fruit" : "text-expresso/55 hover:text-expresso"
+        )}
       >
         <MoreHorizontal className="h-[22px] w-[22px] shrink-0" />
         <span className="max-w-full truncate whitespace-nowrap px-0.5 text-[10px] leading-3">
@@ -76,5 +83,8 @@ export function MobileTabBar({ userRole = "roaster" }: { userRole?: string }) {
         </span>
       </button>
     </nav>
+
+    <MobileMoreSheet open={moreOpen} onOpenChange={setMoreOpen} userRole={userRole} />
+    </>
   )
 }

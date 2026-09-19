@@ -14,7 +14,6 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarSeparator,
-  useSidebar,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { logout } from "@/actions/auth";
@@ -35,7 +34,6 @@ export function AppSidebar({
   userRole?: string;
 }) {
   const { t } = useTranslation();
-  const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
 
@@ -79,7 +77,6 @@ export function AppSidebar({
                       render={
                         <Link
                           href={item.url}
-                          onClick={() => { if (isMobile) setOpenMobile(false); }}
                           className="flex items-center gap-3 py-5"
                         />
                       }
