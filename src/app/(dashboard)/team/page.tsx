@@ -962,13 +962,13 @@ export default function TeamPage() {
         </TabsContent>
 
         <TabsContent value="pending" className="m-0 animate-in fade-in duration-300 space-y-4">
-          <div className="flex justify-between items-center gap-2">
-            <h3 className="text-lg font-heading text-expresso dark:text-foreground">Pending Timesheets</h3>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <h3 className="text-lg font-heading text-expresso dark:text-foreground">{t('team_pending_timesheets')}</h3>
+            <div className="flex items-center gap-2 max-sm:w-full">
               <Button
                 onClick={() => setIsAddLogOpen(true)}
                 variant="outline"
-                className="border-warm-roast/20 text-expresso/70 hover:bg-warm-roast/10"
+                className="border-warm-roast/20 text-expresso/70 hover:bg-warm-roast/10 max-sm:flex-1 max-sm:min-h-11"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {t('team_add_log')}
@@ -976,10 +976,12 @@ export default function TeamPage() {
               <Button
                 disabled={selectedLogIds.size === 0 || markPaidMutation.isPending}
                 onClick={handleBatchMarkPaid}
-                className="bg-coffee-fruit text-white hover:bg-coffee-fruit/90 shadow-sm"
+                className="bg-coffee-fruit text-white hover:bg-coffee-fruit/90 shadow-sm max-sm:flex-1 max-sm:min-h-11"
               >
-                <CheckSquare className="w-4 h-4 mr-2" />
-                Mark Selected as Paid ({selectedLogIds.size})
+                <CheckSquare className="w-4 h-4 mr-2 shrink-0" />
+                <span className="truncate">
+                  {t('team_mark_selected_paid').replace('{count}', String(selectedLogIds.size))}
+                </span>
               </Button>
             </div>
           </div>

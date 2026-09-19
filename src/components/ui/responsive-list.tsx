@@ -104,7 +104,12 @@ export function ResponsiveList<T>({
   const roleOf = (c: ResponsiveListColumn<T>) => c.role ?? "field"
   const titleCol = columns.find((c) => roleOf(c) === "title") ?? columns[0]
   const metaCols = columns.filter((c) => roleOf(c) === "meta")
-  const fieldCols = columns.filter((c) => roleOf(c) === "field" && c !== titleCol)
+  // Full-width fields sort last. Column order is the table's business; if a
+  // spanning field sat between two half-width ones it would push them onto
+  // separate rows and leave holes in the card's two-column grid.
+  const fieldCols = columns
+    .filter((c) => roleOf(c) === "field" && c !== titleCol)
+    .sort((a, b) => Number(a.cardFullWidth ?? false) - Number(b.cardFullWidth ?? false))
   const tableCols = columns.filter((c) => !c.cardOnly)
   const colCount = tableCols.length + (actions ? 1 : 0)
   const isEmpty = !isLoading && data.length === 0
@@ -154,7 +159,7 @@ export function ResponsiveList<T>({
                     rowClassName?.(row, i)
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2 border-b border-warm-roast/5 bg-white-pergamino/30 dark:bg-muted/20 p-4">
+                  <div className="flex items-center justify-between gap-2 border-b border-warm-roast/5 bg-white-pergamino/30 dark:bg-muted/20 px-4 py-3">
                     <div className="min-w-0">
                       <div className="truncate text-base font-bold text-expresso">
                         {cardValue(titleCol, row, i)}

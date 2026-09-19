@@ -20,6 +20,12 @@ import type { DictionaryKey } from "@/i18n/dictionaries"
 
 export type NavItem = {
   titleKey: DictionaryKey
+  /**
+   * Short label for the phone tab bar, where a slot is ~78px wide. The sidebar
+   * has room for the full name; "B2B / Wholesale" (or, worse, "Ventas al por
+   * Mayor") wraps to two lines down there and throws the row out of alignment.
+   */
+  tabKey?: DictionaryKey
   url: string
   icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>
 }
@@ -37,16 +43,16 @@ export const sections: NavSection[] = [
   {
     labelKey: "sidebar_section_overview",
     items: [
-      { titleKey: "nav_dashboard", url: "/", icon: Home },
-      { titleKey: "nav_tracker", url: "/tracker", icon: Clock },
+      { titleKey: "nav_dashboard", tabKey: "tab_dashboard", url: "/", icon: Home },
+      { titleKey: "nav_tracker", tabKey: "tab_tracker", url: "/tracker", icon: Clock },
       { titleKey: "nav_analytics", url: "/analytics", icon: BarChart3 },
-      { titleKey: "nav_history", url: "/history", icon: History },
+      { titleKey: "nav_history", tabKey: "tab_history", url: "/history", icon: History },
     ],
   },
   {
     labelKey: "sidebar_section_operations",
     items: [
-      { titleKey: "nav_inventory", url: "/inventory", icon: Package },
+      { titleKey: "nav_inventory", tabKey: "tab_inventory", url: "/inventory", icon: Package },
       { titleKey: "nav_roasts", url: "/roasts", icon: Flame },
       { titleKey: "nav_calculator", url: "/calculator", icon: Calculator },
       { titleKey: "nav_equipment", url: "/equipment", icon: Wrench },
@@ -55,17 +61,17 @@ export const sections: NavSection[] = [
   {
     labelKey: "sidebar_section_sales",
     items: [
-      { titleKey: "nav_customers", url: "/customers", icon: Users },
-      { titleKey: "nav_b2b", url: "/b2b", icon: Briefcase },
+      { titleKey: "nav_customers", tabKey: "tab_customers", url: "/customers", icon: Users },
+      { titleKey: "nav_b2b", tabKey: "tab_b2b", url: "/b2b", icon: Briefcase },
       { titleKey: "nav_team", url: "/team", icon: Users },
     ],
   },
   {
     labelKey: "sidebar_section_partner",
     items: [
-      { titleKey: "nav_partner_dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { titleKey: "nav_partner_roasting", url: "/roasting", icon: Flame },
-      { titleKey: "nav_partner_orders", url: "/orders", icon: ShoppingCart },
+      { titleKey: "nav_partner_dashboard", tabKey: "tab_partner_dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { titleKey: "nav_partner_roasting", tabKey: "tab_partner_roasting", url: "/roasting", icon: Flame },
+      { titleKey: "nav_partner_orders", tabKey: "tab_partner_orders", url: "/orders", icon: ShoppingCart },
       { titleKey: "nav_partner_recurring", url: "/recurring", icon: RefreshCw },
     ],
   },

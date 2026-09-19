@@ -50,9 +50,16 @@ export function MobileTabBar({ userRole = "roaster" }: { userRole?: string }) {
                 className="absolute top-1.5 h-[3px] w-7 rounded-full bg-coffee-fruit"
               />
             )}
-            <item.icon className="h-[22px] w-[22px]" />
-            <span className={cn("text-[10px] leading-3", isActive && "font-bold")}>
-              {t(item.titleKey)}
+            <item.icon className="h-[22px] w-[22px] shrink-0" />
+            {/* One line, always: a wrapped label would push this tab's baseline
+                out of line with the rest of the row. */}
+            <span
+              className={cn(
+                "max-w-full truncate whitespace-nowrap px-0.5 text-[10px] leading-3",
+                isActive && "font-bold"
+              )}
+            >
+              {t(item.tabKey ?? item.titleKey)}
             </span>
           </Link>
         )
@@ -63,8 +70,10 @@ export function MobileTabBar({ userRole = "roaster" }: { userRole?: string }) {
         onClick={() => setOpenMobile(true)}
         className="relative flex h-[60px] flex-1 basis-0 flex-col items-center justify-center gap-1 rounded-xl text-expresso/55 transition-colors hover:text-expresso"
       >
-        <MoreHorizontal className="h-[22px] w-[22px]" />
-        <span className="text-[10px] leading-3">{t("sidebar_more")}</span>
+        <MoreHorizontal className="h-[22px] w-[22px] shrink-0" />
+        <span className="max-w-full truncate whitespace-nowrap px-0.5 text-[10px] leading-3">
+          {t("sidebar_more")}
+        </span>
       </button>
     </nav>
   )
