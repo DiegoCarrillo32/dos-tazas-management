@@ -11,9 +11,10 @@ import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RecurringOrderForm } from "@/components/RecurringOrderForm"
 import { GenericModal } from "@/components/ui/GenericModal"
+import { ResponsiveList, type ResponsiveListColumn } from "@/components/ui/responsive-list"
 import { formatCurrency, formatKg, formatRecurringSchedule } from "@/lib/format"
 import { useTranslation } from "@/i18n/LanguageProvider"
-import type { B2BPartnerRecord, B2BRecurringOrderRecord } from "@/types"
+import type { B2BPartnerRecord, B2BRecurringOrderRecord, B2BPricingRecord } from "@/types"
 
 interface PartnerManagementModalProps {
   partner: B2BPartnerRecord
@@ -141,10 +142,56 @@ export function PartnerManagementModal({ partner, fullWidthTrigger = false }: Pa
     setEditingOrder(null)
   }
 
+  const pricingActions = (row: B2BPricingRecord) => (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => handleDeletePricing(row.id)}
+      disabled={deletePricingMutation.isPending}
+      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0 max-md:size-11"
+    >
+      <Trash2 className="h-4 w-4" />
+      <span className="sr-only">{t('delete')}</span>
+    </Button>
+  )
+
+  const pricingColumns: ResponsiveListColumn<B2BPricingRecord>[] = [
+    {
+      id: 'coffee',
+      role: 'title',
+      header: t('common_coffee'),
+      cell: (row) => (
+        <span className="font-medium text-coffee-fruit">
+          {row.inventory?.item_name || t('b2b_unknown_bean')}
+        </span>
+      ),
+      cardCell: (row) => row.inventory?.item_name || t('b2b_unknown_bean'),
+    },
+    {
+      id: 'price',
+      role: 'meta',
+      header: t('pm_price_col_custom'),
+      cell: (row) => (
+        <span className="font-bold text-warm-roast">{formatCurrency(row.price_per_kg, settings)}</span>
+      ),
+      cardCell: (row) => (
+        <span className="text-sm font-bold text-warm-roast">
+          {formatCurrency(row.price_per_kg, settings)}{' '}
+          <span className="text-xs font-normal text-expresso/60">/ kg</span>
+        </span>
+      ),
+    },
+  ]
+
   return (
     <>
       <GenericModal
-        isOpen={isOpen}
+        // One sheet at a time. These three modals are JSX siblings, not children,
+        // so Base UI never marks them nested — left alone they stack two
+        // bottom-anchored sheets and two backdrops exactly on top of each other.
+        // Suppress the outer one while an inner is up; `isOpen` still holds it, so
+        // closing the inner brings it straight back.
+        isOpen={isOpen && !isRecurringFormOpen && !modalState.isOpen}
         onOpenChange={setIsOpen}
         trigger={
           <Button variant="outline" className={`text-coffee-fruit hover:bg-warm-roast/10 rounded-lg text-xs border-coffee-fruit/20 ${fullWidthTrigger ? 'w-full' : ''}`}>
@@ -219,64 +266,19 @@ export function PartnerManagementModal({ partner, fullWidthTrigger = false }: Pa
             {isLoadingPricing ? (
               <div className="h-24 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
             ) : pricing && pricing.length > 0 ? (
-              <>
-                {/* Mobile Card View */}
-                <div className="md:hidden flex flex-col gap-3">
-                  {pricing.map(p => (
-                    <div key={p.id} className="flex items-center justify-between gap-3 bg-card rounded-xl border border-warm-roast/10 shadow-sm p-4">
-                      <div className="min-w-0">
-                        <div className="font-medium text-coffee-fruit truncate">{p.inventory?.item_name || t('b2b_unknown_bean')}</div>
-                        <div className="text-sm font-bold text-warm-roast mt-0.5">
-                          {formatCurrency(p.price_per_kg, settings)} <span className="text-xs font-normal text-expresso/60">/ kg</span>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeletePricing(p.id)}
-                        disabled={deletePricingMutation.isPending}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+              <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-hidden">
+                <ResponsiveList
+                  data={pricing}
+                  columns={pricingColumns}
+                  rowKey={(p) => p.id}
+                  actions={pricingActions}
+                  actionsHeader={t('common_actions')}
+                  minTableWidth="min-w-0"
+                  caption={t('pm_price_col_custom')}
+                  emptyState={<span>{t('pm_price_none')}</span>}
+                />
+              </div>
 
-                {/* Desktop Table View */}
-                <div className="hidden md:block bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-white-pergamino text-xs uppercase text-expresso/60">
-                        <tr>
-                          <th className="px-6 py-3">{t('common_coffee')}</th>
-                          <th className="px-6 py-3">{t('pm_price_col_custom')}</th>
-                          <th className="px-6 py-3 text-right">{t('common_actions')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pricing.map(p => (
-                          <tr key={p.id} className="border-t border-warm-roast/10">
-                            <td className="px-6 py-4 font-medium text-coffee-fruit">{p.inventory?.item_name || t('b2b_unknown_bean')}</td>
-                            <td className="px-6 py-4 font-bold text-warm-roast">{formatCurrency(p.price_per_kg, settings)}</td>
-                            <td className="px-6 py-4 text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeletePricing(p.id)}
-                                disabled={deletePricingMutation.isPending}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
             ) : (
               <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 px-4 py-8 text-center text-expresso/50">
                 {t('pm_price_none')}

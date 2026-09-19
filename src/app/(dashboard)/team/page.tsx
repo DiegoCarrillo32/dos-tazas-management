@@ -12,6 +12,7 @@ import { useTeamMembers, useTeamTimeLogs, useGenerateTeamInvite, useUpdateTeamMe
 import { calculateHoursWorked, calculateTotalPay, resolveHours, buildTimestamp, previewHours } from '@/utils/tracker-logic'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { TeamMemberRecord, TeamMemberStatus, TimeLogRecord } from '@/types'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { StatCard } from '@/components/analytics/StatCard'
 import { SortableStatCard } from '@/components/analytics/SortableStatCard'
 import { GenericModal } from '@/components/ui/GenericModal'
@@ -466,6 +467,297 @@ export default function TeamPage() {
     return new Date(Number(y), Number(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' })
   }
 
+  type WorkerStat = (typeof workerStats)[number]
+
+  const hoursCell = (log: TimeLogRecord) => {
+    const hours = resolveHours(log)
+    const isAdjusted = log.adjusted_hours != null
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="font-bold text-coffee-fruit dark:text-primary">
+          {hours.toFixed(2)} {t('tracker_hours_unit')}
+          {isAdjusted && (
+            <span className="ml-1.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+              adj
+            </span>
+          )}
+        </span>
+        {isAdjusted && (
+          <span className="text-xs text-expresso/50 dark:text-muted-foreground">
+            {t('tracker_original_hours').replace(
+              '{hours}',
+              calculateHoursWorked(log.start_time, log.end_time).toFixed(2)
+            )}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const notesCell = (log: TimeLogRecord) => (
+    <>
+      <div className="truncate">{log.notes || '\u2014'}</div>
+      {log.adjustment_note && (
+        <div className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 truncate">
+          {t('tracker_adjustment_reason')}: {log.adjustment_note}
+        </div>
+      )}
+    </>
+  )
+
+  const payCell = (log: TimeLogRecord) => {
+    const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
+    const pay = calculateTotalPay(resolveHours(log), rate)
+    return (
+      <span className="font-bold text-warm-roast dark:text-foreground">
+        {currencySymbol}{pay.toFixed(2)}
+      </span>
+    )
+  }
+
+  const timeRange = (log: TimeLogRecord) =>
+    `${new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+
+  const logBaseColumns: ResponsiveListColumn<TimeLogRecord>[] = [
+    {
+      id: 'date',
+      role: 'title',
+      header: t('common_date'),
+      cell: (l) => (
+        <span className="font-medium text-expresso dark:text-foreground">
+          {new Date(l.start_time).toLocaleDateString()}
+        </span>
+      ),
+      cardCell: (l) => new Date(l.start_time).toLocaleDateString(),
+    },
+    {
+      id: 'worker',
+      role: 'meta',
+      header: t('common_worker'),
+      cell: (l) => (
+        <span className="font-medium text-expresso dark:text-foreground">
+          {l.team_members?.name || l.team_members?.invite_code || '\u2014'}
+        </span>
+      ),
+      cardCell: (l) => l.team_members?.name || l.team_members?.invite_code || '\u2014',
+    },
+    {
+      id: 'logged',
+      role: 'meta',
+      header: t('common_time_logged'),
+      cell: (l) => (
+        <span className="text-expresso/70 dark:text-muted-foreground">{timeRange(l)}</span>
+      ),
+      cardCell: (l) => timeRange(l),
+    },
+    { id: 'hours', header: t('common_hours'), cell: hoursCell },
+    { id: 'pay', header: t('common_total_pay'), cell: payCell },
+    {
+      id: 'notes',
+      header: t('common_notes'),
+      cardFullWidth: true,
+      cellClassName: 'text-expresso/60 dark:text-muted-foreground max-w-[200px]',
+      cell: notesCell,
+    },
+  ]
+
+  const selectCheckbox = (log: TimeLogRecord) => (
+    <input
+      type="checkbox"
+      aria-label={t('team_mark_paid')}
+      checked={selectedLogIds.has(log.id)}
+      onChange={() => toggleSelectLog(log.id)}
+      className="rounded border-warm-roast/20 text-coffee-fruit focus:ring-coffee-fruit/20 w-5 h-5 cursor-pointer shrink-0"
+    />
+  )
+
+  const pendingColumns: ResponsiveListColumn<TimeLogRecord>[] = [
+    {
+      id: 'select',
+      role: 'none',
+      align: 'center',
+      headerClassName: 'w-12',
+      header: (
+        <input
+          type="checkbox"
+          aria-label={t('team_mark_paid')}
+          checked={selectedLogIds.size === pendingLogs.length && pendingLogs.length > 0}
+          onChange={toggleSelectAll}
+          className="rounded border-warm-roast/20 text-coffee-fruit focus:ring-coffee-fruit/20 w-4 h-4 cursor-pointer"
+        />
+      ),
+      cell: selectCheckbox,
+    },
+    ...logBaseColumns,
+  ]
+
+  const pendingActions = (log: TimeLogRecord) => (
+    <>
+      <Button onClick={() => openEditHours(log)} size="sm" variant="ghost" className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20 max-md:min-h-11">
+        <Pencil className="h-3.5 w-3.5 mr-1" /> {t('tracker_edit_hours')}
+      </Button>
+      <Button onClick={() => handleMarkPaid(log.id)} size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-900/40 dark:hover:bg-green-900/20 max-md:min-h-11">
+        <Check className="h-4 w-4 mr-1" /> {t('team_mark_paid')}
+      </Button>
+      <Button onClick={() => handleDeleteLog(log.id)} size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 max-md:min-h-11">
+        <Trash2 className="h-3.5 w-3.5" />
+        <span className="sr-only">{t('delete')}</span>
+      </Button>
+    </>
+  )
+
+  const paidColumns: ResponsiveListColumn<TimeLogRecord>[] = [
+    ...logBaseColumns,
+    {
+      id: 'status',
+      header: t('common_status'),
+      cell: (l) => (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+          {l.status}
+        </span>
+      ),
+    },
+  ]
+
+  const paidActions = (log: TimeLogRecord) => (
+    <>
+      <Button onClick={() => handleRevertLog(log.id)} size="sm" variant="ghost" className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20 text-xs max-md:min-h-11">
+        <RotateCcw className="h-3.5 w-3.5 mr-1" /> {t('team_revert_to_pending')}
+      </Button>
+      <Button onClick={() => handleDeleteLog(log.id)} size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 max-md:min-h-11">
+        <Trash2 className="h-3.5 w-3.5" />
+        <span className="sr-only">{t('delete')}</span>
+      </Button>
+    </>
+  )
+
+  const rosterActions = (member: TeamMemberRecord) => (
+    <Button variant="ghost" size="sm" onClick={() => openManageModal(member)} className="max-md:min-h-11">
+      <Pencil className="h-4 w-4 mr-1" /> {t('team_manage_member')}
+    </Button>
+  )
+
+  const rosterColumns: ResponsiveListColumn<TeamMemberRecord>[] = [
+    {
+      id: 'name',
+      role: 'title',
+      header: t('common_name'),
+      cell: (m) => (
+        <span className="font-medium text-expresso dark:text-foreground">{m.name || '\u2014'}</span>
+      ),
+      cardCell: (m) => m.name || '\u2014',
+    },
+    {
+      id: 'status',
+      role: 'meta',
+      header: t('common_status'),
+      cell: (m) => (
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
+            m.status === 'active'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+          }`}
+        >
+          {m.status}
+        </span>
+      ),
+    },
+    {
+      id: 'code',
+      header: t('common_invite_code'),
+      cell: (m) => (
+        <span className="font-mono text-expresso/70 dark:text-muted-foreground">{m.invite_code}</span>
+      ),
+    },
+    {
+      id: 'worker',
+      header: t('common_worker_id'),
+      cell: (m) => (
+        <span className="text-expresso/70 dark:text-muted-foreground">
+          {m.worker_user_id ? t('common_joined') : t('orders_pending')}
+        </span>
+      ),
+    },
+    {
+      id: 'rate',
+      header: t('common_hourly_rate'),
+      cell: (m) => (
+        <span className="font-medium text-expresso dark:text-foreground">
+          {currencySymbol}{m.hourly_rate}/hr
+        </span>
+      ),
+    },
+    {
+      id: 'pendingHrs',
+      header: t('team_pending_hrs'),
+      align: 'right',
+      cell: (m) => {
+        const hrs = filteredLogs
+          .filter((log) => log.status === 'pending' && log.team_members?.invite_code === m.invite_code)
+          .reduce((acc, log) => acc + resolveHours(log), 0)
+        return (
+          <span className="font-bold text-coffee-fruit dark:text-primary">
+            {hrs > 0 ? `${hrs.toFixed(2)} ${t('tracker_hours_unit')}` : '\u2014'}
+          </span>
+        )
+      },
+    },
+    {
+      id: 'pendingPay',
+      header: t('team_pending_pay'),
+      align: 'right',
+      cell: (m) => {
+        const stat = workerStats.find((s) => s.id === m.id)
+        return (
+          <span className="font-bold text-yellow-600 dark:text-yellow-500">
+            {stat && stat.totalPending > 0 ? `${currencySymbol}${stat.totalPending.toFixed(2)}` : '\u2014'}
+          </span>
+        )
+      },
+    },
+  ]
+
+  const statsColumns: ResponsiveListColumn<WorkerStat>[] = [
+    {
+      id: 'name',
+      role: 'title',
+      header: t('team_col_worker_name'),
+      cell: (s) => <span className="font-medium text-expresso dark:text-foreground">{s.name}</span>,
+      cardCell: (s) => s.name,
+    },
+    {
+      id: 'hours',
+      header: t('team_col_total_hours'),
+      align: 'right',
+      cell: (s) => (
+        <span className="font-bold text-coffee-fruit dark:text-primary">
+          {s.totalHours.toFixed(2)} {t('tracker_hours_unit')}
+        </span>
+      ),
+    },
+    {
+      id: 'pending',
+      header: t('team_col_pending_pay'),
+      align: 'right',
+      cell: (s) => (
+        <span className="font-bold text-yellow-600 dark:text-yellow-500">
+          {currencySymbol}{s.totalPending.toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      id: 'paid',
+      header: t('team_col_total_paid'),
+      align: 'right',
+      cell: (s) => (
+        <span className="font-bold text-green-600 dark:text-green-500">
+          {currencySymbol}{s.totalPaid.toFixed(2)}
+        </span>
+      ),
+    },
+  ]
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <PageHeader
@@ -608,10 +900,10 @@ export default function TeamPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <TabsList className="bg-card border border-warm-roast/10 dark:border-border rounded-xl p-1 h-auto flex flex-row gap-1 w-full overflow-x-auto no-scrollbar sm:w-auto">
           <TabsTrigger value="roster" className="whitespace-nowrap rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:dark:bg-primary/20 data-[state=active]:text-coffee-fruit data-[state=active]:dark:text-primary text-expresso/70 dark:text-muted-foreground transition-all py-2 text-xs sm:text-sm">
-            <Users className="w-4 h-4 mr-1 shrink-0 inline" /> Roster
+            <Users className="w-4 h-4 mr-1 shrink-0 inline" /> {t('team_tab_roster')}
           </TabsTrigger>
           <TabsTrigger value="pending" className="whitespace-nowrap rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:dark:bg-primary/20 data-[state=active]:text-coffee-fruit data-[state=active]:dark:text-primary text-expresso/70 dark:text-muted-foreground transition-all py-2 text-xs sm:text-sm">
-            <Clock className="w-4 h-4 mr-1 shrink-0 inline" /> Pending
+            <Clock className="w-4 h-4 mr-1 shrink-0 inline" /> {t('team_tab_pending')}
             {pendingLogs.length > 0 && (
               <span className="ml-2 bg-coffee-fruit text-white text-[10px] px-1.5 py-0.5 rounded-full inline-block">
                 {pendingLogs.length}
@@ -619,10 +911,10 @@ export default function TeamPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="paid" className="whitespace-nowrap rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:dark:bg-primary/20 data-[state=active]:text-coffee-fruit data-[state=active]:dark:text-primary text-expresso/70 dark:text-muted-foreground transition-all py-2 text-xs sm:text-sm">
-            <CheckCircle2 className="w-4 h-4 mr-1 shrink-0 inline" /> Paid History
+            <CheckCircle2 className="w-4 h-4 mr-1 shrink-0 inline" /> {t('team_tab_paid')}
           </TabsTrigger>
           <TabsTrigger value="statistics" className="whitespace-nowrap rounded-lg data-[state=active]:bg-coffee-fruit/10 data-[state=active]:dark:bg-primary/20 data-[state=active]:text-coffee-fruit data-[state=active]:dark:text-primary text-expresso/70 dark:text-muted-foreground transition-all py-2 text-xs sm:text-sm">
-            <BarChart3 className="w-4 h-4 mr-1 shrink-0 inline" /> Statistics
+            <BarChart3 className="w-4 h-4 mr-1 shrink-0 inline" /> {t('team_tab_statistics')}
           </TabsTrigger>
         </TabsList>
 
@@ -653,61 +945,20 @@ export default function TeamPage() {
       </div>
 
         <TabsContent value="roster" className="m-0 animate-in fade-in duration-300">
-          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-x-auto">
-            <table className="w-full text-sm text-left min-w-[600px]">
-              <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-                <tr>
-                  <th scope="col" className="px-6 py-4">Status</th>
-                  <th scope="col" className="px-6 py-4">Name</th>
-                  <th scope="col" className="px-6 py-4">Invite Code</th>
-                  <th scope="col" className="px-6 py-4">Worker ID</th>
-                  <th scope="col" className="px-6 py-4">Hourly Rate</th>
-                  <th scope="col" className="px-6 py-4 text-right">{t('team_pending_hrs')}</th>
-                  <th scope="col" className="px-6 py-4 text-right">{t('team_pending_pay')}</th>
-                  <th scope="col" className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingTeam ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">Loading...</td></tr>
-                ) : !teamMembers?.length ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">No team members found</td></tr>
-                ) : (
-                  teamMembers.map(member => {
-                    const stats = workerStats.find(s => s.id === member.id)
-                    const memberPendingLogs = filteredLogs.filter(log => log.status === 'pending' && log.team_members?.invite_code === member.invite_code)
-                    const pendingHrs = memberPendingLogs.reduce((acc, log) => acc + resolveHours(log), 0)
-                    return (
-                    <tr key={member.id} className="border-b border-warm-roast/5 dark:border-border/50 hover:bg-warm-roast/5 dark:hover:bg-muted/10 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                          member.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        }`}>
-                          {member.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{member.name || '—'}</td>
-                      <td className="px-6 py-4 font-mono text-expresso/70 dark:text-muted-foreground">{member.invite_code}</td>
-                      <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground">{member.worker_user_id ? 'Joined' : 'Pending'}</td>
-                      <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{currencySymbol}{member.hourly_rate}/hr</td>
-                      <td className="px-6 py-4 text-right font-bold text-coffee-fruit dark:text-primary">
-                        {pendingHrs > 0 ? `${pendingHrs.toFixed(2)} hrs` : '—'}
-                      </td>
-                      <td className="px-6 py-4 text-right font-bold text-yellow-600 dark:text-yellow-500">
-                        {stats && stats.totalPending > 0 ? `${currencySymbol}${stats.totalPending.toFixed(2)}` : '—'}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                         <Button variant="ghost" size="sm" onClick={() => openManageModal(member)}>
-                           <Pencil className="h-4 w-4 mr-1" /> Manage
-                         </Button>
-                      </td>
-                    </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
+          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 overflow-hidden">
+            <ResponsiveList
+              data={teamMembers ?? []}
+              columns={rosterColumns}
+              rowKey={(m) => m.id}
+              actions={rosterActions}
+              actionsHeader={t('common_actions')}
+              isLoading={loadingTeam}
+              minTableWidth="min-w-[600px]"
+              caption={t('team_tab_roster')}
+              emptyState={<span>{t('team_no_members')}</span>}
+            />
           </div>
+
         </TabsContent>
 
         <TabsContent value="pending" className="m-0 animate-in fade-in duration-300 space-y-4">
@@ -732,331 +983,43 @@ export default function TeamPage() {
               </Button>
             </div>
           </div>
-          {/* Mobile cards — Pending */}
-          <div className="md:hidden flex flex-col gap-3">
-            {loadingLogs ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-28 bg-card rounded-xl border border-warm-roast/10 dark:border-border animate-pulse" />
-              ))
-            ) : pendingLogs.length === 0 ? (
-              <div className="py-8 text-center text-expresso/40 dark:text-muted-foreground">No pending time logs</div>
-            ) : pendingLogs.map(log => {
-              const hours = resolveHours(log)
-              const originalHours = calculateHoursWorked(log.start_time, log.end_time)
-              const isAdjusted = log.adjusted_hours != null
-              const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
-              const pay = calculateTotalPay(hours, rate)
-              return (
-                <div key={log.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 dark:border-border shadow-sm p-4 gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-expresso dark:text-foreground">{new Date(log.start_time).toLocaleDateString()}</div>
-                      <div className="text-xs text-expresso/60 dark:text-muted-foreground font-medium">{log.team_members?.name || log.team_members?.invite_code || '—'}</div>
-                      <div className="text-xs text-expresso/50 dark:text-muted-foreground">
-                        {new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={selectedLogIds.has(log.id)}
-                      onChange={() => toggleSelectLog(log.id)}
-                      className="rounded border-warm-roast/20 text-coffee-fruit focus:ring-coffee-fruit/20 w-4 h-4 cursor-pointer mt-1 shrink-0"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} hrs</span>
-                        {isAdjusted && <span className="text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">adj</span>}
-                      </div>
-                      {isAdjusted && <span className="text-xs text-expresso/50 dark:text-muted-foreground">{t('tracker_original_hours').replace('{hours}', originalHours.toFixed(2))}</span>}
-                    </div>
-                    <span className="font-bold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</span>
-                  </div>
-                  {log.notes && <p className="text-xs text-expresso/60 dark:text-muted-foreground bg-warm-roast/5 dark:bg-muted/20 p-2 rounded-lg">{log.notes}</p>}
-                  {log.adjustment_note && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-1.5">
-                      {t('tracker_adjustment_reason')}: {log.adjustment_note}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-1 flex-wrap">
-                    <Button onClick={() => openEditHours(log)} size="sm" variant="ghost" className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20">
-                      <Pencil className="h-3.5 w-3.5 mr-1" /> {t('tracker_edit_hours')}
-                    </Button>
-                    <Button onClick={() => handleMarkPaid(log.id)} size="sm" variant="outline" className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-900/40 dark:hover:bg-green-900/20">
-                      <Check className="h-4 w-4 mr-1" /> {t('team_mark_paid')}
-                    </Button>
-                    <Button onClick={() => handleDeleteLog(log.id)} size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
+          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-hidden">
+            <ResponsiveList
+              data={pendingLogs}
+              columns={pendingColumns}
+              rowKey={(l) => l.id}
+              actions={pendingActions}
+              cardActions={selectCheckbox}
+              cardFooter={pendingActions}
+              actionsHeader={t('common_actions')}
+              isLoading={loadingLogs}
+              caption={t('team_tab_pending')}
+              emptyState={<span>{t('team_no_pending_logs')}</span>}
+            />
           </div>
 
-          {/* Desktop table — Pending */}
-          <div className="hidden md:block bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
-            <table className="w-full text-sm text-left min-w-[800px]">
-              <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
-                <tr>
-                  <th scope="col" className="px-6 py-4 w-12 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedLogIds.size === pendingLogs.length && pendingLogs.length > 0}
-                      onChange={toggleSelectAll}
-                      className="rounded border-warm-roast/20 text-coffee-fruit focus:ring-coffee-fruit/20 w-4 h-4 cursor-pointer"
-                    />
-                  </th>
-                  <th scope="col" className="px-6 py-4">Date</th>
-                  <th scope="col" className="px-6 py-4">Worker</th>
-                  <th scope="col" className="px-6 py-4">Time Logged</th>
-                  <th scope="col" className="px-6 py-4">Hours</th>
-                  <th scope="col" className="px-6 py-4">Total Pay</th>
-                  <th scope="col" className="px-6 py-4">Notes</th>
-                  <th scope="col" className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingLogs ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">Loading...</td></tr>
-                ) : pendingLogs.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">No pending time logs</td></tr>
-                ) : (
-                  pendingLogs.map(log => {
-                    const hours = resolveHours(log)
-                    const originalHours = calculateHoursWorked(log.start_time, log.end_time)
-                    const isAdjusted = log.adjusted_hours != null
-                    const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
-                    const pay = calculateTotalPay(hours, rate)
-                    const sTime = new Date(log.start_time)
-                    const eTime = new Date(log.end_time)
-                    return (
-                      <tr key={log.id} className="border-b border-warm-roast/5 dark:border-border/50 hover:bg-warm-roast/5 dark:hover:bg-muted/10 transition-colors">
-                        <td className="px-6 py-4 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedLogIds.has(log.id)}
-                            onChange={() => toggleSelectLog(log.id)}
-                            className="rounded border-warm-roast/20 text-coffee-fruit focus:ring-coffee-fruit/20 w-4 h-4 cursor-pointer"
-                          />
-                        </td>
-                        <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{sTime.toLocaleDateString()}</td>
-                        <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{log.team_members?.name || log.team_members?.invite_code || '—'}</td>
-                        <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground">
-                          {sTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {eTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-coffee-fruit dark:text-primary">
-                              {hours.toFixed(2)} hrs
-                              {isAdjusted && <span className="ml-1.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">adj</span>}
-                            </span>
-                            {isAdjusted && (
-                              <span className="text-xs text-expresso/50 dark:text-muted-foreground">
-                                {t('tracker_original_hours').replace('{hours}', originalHours.toFixed(2))}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-expresso/60 dark:text-muted-foreground max-w-[200px]">
-                          <div className="truncate">{log.notes || '—'}</div>
-                          {log.adjustment_note && (
-                            <div className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 truncate">
-                              {t('tracker_adjustment_reason')}: {log.adjustment_note}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              onClick={() => openEditHours(log)}
-                              size="sm"
-                              variant="ghost"
-                              className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20"
-                            >
-                              <Pencil className="h-3.5 w-3.5 mr-1" /> {t('tracker_edit_hours')}
-                            </Button>
-                            <Button
-                              onClick={() => handleMarkPaid(log.id)}
-                              size="sm"
-                              variant="outline"
-                              className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-900/40 dark:hover:bg-green-900/20"
-                            >
-                              <Check className="h-4 w-4 mr-1" /> {t('team_mark_paid')}
-                            </Button>
-                            <Button
-                              onClick={() => handleDeleteLog(log.id)}
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
         </TabsContent>
 
         <TabsContent value="paid" className="m-0 animate-in fade-in duration-300 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-heading text-expresso dark:text-foreground">Paid History</h3>
+            <h3 className="text-lg font-heading text-expresso dark:text-foreground">{t('team_tab_paid')}</h3>
           </div>
 
-          {/* Mobile cards — Paid */}
-          <div className="md:hidden flex flex-col gap-3">
-            {loadingLogs ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-24 bg-card rounded-xl border border-warm-roast/10 dark:border-border animate-pulse" />
-              ))
-            ) : paidLogs.length === 0 ? (
-              <div className="py-8 text-center text-expresso/40 dark:text-muted-foreground">No paid time logs in this period</div>
-            ) : paidLogs.map(log => {
-              const hours = resolveHours(log)
-              const originalHours = calculateHoursWorked(log.start_time, log.end_time)
-              const isAdjusted = log.adjusted_hours != null
-              const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
-              const pay = calculateTotalPay(hours, rate)
-              return (
-                <div key={log.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 dark:border-border shadow-sm p-4 gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-expresso dark:text-foreground">{new Date(log.start_time).toLocaleDateString()}</div>
-                      <div className="text-xs text-expresso/60 dark:text-muted-foreground font-medium">{log.team_members?.name || log.team_members?.invite_code || '—'}</div>
-                      <div className="text-xs text-expresso/50 dark:text-muted-foreground">
-                        {new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 shrink-0">
-                      {log.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} hrs</span>
-                        {isAdjusted && <span className="text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">adj</span>}
-                      </div>
-                      {isAdjusted && <span className="text-xs text-expresso/50 dark:text-muted-foreground">{t('tracker_original_hours').replace('{hours}', originalHours.toFixed(2))}</span>}
-                    </div>
-                    <span className="font-bold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</span>
-                  </div>
-                  {log.notes && <p className="text-xs text-expresso/60 dark:text-muted-foreground bg-warm-roast/5 dark:bg-muted/20 p-2 rounded-lg">{log.notes}</p>}
-                  {log.adjustment_note && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-1.5">
-                      {t('tracker_adjustment_reason')}: {log.adjustment_note}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-1">
-                    <Button onClick={() => handleRevertLog(log.id)} size="sm" variant="ghost" className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20">
-                      <RotateCcw className="h-3.5 w-3.5 mr-1" /> {t('team_revert_to_pending')}
-                    </Button>
-                    <Button onClick={() => handleDeleteLog(log.id)} size="sm" variant="ghost" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
+          <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-hidden">
+            <ResponsiveList
+              data={paidLogs}
+              columns={paidColumns}
+              rowKey={(l) => l.id}
+              actions={paidActions}
+              cardActions={() => null}
+              cardFooter={paidActions}
+              actionsHeader={t('common_actions')}
+              isLoading={loadingLogs}
+              caption={t('team_tab_paid')}
+              emptyState={<span>{t('team_no_paid_logs')}</span>}
+            />
           </div>
 
-          {/* Desktop table — Paid */}
-          <div className="hidden md:block bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
-            <table className="w-full text-sm text-left min-w-[800px]">
-              <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
-                <tr>
-                  <th scope="col" className="px-6 py-4">Date</th>
-                  <th scope="col" className="px-6 py-4">Worker</th>
-                  <th scope="col" className="px-6 py-4">Time Logged</th>
-                  <th scope="col" className="px-6 py-4">Hours</th>
-                  <th scope="col" className="px-6 py-4">Total Pay</th>
-                  <th scope="col" className="px-6 py-4">Notes</th>
-                  <th scope="col" className="px-6 py-4">Status</th>
-                  <th scope="col" className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingLogs ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">Loading...</td></tr>
-                ) : paidLogs.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">No paid time logs in this period</td></tr>
-                ) : (
-                  paidLogs.map(log => {
-                    const hours = resolveHours(log)
-                    const originalHours = calculateHoursWorked(log.start_time, log.end_time)
-                    const isAdjusted = log.adjusted_hours != null
-                    const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
-                    const pay = calculateTotalPay(hours, rate)
-                    const sTime = new Date(log.start_time)
-                    const eTime = new Date(log.end_time)
-                    return (
-                      <tr key={log.id} className="border-b border-warm-roast/5 dark:border-border/50 hover:bg-warm-roast/5 dark:hover:bg-muted/10 transition-colors">
-                        <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{sTime.toLocaleDateString()}</td>
-                        <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{log.team_members?.name || log.team_members?.invite_code || '—'}</td>
-                        <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground">
-                          {sTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {eTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-bold text-coffee-fruit dark:text-primary">
-                              {hours.toFixed(2)} hrs
-                              {isAdjusted && <span className="ml-1.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">adj</span>}
-                            </span>
-                            {isAdjusted && (
-                              <span className="text-xs text-expresso/50 dark:text-muted-foreground">
-                                {t('tracker_original_hours').replace('{hours}', originalHours.toFixed(2))}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-warm-roast dark:text-foreground">{currencySymbol}{pay.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-expresso/60 dark:text-muted-foreground max-w-[200px]">
-                          <div className="truncate">{log.notes || '—'}</div>
-                          {log.adjustment_note && (
-                            <div className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 truncate">
-                              {t('tracker_adjustment_reason')}: {log.adjustment_note}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                            {log.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              onClick={() => handleRevertLog(log.id)}
-                              size="sm"
-                              variant="ghost"
-                              className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20 text-xs"
-                            >
-                              <RotateCcw className="h-3.5 w-3.5 mr-1" /> {t('team_revert_to_pending')}
-                            </Button>
-                            <Button
-                              onClick={() => handleDeleteLog(log.id)}
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
         </TabsContent>
 
         <TabsContent value="statistics" className="m-0 animate-in fade-in duration-300 space-y-6">
@@ -1099,32 +1062,17 @@ export default function TeamPage() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-x-auto">
-              <table className="w-full text-sm text-left min-w-[500px]">
-                <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino dark:bg-muted/30 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
-                  <tr>
-                    <th scope="col" className="px-6 py-4">Worker Name</th>
-                    <th scope="col" className="px-6 py-4 text-right">Total Hours</th>
-                    <th scope="col" className="px-6 py-4 text-right">Pending Pay</th>
-                    <th scope="col" className="px-6 py-4 text-right">Total Paid</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!workerStats?.length ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">No workers found to show statistics</td></tr>
-                  ) : (
-                    workerStats.map(stat => (
-                      <tr key={stat.id} className="border-b border-warm-roast/5 dark:border-border/50 hover:bg-warm-roast/5 dark:hover:bg-muted/10 transition-colors">
-                        <td className="px-6 py-4 font-medium text-expresso dark:text-foreground">{stat.name}</td>
-                        <td className="px-6 py-4 font-bold text-coffee-fruit dark:text-primary text-right">{stat.totalHours.toFixed(2)} hrs</td>
-                        <td className="px-6 py-4 font-bold text-yellow-600 dark:text-yellow-500 text-right">{currencySymbol}{stat.totalPending.toFixed(2)}</td>
-                        <td className="px-6 py-4 font-bold text-green-600 dark:text-green-500 text-right">{currencySymbol}{stat.totalPaid.toFixed(2)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border overflow-hidden">
+              <ResponsiveList
+                data={workerStats}
+                columns={statsColumns}
+                rowKey={(s) => s.id}
+                minTableWidth="min-w-[500px]"
+                caption={t('team_col_worker_name')}
+                emptyState={<span>{t('team_no_worker_stats')}</span>}
+              />
             </div>
+
             
             <div className="bg-card rounded-xl shadow-sm border border-warm-roast/10 dark:border-border p-6 flex flex-col h-[400px]">
               <h3 className="text-lg font-heading text-expresso dark:text-foreground mb-4">Worker Earnings</h3>

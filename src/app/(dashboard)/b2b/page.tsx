@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Plus, Briefcase, Users, ShoppingCart, Calculator, Flame } from 'lucide-react'
 import { OrderForm } from '@/components/OrderForm'
-import { TableRowSkeleton } from '@/components/Skeletons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { InvitePartnerDialog } from '@/components/InvitePartnerDialog'
 import { PartnersList } from '@/components/PartnersList'
@@ -14,11 +13,12 @@ import { OrderDetailsModal } from '@/components/OrderDetailsModal'
 import { RoastingOrderDetailsModal } from '@/components/RoastingOrderDetailsModal'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { formatCurrency, formatCRC, formatKg } from '@/lib/format'
 import { aggregatePendingB2BOrders, calculateGreenCoffeeNeeded } from '@/utils/calculations'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { DictionaryKey } from '@/i18n/dictionaries'
-import type { OrderWithCustomer } from '@/types'
+import type { OrderWithCustomer, RoastingOrderWithPartner } from '@/types'
 
 export default function B2BPage() {
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -54,6 +54,177 @@ export default function B2BPage() {
       : status === 'roasted' ? t('orders_roasted')
         : t('orders_pending')
 
+  const orderActions = (order: OrderWithCustomer) => (
+    <GenericModal
+      variant="bare"
+      isOpen={openOrderId === order.id}
+      onOpenChange={(open) => setOpenOrderId(open ? order.id : null)}
+      title={t('b2b_order_details')}
+      contentClassName="sm:max-w-[480px]"
+      trigger={
+        <Button variant="ghost" size="sm" className="text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5 max-md:min-h-11">
+          {t('edit')}
+        </Button>
+      }
+    >
+      <OrderDetailsModal
+        order={order}
+        customers={customers || []}
+        inventoryItems={coffeeInventory}
+        settings={settings}
+        onClose={() => setOpenOrderId(null)}
+      />
+    </GenericModal>
+  )
+
+  const orderColumns: ResponsiveListColumn<OrderWithCustomer>[] = [
+    {
+      id: 'company',
+      role: 'title',
+      header: t('common_company'),
+      cell: (o) => (
+        <>
+          <span className="font-bold text-coffee-fruit">{o.company_name || t('b2b_client')}</span>
+          <div className="text-xs font-normal text-expresso/60 mt-0.5">{o.customers?.full_name}</div>
+        </>
+      ),
+      cardCell: (o) => o.company_name || t('b2b_client'),
+    },
+    {
+      id: 'contact',
+      role: 'meta',
+      cardOnly: true,
+      header: t('common_company'),
+      cell: (o) => o.customers?.full_name,
+    },
+    {
+      id: 'date',
+      role: 'none',
+      header: t('b2b_col_order_info'),
+      cell: (o) => (
+        <div className="flex flex-col gap-0.5 text-expresso">
+          <span>{new Date(o.order_date).toLocaleDateString()}</span>
+          <span className="text-xs text-expresso/60 capitalize">{o.roast_level}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'coffee',
+      header: t('common_coffee'),
+      cell: (o) => o.inventory?.item_name || <span className="text-expresso/40">—</span>,
+      cardCell: (o) => (
+        <>
+          {o.inventory?.item_name || <span className="text-expresso/40">—</span>}
+          <div className="text-xs font-normal text-expresso/60 capitalize">
+            {o.roast_level} • {new Date(o.order_date).toLocaleDateString()}
+          </div>
+        </>
+      ),
+    },
+    {
+      id: 'amount',
+      header: t('common_amount'),
+      cell: (o) => (
+        <>
+          <span className="font-medium text-expresso">{formatKg(o.amount_grams)}</span>
+          <span className="text-xs text-expresso/60 ml-1">
+            ({t('common_bags').replace('{count}', String(o.bag_count))})
+          </span>
+        </>
+      ),
+    },
+    {
+      id: 'total',
+      header: t('common_total'),
+      cell: (o) => (
+        <span className="font-bold text-warm-roast">{formatCurrency(o.total_price, settings)}</span>
+      ),
+    },
+    {
+      id: 'status',
+      header: t('common_status'),
+      cell: (o) => (
+        <StatusBadge
+          tone={
+            o.fulfillment_status === 'delivered' ? 'success' :
+            o.fulfillment_status === 'roasted' ? 'accent' :
+            'info'
+          }
+        >
+          {fulfillmentLabel(o.fulfillment_status)}
+        </StatusBadge>
+      ),
+    },
+  ]
+
+  const roastingActions = (order: RoastingOrderWithPartner) => (
+    <GenericModal
+      variant="bare"
+      title={t('roasting_order_details')}
+      contentClassName="sm:max-w-[520px]"
+      trigger={
+        <Button variant="ghost" size="sm" className="text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5 max-md:min-h-11 max-md:w-full">
+          {t('roasting_col_view')}
+        </Button>
+      }
+    >
+      <RoastingOrderDetailsModal order={order} />
+    </GenericModal>
+  )
+
+  const roastingColumns: ResponsiveListColumn<RoastingOrderWithPartner>[] = [
+    {
+      id: 'company',
+      role: 'title',
+      header: t('roasting_col_company'),
+      cell: (o) => (
+        <span className="font-bold text-coffee-fruit">
+          {o.b2b_partners?.company_name || t('roasting_unknown_partner')}
+        </span>
+      ),
+      cardCell: (o) => o.b2b_partners?.company_name || t('roasting_unknown_partner'),
+    },
+    {
+      id: 'date',
+      role: 'meta',
+      header: t('roasting_col_date'),
+      cell: (o) => new Date(o.created_at).toLocaleDateString(),
+    },
+    {
+      id: 'output',
+      header: t('roasting_col_output'),
+      cell: (o) => (
+        <>
+          <span className="font-medium text-expresso">{formatKg(o.roasted_grams_out)}</span>
+          <span className="text-xs text-expresso/60 ml-1">
+            ({t('common_batches').replace('{count}', String(o.batches_needed))})
+          </span>
+        </>
+      ),
+    },
+    {
+      id: 'cost',
+      header: t('roasting_col_service_cost'),
+      cell: (o) => <span className="font-bold text-warm-roast">{formatCRC(o.total_cost)}</span>,
+    },
+    {
+      id: 'status',
+      header: t('roasting_col_status'),
+      cell: (o) => (
+        <StatusBadge
+          tone={
+            o.status === 'completed' ? 'success' :
+            o.status === 'accepted' ? 'accent' :
+            o.status === 'cancelled' ? 'danger' :
+            'info'
+          }
+        >
+          {t(`roasting_status_${o.status}` as DictionaryKey)}
+        </StatusBadge>
+      ),
+    },
+  ]
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <PageHeader
@@ -64,12 +235,11 @@ export default function B2BPage() {
             <InvitePartnerDialog />
 
             <GenericModal
+              variant="bare"
               isOpen={isAddOpen}
               onOpenChange={setIsAddOpen}
-              hideFooter={true}
-              hideTitle={true}
               title="New B2B Order"
-              contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+              contentClassName="sm:max-w-[600px]"
               trigger={
                 <Button className="bg-card text-coffee-fruit hover:bg-warm-roast/10 border border-coffee-fruit/20 rounded-full px-6 shadow-sm transition-all">
                   <Plus className="mr-2 h-4 w-4" /> {t('orders_new') || "New B2B Order"}
@@ -115,302 +285,43 @@ export default function B2BPage() {
 
         <TabsContent value="orders" className="m-0 animate-in fade-in duration-300 outline-none">
           <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
-            {/* Mobile Card View */}
-            <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-32 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
-                ))
-              ) : b2bOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
+            <ResponsiveList
+              data={b2bOrders}
+              columns={orderColumns}
+              rowKey={(o) => o.id}
+              actions={orderActions}
+              actionsHeader={t('common_actions')}
+              isLoading={isLoading}
+              caption={t('common_company')}
+              emptyState={
+                <div className="flex flex-col items-center justify-center gap-2">
                   <Briefcase className="h-8 w-8 opacity-20" />
                   <p>{t('b2b_no_orders')}</p>
                 </div>
-              ) : (
-                b2bOrders.map((order) => (
-                  <div key={order.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
-                    <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
-                      <div className="min-w-0">
-                        <div className="font-bold text-coffee-fruit truncate">{order.company_name || t('b2b_client')}</div>
-                        <div className="text-xs text-expresso/60 mt-0.5">{order.customers?.full_name}</div>
-                      </div>
-                      <StatusBadge tone={
-                        order.fulfillment_status === 'delivered' ? 'success' :
-                        order.fulfillment_status === 'roasted' ? 'accent' :
-                        'info'
-                      }>
-                        {fulfillmentLabel(order.fulfillment_status)}
-                      </StatusBadge>
-                    </div>
-                    <div className="p-4 grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('common_coffee')}</div>
-                        <div className="font-medium text-expresso">{order.inventory?.item_name || '—'}</div>
-                        <div className="text-xs text-expresso/60 capitalize">{order.roast_level} • {new Date(order.order_date).toLocaleDateString()}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('common_amount')}</div>
-                        <div className="font-medium text-expresso">{formatKg(order.amount_grams)}</div>
-                        <div className="text-xs text-expresso/60">({t('common_bags').replace('{count}', String(order.bag_count))})</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('common_total')}</div>
-                        <div className="font-bold text-warm-roast">{formatCurrency(order.total_price, settings)}</div>
-                      </div>
-                      <div className="flex items-end justify-end">
-                        <GenericModal
-                          isOpen={openOrderId === order.id}
-                          onOpenChange={(open) => setOpenOrderId(open ? order.id : null)}
-                          hideFooter={true}
-                          hideTitle={true}
-                          title={t('b2b_order_details')}
-                          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
-                          trigger={
-                            <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-3 text-coffee-fruit hover:bg-warm-roast/5">
-                              {t('edit')}
-                            </button>
-                          }
-                        >
-                          <OrderDetailsModal
-                            order={order}
-                            customers={customers || []}
-                            inventoryItems={coffeeInventory}
-                            settings={settings}
-                            onClose={() => setOpenOrderId(null)}
-                          />
-                        </GenericModal>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+              }
+            />
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm text-left min-w-[800px]">
-                <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-                  <tr>
-                    <th scope="col" className="px-6 py-4">{t('common_company')}</th>
-                    <th scope="col" className="px-6 py-4">{t('b2b_col_order_info')}</th>
-                    <th scope="col" className="px-6 py-4">{t('common_coffee')}</th>
-                    <th scope="col" className="px-6 py-4">{t('common_amount')}</th>
-                    <th scope="col" className="px-6 py-4">{t('common_total')}</th>
-                    <th scope="col" className="px-6 py-4">{t('common_status')}</th>
-                    <th scope="col" className="px-6 py-4 text-right">{t('common_actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <TableRowSkeleton cols={7} rows={3} />
-                  ) : b2bOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-expresso/50">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <Briefcase className="h-8 w-8 opacity-20" />
-                          <p>{t('b2b_no_orders')}</p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    b2bOrders.map((order) => (
-                      <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
-                        <td className="px-6 py-4 font-bold text-coffee-fruit">
-                          {order.company_name || t('b2b_client')}
-                          <div className="text-xs font-normal text-expresso/60 mt-0.5">
-                            {order.customers?.full_name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-expresso">
-                          <div className="flex flex-col gap-0.5">
-                            <span>{new Date(order.order_date).toLocaleDateString()}</span>
-                            <span className="text-xs text-expresso/60 capitalize">{order.roast_level}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {order.inventory?.item_name || <span className="text-expresso/40">—</span>}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-expresso">
-                          {formatKg(order.amount_grams)}
-                          <span className="text-xs text-expresso/60 ml-1">({t('common_bags').replace('{count}', String(order.bag_count))})</span>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-warm-roast">
-                          {formatCurrency(order.total_price, settings)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusBadge tone={
-                            order.fulfillment_status === 'delivered' ? 'success' :
-                            order.fulfillment_status === 'roasted' ? 'accent' :
-                            'info'
-                          }>
-                            {fulfillmentLabel(order.fulfillment_status)}
-                          </StatusBadge>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <GenericModal
-                            isOpen={openOrderId === order.id}
-                            onOpenChange={(open) => setOpenOrderId(open ? order.id : null)}
-                            hideFooter={true}
-                            hideTitle={true}
-                            title={t('b2b_order_details')}
-                            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
-                            trigger={
-                              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5">
-                                {t('edit')}
-                              </button>
-                            }
-                          >
-                            <OrderDetailsModal
-                              order={order}
-                              customers={customers || []}
-                              inventoryItems={coffeeInventory}
-                              settings={settings}
-                              onClose={() => setOpenOrderId(null)}
-                            />
-                          </GenericModal>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
           </div>
         </TabsContent>
 
         <TabsContent value="roasting" className="m-0 animate-in fade-in duration-300 outline-none">
           <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
-            {/* Mobile Card View */}
-            <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
-              {loadingRoasting ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-28 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
-                ))
-              ) : !roastingOrders || roastingOrders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
+            <ResponsiveList
+              data={roastingOrders ?? []}
+              columns={roastingColumns}
+              rowKey={(o) => o.id}
+              actions={roastingActions}
+              actionsHeader={t('roasting_col_actions')}
+              isLoading={loadingRoasting}
+              caption={t('roasting_col_company')}
+              emptyState={
+                <div className="flex flex-col items-center justify-center gap-2">
                   <Flame className="h-8 w-8 opacity-20" />
                   <p>{t('roasting_roaster_empty')}</p>
                 </div>
-              ) : (
-                roastingOrders.map((order) => (
-                  <div key={order.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
-                    <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
-                      <div className="min-w-0">
-                        <div className="font-bold text-coffee-fruit truncate">{order.b2b_partners?.company_name || t('roasting_unknown_partner')}</div>
-                        <div className="text-xs text-expresso/60 mt-0.5">{new Date(order.created_at).toLocaleDateString()}</div>
-                      </div>
-                      <StatusBadge tone={
-                        order.status === 'completed' ? 'success' :
-                        order.status === 'accepted' ? 'accent' :
-                        order.status === 'cancelled' ? 'danger' :
-                        'info'
-                      }>
-                        {t(`roasting_status_${order.status}` as DictionaryKey)}
-                      </StatusBadge>
-                    </div>
-                    <div className="p-4 flex items-center justify-between gap-3 text-sm">
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('roasting_col_output')}</div>
-                        <div className="font-medium text-expresso">{formatKg(order.roasted_grams_out)}</div>
-                        <div className="text-xs text-expresso/60">({t('common_batches').replace('{count}', String(order.batches_needed))})</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('roasting_col_service_cost')}</div>
-                        <div className="font-bold text-warm-roast">{formatCRC(order.total_cost)}</div>
-                      </div>
-                    </div>
-                    <div className="px-4 pb-4">
-                      <GenericModal
-                        hideFooter={true}
-                        hideTitle={true}
-                        title={t('roasting_order_details')}
-                        contentClassName="sm:max-w-[520px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
-                        trigger={
-                          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-9 px-3 w-full text-coffee-fruit hover:bg-warm-roast/5 border border-warm-roast/10">
-                            {t('roasting_col_view')}
-                          </button>
-                        }
-                      >
-                        <RoastingOrderDetailsModal order={order} />
-                      </GenericModal>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+              }
+            />
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm text-left min-w-[800px]">
-                <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-                  <tr>
-                    <th scope="col" className="px-6 py-4">{t('roasting_col_company')}</th>
-                    <th scope="col" className="px-6 py-4">{t('roasting_col_date')}</th>
-                    <th scope="col" className="px-6 py-4">{t('roasting_col_output')}</th>
-                    <th scope="col" className="px-6 py-4">{t('roasting_col_service_cost')}</th>
-                    <th scope="col" className="px-6 py-4">{t('roasting_col_status')}</th>
-                    <th scope="col" className="px-6 py-4 text-right">{t('roasting_col_actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingRoasting ? (
-                    <TableRowSkeleton cols={6} rows={3} />
-                  ) : !roastingOrders || roastingOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-expresso/50">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <Flame className="h-8 w-8 opacity-20" />
-                          <p>{t('roasting_roaster_empty')}</p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    roastingOrders.map((order) => (
-                      <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
-                        <td className="px-6 py-4 font-bold text-coffee-fruit">
-                          {order.b2b_partners?.company_name || t('roasting_unknown_partner')}
-                        </td>
-                        <td className="px-6 py-4 text-expresso">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-expresso">
-                          {formatKg(order.roasted_grams_out)}
-                          <span className="text-xs text-expresso/60 ml-1">({t('common_batches').replace('{count}', String(order.batches_needed))})</span>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-warm-roast">
-                          {formatCRC(order.total_cost)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusBadge tone={
-                            order.status === 'completed' ? 'success' :
-                            order.status === 'accepted' ? 'accent' :
-                            order.status === 'cancelled' ? 'danger' :
-                            'info'
-                          }>
-                            {t(`roasting_status_${order.status}` as DictionaryKey)}
-                          </StatusBadge>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <GenericModal
-                            hideFooter={true}
-                            hideTitle={true}
-                            title={t('roasting_order_details')}
-                            contentClassName="sm:max-w-[520px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
-                            trigger={
-                              <button className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors h-9 px-3 text-expresso/70 hover:text-coffee-fruit hover:bg-warm-roast/5">
-                                {t('roasting_col_view')}
-                              </button>
-                            }
-                          >
-                            <RoastingOrderDetailsModal order={order} />
-                          </GenericModal>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
           </div>
         </TabsContent>
 

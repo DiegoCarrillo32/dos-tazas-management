@@ -150,7 +150,7 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
             fulfillmentMutation.mutate({ id: order.id, status: newStatus });
           }}
         >
-          <SelectTrigger size="sm" className={`flex-1 h-7 py-0 text-[0.8rem] font-bold px-2.5 border-transparent transition-colors rounded-[12px] [&>svg]:size-3.5 ${fulfillmentColors[fulfillment]}`}>
+          <SelectTrigger size="sm" className={`flex-1 max-md:min-h-11 h-7 py-0 text-[0.8rem] font-bold px-2.5 border-transparent transition-colors rounded-[12px] [&>svg]:size-3.5 ${fulfillmentColors[fulfillment]}`}>
             <SelectValue>{fulfillment === 'pending' ? t('orders_pending') : fulfillment === 'roasted' ? t('orders_roasted') : t('orders_delivered')}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -164,20 +164,19 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
           size="sm" 
           onClick={handlePaymentToggle}
           disabled={paymentMutation.isPending}
-          className={`flex-1 transition-colors border-transparent ${paymentColors[payment]}`}
+          className={`flex-1 max-md:min-h-11 transition-colors border-transparent ${paymentColors[payment]}`}
         >
           <DollarSign className="h-3.5 w-3.5 mr-1" />
           {payment === 'pending' ? t('order_unpaid') : t('order_paid')}
         </Button>
       </CardFooter>
 
-      <GenericModal 
+      <GenericModal
+        variant="bare"
         isOpen={isOpen}
         onOpenChange={setIsOpen}
-        hideTitle={true}
-        hideFooter={true}
         title="Order Details"
-        contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+        contentClassName="sm:max-w-[480px]"
       >
         <OrderDetailsModal order={order} customers={customers} inventoryItems={inventoryItems} settings={settings} onClose={() => setIsOpen(false)} />
       </GenericModal>

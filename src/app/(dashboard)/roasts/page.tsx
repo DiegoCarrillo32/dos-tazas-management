@@ -7,9 +7,10 @@ import { Plus, Flame, Edit, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { RoastBatchForm } from '@/components/RoastBatchForm'
 import { useRoastBatches } from '@/hooks/queries'
-import { TableRowSkeleton } from '@/components/Skeletons'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
+import type { RoastBatchRecord } from '@/types'
 import { useTranslation } from '@/i18n/LanguageProvider'
 
 export default function RoastsPage() {
@@ -24,6 +25,94 @@ export default function RoastsPage() {
     r.notes?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
 
+  const yieldOf = (b: RoastBatchRecord) =>
+    b.weight_in_grams && b.weight_out_grams && b.weight_in_grams > 0
+      ? ((b.weight_out_grams / b.weight_in_grams) * 100).toFixed(1)
+      : null
+
+  const rowActions = (batch: RoastBatchRecord) => (
+    <GenericModal
+      variant="bare"
+      title={t('roasts_edit')}
+      contentClassName="sm:max-w-[600px]"
+      trigger={
+        <Button variant="ghost" size="icon-sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 rounded-full max-md:size-11">
+          <Edit className="h-4 w-4" />
+          <span className="sr-only">{t('edit')}</span>
+        </Button>
+      }
+    >
+      <RoastBatchForm initialData={batch} />
+    </GenericModal>
+  )
+
+  const columns: ResponsiveListColumn<RoastBatchRecord>[] = [
+    {
+      id: 'lot',
+      role: 'title',
+      header: t('roasts_col_lot'),
+      cell: (b) => (
+        <>
+          <span className="font-bold text-coffee-fruit">{b.green_lot_name || t('roasts_unknown_lot')}</span>
+          {b.notes && <p className="text-xs text-expresso/60 truncate max-w-[200px] mt-1">{b.notes}</p>}
+        </>
+      ),
+      cardCell: (b) => b.green_lot_name || t('roasts_unknown_lot'),
+    },
+    {
+      id: 'date',
+      role: 'meta',
+      header: t('roasts_col_date'),
+      cell: (b) => (
+        <div className="flex flex-col font-medium text-expresso">
+          <span>{new Date(b.created_at).toLocaleDateString()}</span>
+          {b.roast_time_minutes && (
+            <span className="text-xs text-expresso/50">
+              {b.roast_time_minutes} {t('roasts_minutes')}
+            </span>
+          )}
+        </div>
+      ),
+      cardCell: (b) => (
+        <span className="bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full">
+          {new Date(b.created_at).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      id: 'in',
+      header: `${t('roasts_col_weight_in')} (g)`,
+      cardLabel: t('roasts_col_weight_in'),
+      cell: (b) => <span className="font-medium">{b.weight_in_grams}</span>,
+      cardCell: (b) => `${b.weight_in_grams} g`,
+    },
+    {
+      id: 'out',
+      header: `${t('roasts_col_weight_out')} (g)`,
+      cardLabel: t('roasts_col_weight_out'),
+      cell: (b) => <span className="font-medium">{b.weight_out_grams}</span>,
+      cardCell: (b) => `${b.weight_out_grams} g`,
+    },
+    {
+      id: 'yield',
+      header: `${t('roasts_col_yield')} (%)`,
+      cardLabel: t('roasts_col_yield'),
+      cell: (b) => {
+        const y = yieldOf(b)
+        return (
+          <StatusBadge tone={Number(y) < 80 ? 'danger' : 'success'}>
+            {y ? `${y}%` : '—'}
+          </StatusBadge>
+        )
+      },
+    },
+    {
+      id: 'roaster',
+      header: t('roasts_col_roaster'),
+      cell: (b) => b.equipment_name || <span className="text-expresso/40 italic font-normal">—</span>,
+    },
+  ]
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <PageHeader
@@ -31,12 +120,11 @@ export default function RoastsPage() {
         subtitle={t('roasts_subtitle')}
         action={
           <GenericModal
+            variant="bare"
             isOpen={isAddOpen}
             onOpenChange={setIsAddOpen}
-            hideFooter={true}
-            hideTitle={true}
             title={t('roasts_log')}
-            contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
+            contentClassName="sm:max-w-[600px]"
             trigger={
               <Button className="bg-coffee-fruit hover:bg-warm-roast text-white rounded-full px-6 shadow-sm shadow-warm-roast/20 transition-all">
                 <Plus className="mr-2 h-4 w-4" /> {t('roasts_log')}
@@ -65,186 +153,22 @@ export default function RoastsPage() {
 
       {/* Roasts Table */}
       <div className="bg-card rounded-xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
-        {/* Mobile Card View */}
-        <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-32 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
-            ))
-          ) : filteredRoasts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
+        <ResponsiveList
+          data={filteredRoasts}
+          columns={columns}
+          rowKey={(b) => b.id}
+          actions={rowActions}
+          actionsHeader={t('roasts_col_actions')}
+          isLoading={isLoading}
+          caption={t('roasts_title')}
+          emptyState={
+            <div className="flex flex-col items-center justify-center gap-2">
               <Flame className="h-8 w-8 opacity-20" />
               <p>{t('roasts_no_found')}</p>
             </div>
-          ) : (
-            filteredRoasts.map((batch) => {
-              const yieldPercent = (batch.weight_in_grams && batch.weight_out_grams && batch.weight_in_grams > 0)
-                ? ((batch.weight_out_grams / batch.weight_in_grams) * 100).toFixed(1)
-                : null
-              return (
-                <div key={batch.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
-                  {/* Header */}
-                  <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
-                    <div>
-                      <div className="font-bold text-expresso text-base mb-1">{batch.green_lot_name || t('roasts_unknown_lot')}</div>
-                      <span className="text-xs bg-warm-roast/10 text-expresso/70 px-2 py-0.5 rounded-full">
-                        {new Date(batch.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <GenericModal
-                        hideFooter={true}
-                        hideTitle={true}
-                        title={t('roasts_edit')}
-                        contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
-                        trigger={
-                          <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">{t('edit')}</span>
-                          </Button>
-                        }
-                      >
-                        <RoastBatchForm initialData={batch} />
-                      </GenericModal>
-                    </div>
-                  </div>
+          }
+        />
 
-                  {/* Content Grid */}
-                  <div className="p-4 grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        {t('roasts_col_weight_in')}
-                      </div>
-                      <div className="font-medium text-expresso text-sm">
-                        {batch.weight_in_grams} g
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        {t('roasts_col_weight_out')}
-                      </div>
-                      <div className="font-medium text-expresso text-sm">
-                        {batch.weight_out_grams} g
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        {t('roasts_col_yield')}
-                      </div>
-                      <div className="font-medium text-sm">
-                        <StatusBadge tone={Number(yieldPercent) < 80 ? 'danger' : 'success'}>
-                          {yieldPercent ? `${yieldPercent}%` : '—'}
-                        </StatusBadge>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                        {t('roasts_col_roaster')}
-                      </div>
-                      <div className="font-medium text-expresso text-sm truncate" title={batch.equipment_name || ''}>
-                        {batch.equipment_name || <span className="text-expresso/40 italic font-normal">—</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {(batch.notes || batch.roast_time_minutes) && (
-                    <div className="px-4 pb-4">
-                      {batch.roast_time_minutes && (
-                        <p className="text-xs text-expresso/60 mb-2">
-                          <span className="font-bold text-expresso">{t('roasts_time_label')}:</span> {batch.roast_time_minutes} {t('roasts_minutes')}
-                        </p>
-                      )}
-                      {batch.notes && (
-                        <p className="text-xs text-expresso/60 bg-warm-roast/5 p-2 rounded-lg italic">
-                          &quot;{batch.notes}&quot;
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[800px]">
-            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-              <tr>
-                <th scope="col" className="px-6 py-4">{t('roasts_col_date')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasts_col_lot')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasts_col_roaster')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasts_col_weight_in')} (g)</th>
-                <th scope="col" className="px-6 py-4">{t('roasts_col_weight_out')} (g)</th>
-                <th scope="col" className="px-6 py-4">{t('roasts_col_yield')} (%)</th>
-                <th scope="col" className="px-6 py-4 text-right">{t('roasts_col_actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <TableRowSkeleton cols={7} rows={3} />
-              ) : filteredRoasts.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-expresso/50">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Flame className="h-8 w-8 opacity-20" />
-                      <p>{t('roasts_no_found')}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredRoasts.map((batch) => {
-                  const yieldPercent = (batch.weight_in_grams && batch.weight_out_grams && batch.weight_in_grams > 0)
-                    ? ((batch.weight_out_grams / batch.weight_in_grams) * 100).toFixed(1)
-                    : null
-                  return (
-                    <tr key={batch.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
-                      <td className="px-6 py-4 font-medium text-expresso">
-                        <div className="flex flex-col">
-                          <span>{new Date(batch.created_at).toLocaleDateString()}</span>
-                          {batch.roast_time_minutes && (
-                            <span className="text-xs text-expresso/50">{batch.roast_time_minutes} {t('roasts_minutes')}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-bold text-coffee-fruit">{batch.green_lot_name || t('roasts_unknown_lot')}</span>
-                        {batch.notes && <p className="text-xs text-expresso/60 truncate max-w-[200px] mt-1">{batch.notes}</p>}
-                      </td>
-                      <td className="px-6 py-4 text-expresso/80">
-                        {batch.equipment_name || <span className="text-expresso/40">—</span>}
-                      </td>
-                      <td className="px-6 py-4 font-medium">{batch.weight_in_grams}</td>
-                      <td className="px-6 py-4 font-medium">{batch.weight_out_grams}</td>
-                      <td className="px-6 py-4">
-                        <StatusBadge tone={Number(yieldPercent) < 80 ? 'danger' : 'success'}>
-                          {yieldPercent ? `${yieldPercent}%` : '—'}
-                        </StatusBadge>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <GenericModal
-                          hideFooter={true}
-                          hideTitle={true}
-                          title={t('roasts_edit')}
-                          contentClassName="sm:max-w-[600px] p-0 border-none bg-transparent shadow-none"
-                          trigger={
-                            <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">{t('edit')}</span>
-                            </Button>
-                          }
-                        >
-                          <RoastBatchForm initialData={batch} />
-                        </GenericModal>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   )

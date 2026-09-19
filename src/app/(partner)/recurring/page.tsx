@@ -3,7 +3,8 @@
 import { usePartnerRecurringOrders, useInventory, usePartners, useDeleteRecurringOrder } from '@/hooks/queries'
 import type { B2BPartnerRecord } from '@/types'
 import { PageHeader } from '@/components/PageHeader'
-import { TableRowSkeleton } from '@/components/Skeletons'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
+import type { B2BRecurringOrderRecord } from '@/types'
 import { RefreshCw, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GenericModal } from '@/components/ui/GenericModal'
@@ -22,6 +23,77 @@ export default function PartnerRecurringOrders() {
   const { data: inventoryItems } = useInventory()
   const deleteMutation = useDeleteRecurringOrder(partnerId || '')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const rowActions = (order: B2BRecurringOrderRecord) => (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => deleteMutation.mutate(order.id)}
+      disabled={deleteMutation.isPending}
+      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg size-11 md:size-8"
+    >
+      <Trash2 className="h-4 w-4" />
+      <span className="sr-only">{t('delete')}</span>
+    </Button>
+  )
+
+  const columns: ResponsiveListColumn<B2BRecurringOrderRecord>[] = [
+    {
+      id: 'coffee',
+      role: 'title',
+      header: t('common_coffee'),
+      cell: (o) => (
+        <>
+          <span className="font-bold text-coffee-fruit">
+            {o.inventory?.item_name || t('partner_standard_coffee')}
+          </span>
+          <div className="text-xs font-normal text-expresso/60 mt-0.5 capitalize">
+            {o.roast_level} {t('common_roast_suffix')} • {o.preparation_method}
+          </div>
+        </>
+      ),
+      cardCell: (o) => o.inventory?.item_name || t('partner_standard_coffee'),
+    },
+    {
+      id: 'detail',
+      role: 'meta',
+      cardOnly: true,
+      header: t('common_coffee'),
+      cell: (o) => (
+        <span className="capitalize">
+          {o.roast_level} {t('common_roast_suffix')} • {o.preparation_method}
+        </span>
+      ),
+    },
+    {
+      id: 'amount',
+      header: t('common_amount'),
+      cell: (o) => (
+        <>
+          <span className="font-medium text-expresso">{formatKg(o.amount_grams)}</span>
+          <span className="text-xs text-expresso/60 ml-1">
+            ({t('common_bags').replace('{count}', String(o.bag_count))})
+          </span>
+        </>
+      ),
+    },
+    {
+      id: 'frequency',
+      header: t('common_frequency'),
+      cell: (o) => (
+        <span className="capitalize">{formatRecurringSchedule(o.frequency, o.day_of_week, t)}</span>
+      ),
+    },
+    {
+      id: 'status',
+      header: t('common_status'),
+      cell: (o) => (
+        <StatusBadge tone={o.is_active ? 'success' : 'danger'}>
+          {o.is_active ? t('common_active') : t('common_paused')}
+        </StatusBadge>
+      ),
+    },
+  ]
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -57,124 +129,23 @@ export default function PartnerRecurringOrders() {
       </div>
 
       <div className="bg-card rounded-2xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
-        {/* Mobile Card View */}
-        <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-28 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
-            ))
-          ) : !recurringOrders || recurringOrders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
+        <ResponsiveList
+          data={recurringOrders ?? []}
+          columns={columns}
+          rowKey={(o) => o.id}
+          actions={rowActions}
+          actionsHeader={t('common_actions')}
+          isLoading={isLoading}
+          caption={t('partner_recurring_title')}
+          emptyState={
+            <div className="flex flex-col items-center justify-center gap-2">
               <RefreshCw className="h-8 w-8 opacity-20" />
               <p>{t('partner_no_recurring')}</p>
               <p className="text-xs">{t('partner_no_recurring_desc')}</p>
             </div>
-          ) : (
-            recurringOrders.map((order) => (
-              <div key={order.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
-                <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
-                  <div>
-                    <div className="font-bold text-coffee-fruit text-base">{order.inventory?.item_name || t('partner_standard_coffee')}</div>
-                    <div className="text-xs text-expresso/60 mt-0.5 capitalize">
-                      {order.roast_level} {t('common_roast_suffix')} • {order.preparation_method}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <StatusBadge tone={order.is_active ? 'success' : 'danger'}>
-                      {order.is_active ? t('common_active') : t('common_paused')}
-                    </StatusBadge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(order.id)}
-                      disabled={deleteMutation.isPending}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg h-8 w-8"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('common_amount')}</div>
-                    <div className="font-medium text-expresso">{formatKg(order.amount_grams)}</div>
-                    <div className="text-xs text-expresso/60">({t('common_bags').replace('{count}', String(order.bag_count))})</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('common_frequency')}</div>
-                    <div className="font-medium text-expresso capitalize">
-                      {formatRecurringSchedule(order.frequency, order.day_of_week, t)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+          }
+        />
 
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[800px]">
-            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-              <tr>
-                <th scope="col" className="px-6 py-4">{t('common_coffee')}</th>
-                <th scope="col" className="px-6 py-4">{t('common_amount')}</th>
-                <th scope="col" className="px-6 py-4">{t('common_frequency')}</th>
-                <th scope="col" className="px-6 py-4">{t('common_status')}</th>
-                <th scope="col" className="px-6 py-4 text-right">{t('common_actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <TableRowSkeleton cols={5} rows={4} />
-              ) : !recurringOrders || recurringOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-expresso/50">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <RefreshCw className="h-8 w-8 opacity-20" />
-                      <p>{t('partner_no_recurring')}</p>
-                      <p className="text-xs">{t('partner_no_recurring_desc')}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                recurringOrders.map((order) => (
-                  <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors group">
-                    <td className="px-6 py-4 font-bold text-coffee-fruit">
-                      {order.inventory?.item_name || t('partner_standard_coffee')}
-                      <div className="text-xs font-normal text-expresso/60 mt-0.5 capitalize">
-                        {order.roast_level} {t('common_roast_suffix')} • {order.preparation_method}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-expresso">
-                      {formatKg(order.amount_grams)}
-                      <span className="text-xs text-expresso/60 ml-1">({t('common_bags').replace('{count}', String(order.bag_count))})</span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-expresso capitalize">
-                      {formatRecurringSchedule(order.frequency, order.day_of_week, t)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge tone={order.is_active ? 'success' : 'danger'}>
-                        {order.is_active ? t('common_active') : t('common_paused')}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteMutation.mutate(order.id)}
-                        disabled={deleteMutation.isPending}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   )

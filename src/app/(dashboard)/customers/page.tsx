@@ -12,6 +12,8 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
+import type { CustomerWithLastPurchase } from '@/types'
 
 export default function CustomersPage() {
   const { t } = useTranslation()
@@ -33,6 +35,84 @@ export default function CustomersPage() {
   const showConfirm = (title: string, message: string, onConfirm: () => void, confirmVariant: "default" | "destructive" = "default") => {
     setModalState({ isOpen: true, title, message, onConfirm, confirmVariant })
   }
+
+  const notProvided = <span className="italic font-normal text-expresso/40">{t('customers_not_provided')}</span>
+  const formatDate = (value: string | null, fallback: React.ReactNode) =>
+    value
+      ? new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+      : fallback
+
+  const rowActions = (customer: CustomerWithLastPurchase) => (
+    <>
+      <GenericModal
+        variant="bare"
+        title={t('cust_form_edit') || "Edit Customer"}
+        contentClassName="sm:max-w-[480px]"
+        trigger={
+          <Button variant="ghost" size="icon-sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 rounded-full max-md:size-11">
+            <Edit className="h-4 w-4" />
+            <span className="sr-only">{t('edit')}</span>
+          </Button>
+        }
+      >
+        <CustomerForm initialData={customer} />
+      </GenericModal>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full max-md:size-11"
+        onClick={() => {
+          showConfirm(
+            t('customers_delete_title'),
+            t('customers_delete_confirm'),
+            () => deleteMutation.mutate(customer.id),
+            "destructive"
+          )
+        }}
+        disabled={deleteMutation.isPending}
+      >
+        <Trash2 className="h-4 w-4" />
+        <span className="sr-only">{t('delete')}</span>
+      </Button>
+    </>
+  )
+
+  const columns: ResponsiveListColumn<CustomerWithLastPurchase>[] = [
+    {
+      id: 'name',
+      role: 'title',
+      header: t('customers_col_name'),
+      cell: (c) => <span className="font-medium text-expresso">{c.full_name}</span>,
+    },
+    {
+      id: 'phone',
+      header: t('customers_col_phone'),
+      cell: (c) => c.phone || notProvided,
+    },
+    {
+      id: 'address',
+      header: t('customers_col_address'),
+      cardFullWidth: true,
+      cellClassName: 'max-w-xs truncate',
+      cell: (c) => c.address || notProvided,
+    },
+    {
+      // Desktop only because the config says so, not because someone remembered
+      // to leave it out of a hand-written card block.
+      id: 'added',
+      role: 'none',
+      header: t('customers_col_added'),
+      cell: (c) => formatDate(c.created_at, notProvided),
+    },
+    {
+      id: 'last',
+      header: t('customers_col_last_purchase'),
+      cell: (c) => formatDate(
+        c.last_purchase_date,
+        <span className="italic font-normal text-expresso/40">{t('customers_never')}</span>
+      ),
+    },
+  ]
 
   if (isLoading) {
     return <TableSkeleton cols={6} rows={4} />
@@ -69,10 +149,9 @@ export default function CustomersPage() {
         subtitle={t('customers_subtitle')}
         action={
           <GenericModal
-            hideFooter={true}
-            hideTitle={true}
+            variant="bare"
             title={t('customers_new_title') || "New Customer"}
-            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
+            contentClassName="sm:max-w-[480px]"
             trigger={
               <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
                 <Plus className="h-5 w-5" />
@@ -136,190 +215,21 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {/* Mobile Card View */}
-          <div className="md:hidden">
-            {paginatedItems.length === 0 ? (
-              <div className="px-6 py-12 text-center text-expresso/60">
-                <div className="flex flex-col items-center justify-center gap-3">
-                  <Users className="h-12 w-12 text-warm-roast/20" />
-                  <p className="text-lg font-medium">{t('customers_no_found')}</p>
-                  <p className="text-sm">{t('customers_no_found_desc')}</p>
-                </div>
+          <ResponsiveList
+            data={paginatedItems}
+            columns={columns}
+            rowKey={(c) => c.id}
+            actions={rowActions}
+            actionsHeader={t('customers_col_actions')}
+            caption={t('customers_directory')}
+            emptyState={
+              <div className="flex flex-col items-center justify-center gap-3">
+                <Users className="h-12 w-12 text-warm-roast/20" />
+                <p className="text-lg font-medium">{t('customers_no_found')}</p>
+                <p className="text-sm">{t('customers_no_found_desc')}</p>
               </div>
-            ) : (
-              <div className="flex flex-col gap-4 p-4 bg-warm-roast/5">
-                {paginatedItems.map((customer) => (
-                  <div key={customer.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
-                      <div className="font-bold text-expresso text-base">{customer.full_name}</div>
-                      <div className="flex items-center gap-1">
-                        <GenericModal
-                          hideFooter={true}
-                          hideTitle={true}
-                          title={t('cust_form_edit') || "Edit Customer"}
-                          contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
-                          trigger={
-                            <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
-                                <Edit className="h-4 w-4" />
-                                <span className="sr-only">{t('edit')}</span>
-                            </Button>
-                          }
-                        >
-                          <CustomerForm initialData={customer} />
-                        </GenericModal>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full"
-                          onClick={() => {
-                            showConfirm(
-                              t('customers_delete_title'),
-                              t('customers_delete_confirm'),
-                              () => deleteMutation.mutate(customer.id),
-                              "destructive"
-                            )
-                          }}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">{t('delete')}</span>
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Content Grid */}
-                    <div className="p-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                          {t('customers_col_phone')}
-                        </div>
-                        <div className="font-medium text-expresso text-sm">
-                          {customer.phone || <span className="text-expresso/40 italic font-normal">{t('customers_not_provided')}</span>}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                          {t('customers_col_last_purchase')}
-                        </div>
-                        <div className="font-medium text-expresso text-sm">
-                          {customer.last_purchase_date ? new Date(customer.last_purchase_date).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          }) : <span className="text-expresso/40 italic font-normal">{t('customers_never')}</span>}
-                        </div>
-                      </div>
-                      
-                      {customer.address && (
-                        <div className="col-span-2 pt-2 border-t border-warm-roast/5">
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">
-                            {t('customers_col_address')}
-                          </div>
-                          <div className="text-sm text-expresso/80 truncate" title={customer.address}>
-                            {customer.address}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm text-left min-w-[800px]">
-              <thead className="text-xs uppercase bg-warm-roast/5 text-expresso/70 font-bold border-b border-warm-roast/10">
-                <tr>
-                  <th scope="col" className="px-6 py-4 rounded-tl-lg">{t('customers_col_name')}</th>
-                  <th scope="col" className="px-6 py-4">{t('customers_col_phone')}</th>
-                  <th scope="col" className="px-6 py-4">{t('customers_col_address')}</th>
-                  <th scope="col" className="px-6 py-4">{t('customers_col_added')}</th>
-                  <th scope="col" className="px-6 py-4">{t('customers_col_last_purchase')}</th>
-                  <th scope="col" className="px-6 py-4 text-right rounded-tr-lg">{t('customers_col_actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-expresso/60 border-b border-warm-roast/10">
-                      <div className="flex flex-col items-center justify-center gap-3">
-                        <Users className="h-12 w-12 text-warm-roast/20" />
-                        <p className="text-lg font-medium">{t('customers_no_found')}</p>
-                        <p className="text-sm">{t('customers_no_found_desc')}</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedItems.map((customer) => (
-                    <tr key={customer.id} className="border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors group">
-                      <td className="px-6 py-4 font-medium text-expresso">
-                        {customer.full_name}
-                      </td>
-                      <td className="px-6 py-4 text-expresso/80">
-                        {customer.phone || <span className="text-expresso/40 italic">{t('customers_not_provided')}</span>}
-                      </td>
-                      <td className="px-6 py-4 text-expresso/80 max-w-xs truncate" title={customer.address || ''}>
-                        {customer.address || <span className="text-expresso/40 italic">{t('customers_not_provided')}</span>}
-                      </td>
-                      <td className="px-6 py-4 text-expresso/70">
-                        {new Date(customer.created_at).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </td>
-                      <td className="px-6 py-4 text-expresso/80 font-medium">
-                        {customer.last_purchase_date ? new Date(customer.last_purchase_date).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        }) : <span className="text-expresso/40 italic">{t('customers_never')}</span>}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <GenericModal
-                            hideFooter={true}
-                            hideTitle={true}
-                            title={t('cust_form_edit') || "Edit Customer"}
-                            contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none"
-                            trigger={
-                              <Button variant="ghost" size="sm" className="text-coffee-fruit hover:text-warm-roast hover:bg-warm-roast/10 h-8 w-8 p-0 rounded-full">
-                                <Edit className="h-4 w-4" />
-                                <span className="sr-only">{t('edit')}</span>
-                              </Button>
-                            }
-                          >
-                            <CustomerForm initialData={customer} />
-                          </GenericModal>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0 rounded-full"
-                            onClick={() => {
-                              showConfirm(
-                                t('customers_delete_title'),
-                                t('customers_delete_confirm'),
-                                () => deleteMutation.mutate(customer.id),
-                                "destructive"
-                              )
-                            }}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">{t('delete')}</span>
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+            }
+          />
 
           {/* Pagination Controls */}
           <Pagination

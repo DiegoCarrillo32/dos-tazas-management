@@ -43,10 +43,9 @@ export default function OrdersPage() {
               <span className="hidden sm:inline font-bold">{t('orders_export_pdf')}</span>
             </Button>
             <GenericModal
-              hideFooter={true}
-              hideTitle={true}
+              variant="bare"
               title={t('orders_create_new') || "Create New Order"}
-              contentClassName="sm:max-w-[480px] p-0 border-none bg-transparent shadow-none max-h-[90vh] overflow-y-auto"
+              contentClassName="sm:max-w-[480px]"
               trigger={
                 <Button className="bg-warm-roast hover:bg-coffee-fruit text-white gap-2 shadow-sm rounded-full px-6">
                   <Plus className="h-5 w-5" />

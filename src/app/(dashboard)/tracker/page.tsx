@@ -9,6 +9,7 @@ import { useWorkerTimeLogs, useLogTime, useDeleteTimeLog, useUpdateWorkerTimeLog
 import { calculateHoursWorked, buildTimestamp, previewHours, resolveHours } from '@/utils/tracker-logic'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { StatCard } from '@/components/analytics/StatCard'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { TimeLogRecord } from '@/types'
@@ -280,6 +281,117 @@ export default function TrackerPage() {
     </>
   )
 
+  const logActions = (log: TimeLogRecord) =>
+    log.status === 'pending' ? (
+      <>
+        <Button
+          onClick={() => openEdit(log)}
+          size="sm"
+          variant="ghost"
+          className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20 max-md:min-h-11"
+        >
+          <Pencil className="h-3.5 w-3.5 mr-1" /> {t('tracker_edit_log_title')}
+        </Button>
+        <Button
+          onClick={() => handleDelete(log.id)}
+          size="sm"
+          variant="ghost"
+          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 max-md:min-h-11"
+        >
+          {t('delete')}
+        </Button>
+      </>
+    ) : null
+
+  const hoursCell = (log: TimeLogRecord) => {
+    const hours = resolveHours(log)
+    const isAdjusted = log.adjusted_hours != null
+    return (
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1.5">
+          <span className="font-bold text-coffee-fruit dark:text-primary">
+            {hours.toFixed(2)} {t('tracker_hours_unit')}
+          </span>
+          {isAdjusted && (
+            <span className="text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+              adj
+            </span>
+          )}
+        </div>
+        {isAdjusted && (
+          <span className="text-xs text-expresso/50 dark:text-muted-foreground">
+            {t('tracker_original_hours').replace(
+              '{hours}',
+              calculateHoursWorked(log.start_time, log.end_time).toFixed(2)
+            )}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const notesCell = (log: TimeLogRecord) => (
+    <>
+      <div>
+        {log.notes || (
+          <span className="text-expresso/30 dark:text-muted-foreground/50 italic">
+            {t('tracker_no_notes')}
+          </span>
+        )}
+      </div>
+      {log.adjustment_note && (
+        <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-1.5 mt-1">
+          {t('tracker_adjustment_reason')}: {log.adjustment_note}
+        </div>
+      )}
+    </>
+  )
+
+  const timeRange = (log: TimeLogRecord) =>
+    `${new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+
+  const logColumns: ResponsiveListColumn<TimeLogRecord>[] = [
+    {
+      id: 'date',
+      role: 'title',
+      header: t('common_date'),
+      cell: (l) => (
+        <span className="text-expresso/80 dark:text-foreground font-medium">
+          {new Date(l.start_time).toLocaleDateString()}
+        </span>
+      ),
+      cardCell: (l) => new Date(l.start_time).toLocaleDateString(),
+    },
+    {
+      id: 'time',
+      role: 'meta',
+      header: t('common_time'),
+      cell: (l) => (
+        <span className="text-expresso/70 dark:text-muted-foreground text-sm">{timeRange(l)}</span>
+      ),
+      cardCell: (l) => timeRange(l),
+    },
+    {
+      id: 'hours',
+      header: t('common_hours'),
+      cell: hoursCell,
+    },
+    {
+      id: 'status',
+      header: t('common_status'),
+      cell: (l) => (
+        <StatusBadge tone={l.status === 'paid' ? 'success' : 'warning'}>{l.status}</StatusBadge>
+      ),
+    },
+    {
+      id: 'notes',
+      header: t('common_notes'),
+      cardFullWidth: true,
+      cellClassName: 'text-expresso/70 dark:text-muted-foreground text-sm max-w-xs',
+      cell: notesCell,
+    },
+  ]
+
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
       <PageHeader
@@ -388,146 +500,16 @@ export default function TrackerPage() {
           )}
         </div>
 
-        {/* ── Mobile Card View ── */}
-        <div className="md:hidden flex flex-col gap-3 p-4 bg-warm-roast/5 dark:bg-muted/10">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-24 bg-card rounded-xl border border-warm-roast/10 dark:border-border animate-pulse" />
-            ))
-          ) : !filteredLogs.length ? (
-            <div className="px-6 py-8 text-center text-expresso/40 dark:text-muted-foreground">{t('tracker_no_logs')}</div>
-          ) : (
-            filteredLogs.map(log => {
-              const hours = resolveHours(log)
-              const originalHours = calculateHoursWorked(log.start_time, log.end_time)
-              const isAdjusted = log.adjusted_hours != null
-              return (
-                <div key={log.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 dark:border-border shadow-sm p-4 gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-bold text-expresso dark:text-foreground">{new Date(log.start_time).toLocaleDateString()}</div>
-                      <div className="text-xs text-expresso/60 dark:text-muted-foreground">
-                        {new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <StatusBadge tone={log.status === 'paid' ? 'success' : 'warning'}>{log.status}</StatusBadge>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} {t('tracker_hours_unit')}</span>
-                      {isAdjusted && <span className="text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">adj</span>}
-                    </div>
-                    {isAdjusted && (
-                      <span className="text-xs text-expresso/50 dark:text-muted-foreground">
-                        {t('tracker_original_hours').replace('{hours}', originalHours.toFixed(2))}
-                      </span>
-                    )}
-                  </div>
-                  {log.notes && <p className="text-xs text-expresso/60 dark:text-muted-foreground bg-warm-roast/5 dark:bg-muted/20 p-2 rounded-lg">{log.notes}</p>}
-                  {log.adjustment_note && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-1.5">
-                      {t('tracker_adjustment_reason')}: {log.adjustment_note}
-                    </p>
-                  )}
-                  {log.status === 'pending' && (
-                    <div className="flex gap-2 mt-1">
-                      <Button onClick={() => openEdit(log)} size="sm" variant="ghost" className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20">
-                        <Pencil className="h-3.5 w-3.5 mr-1" /> {t('tracker_edit_log_title')}
-                      </Button>
-                      <Button onClick={() => handleDelete(log.id)} size="sm" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
-                        {t('delete')}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </div>
-
-        {/* ── Desktop Table View ── */}
-        <table className="hidden md:table w-full text-sm text-left min-w-[800px]">
-          <thead className="text-xs text-expresso/60 dark:text-muted-foreground uppercase bg-white-pergamino/50 dark:bg-muted/10 border-b border-warm-roast/10 dark:border-border font-bold tracking-wider">
-            <tr>
-              <th scope="col" className="px-6 py-4">{t('common_date')}</th>
-              <th scope="col" className="px-6 py-4">{t('common_time')}</th>
-              <th scope="col" className="px-6 py-4">{t('common_hours')}</th>
-              <th scope="col" className="px-6 py-4">{t('common_notes')}</th>
-              <th scope="col" className="px-6 py-4">{t('common_status')}</th>
-              <th scope="col" className="px-6 py-4 text-right">{t('common_actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr><td colSpan={6} className="p-8 text-center text-expresso/50 dark:text-muted-foreground">{t('loading')}</td></tr>
-            ) : !filteredLogs.length ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-expresso/40 dark:text-muted-foreground">{t('tracker_no_logs')}</td></tr>
-            ) : (
-              filteredLogs.map(log => {
-                const hours = resolveHours(log)
-                const originalHours = calculateHoursWorked(log.start_time, log.end_time)
-                const isAdjusted = log.adjusted_hours != null
-
-                return (
-                  <tr key={log.id} className="border-b border-warm-roast/5 dark:border-border/50 hover:bg-warm-roast/5 dark:hover:bg-muted/10 transition-colors">
-                    <td className="px-6 py-4 text-expresso/80 dark:text-foreground font-medium">{new Date(log.start_time).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground text-sm">
-                      {new Date(log.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(log.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-coffee-fruit dark:text-primary">{hours.toFixed(2)} {t('tracker_hours_unit')}</span>
-                          {isAdjusted && <span className="text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">adj</span>}
-                        </div>
-                        {isAdjusted && (
-                          <span className="text-xs text-expresso/50 dark:text-muted-foreground">
-                            {t('tracker_original_hours').replace('{hours}', originalHours.toFixed(2))}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-expresso/70 dark:text-muted-foreground text-sm max-w-xs">
-                      <div>{log.notes || <span className="text-expresso/30 dark:text-muted-foreground/50 italic">{t('tracker_no_notes')}</span>}</div>
-                      {log.adjustment_note && (
-                        <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded p-1.5 mt-1">
-                          {t('tracker_adjustment_reason')}: {log.adjustment_note}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge tone={log.status === 'paid' ? 'success' : 'warning'}>
-                        {log.status}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {log.status === 'pending' && (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            onClick={() => openEdit(log)}
-                            size="sm"
-                            variant="ghost"
-                            className="text-expresso/60 hover:text-expresso hover:bg-warm-roast/10 dark:hover:bg-warm-roast/20"
-                          >
-                            <Pencil className="h-3.5 w-3.5 mr-1" /> {t('tracker_edit_log_title')}
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(log.id)}
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            {t('delete')}
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
+        <ResponsiveList
+          data={filteredLogs}
+          columns={logColumns}
+          rowKey={(l) => l.id}
+          actions={logActions}
+          actionsHeader={t('common_actions')}
+          isLoading={isLoading}
+          caption={t('tracker_title')}
+          emptyState={<span>{t('tracker_no_logs')}</span>}
+        />
       </div>
 
       {/* Edit log modal */}

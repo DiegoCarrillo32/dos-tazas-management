@@ -4,8 +4,9 @@ import { useOrders, usePartnerRecurringOrders, usePartners } from '@/hooks/queri
 import type { B2BPartnerRecord } from '@/types'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { TableRowSkeleton } from '@/components/Skeletons'
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
+import type { OrderWithCustomer } from '@/types'
 import { formatKg } from '@/lib/format'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { RefreshCw, Package, ArrowRight, Clock } from 'lucide-react'
@@ -25,6 +26,54 @@ export default function PartnerDashboard() {
 
   const pendingOrders = (orders || []).filter(o => o.fulfillment_status === 'pending' || o.fulfillment_status === 'roasted')
   const recentOrders = (orders || []).slice(0, 5)
+
+  const columns: ResponsiveListColumn<OrderWithCustomer>[] = [
+    {
+      id: 'coffee',
+      role: 'title',
+      header: t('common_coffee'),
+      cell: (o) => (
+        <>
+          <span className="font-bold text-coffee-fruit">
+            {o.inventory?.item_name || t('partner_coffee_bean')}
+          </span>
+          <div className="text-xs font-normal text-expresso/60 mt-0.5 capitalize">
+            {o.roast_level} {t('common_roast_suffix')} • {o.preparation_method}
+          </div>
+        </>
+      ),
+      cardCell: (o) => o.inventory?.item_name || t('partner_coffee_bean'),
+    },
+    {
+      // Folded into the coffee cell on desktop; its own line on the card.
+      id: 'detail',
+      role: 'meta',
+      cardOnly: true,
+      header: t('common_coffee'),
+      cell: (o) => (
+        <span className="capitalize">
+          {o.roast_level} {t('common_roast_suffix')} • {o.preparation_method}
+        </span>
+      ),
+    },
+    {
+      id: 'date',
+      header: t('common_date'),
+      cell: (o) => new Date(o.order_date).toLocaleDateString(),
+    },
+    {
+      id: 'amount',
+      header: t('common_amount'),
+      cell: (o) => <span className="font-medium text-expresso">{formatKg(o.amount_grams)}</span>,
+    },
+    {
+      id: 'status',
+      header: t('common_status'),
+      cell: (o) => (
+        <StatusBadge tone={fulfillmentTone(o.fulfillment_status)}>{o.fulfillment_status}</StatusBadge>
+      ),
+    },
+  ]
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -85,80 +134,15 @@ export default function PartnerDashboard() {
           </Link>
         </div>
 
-        {/* Mobile Card View */}
-        <div className="md:hidden flex flex-col gap-3">
-          {ordersLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-20 bg-warm-roast/5 rounded-xl border border-warm-roast/10 animate-pulse" />
-            ))
-          ) : recentOrders.length === 0 ? (
-            <div className="px-6 py-12 text-center text-expresso/50">{t('partner_no_orders')}</div>
-          ) : (
-            recentOrders.map((order) => (
-              <div key={order.id} className="flex items-start justify-between gap-3 bg-white-pergamino/30 rounded-xl border border-warm-roast/10 p-4">
-                <div className="min-w-0">
-                  <div className="font-bold text-coffee-fruit truncate">{order.inventory?.item_name || t('partner_coffee_bean')}</div>
-                  <div className="text-xs text-expresso/60 mt-0.5 capitalize">
-                    {order.roast_level} {t('common_roast_suffix')} • {order.preparation_method}
-                  </div>
-                  <div className="text-xs text-expresso/60 mt-1">
-                    {new Date(order.order_date).toLocaleDateString()} • {formatKg(order.amount_grams)}
-                  </div>
-                </div>
-                <StatusBadge tone={fulfillmentTone(order.fulfillment_status)}>
-                  {order.fulfillment_status}
-                </StatusBadge>
-              </div>
-            ))
-          )}
-        </div>
+        <ResponsiveList
+          data={recentOrders}
+          columns={columns}
+          rowKey={(o) => o.id}
+          isLoading={ordersLoading}
+          caption={t('partner_recent_orders')}
+          emptyState={<span>{t('partner_no_orders')}</span>}
+        />
 
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[800px]">
-            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-              <tr>
-                <th scope="col" className="px-6 py-4">{t('common_date')}</th>
-                <th scope="col" className="px-6 py-4">{t('common_coffee')}</th>
-                <th scope="col" className="px-6 py-4">{t('common_amount')}</th>
-                <th scope="col" className="px-6 py-4">{t('common_status')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ordersLoading ? (
-                <TableRowSkeleton cols={4} rows={3} />
-              ) : recentOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-expresso/50">
-                    {t('partner_no_orders')}
-                  </td>
-                </tr>
-              ) : (
-                recentOrders.map((order) => (
-                  <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
-                    <td className="px-6 py-4 text-expresso">
-                      {new Date(order.order_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-coffee-fruit">
-                      {order.inventory?.item_name || t('partner_coffee_bean')}
-                      <div className="text-xs font-normal text-expresso/60 mt-0.5 capitalize">
-                        {order.roast_level} {t('common_roast_suffix')} • {order.preparation_method}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-expresso">
-                      {formatKg(order.amount_grams)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge tone={fulfillmentTone(order.fulfillment_status)}>
-                        {order.fulfillment_status}
-                      </StatusBadge>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   )

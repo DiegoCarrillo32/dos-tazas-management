@@ -5,14 +5,14 @@ import { Flame, Plus, X } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { GenericModal } from '@/components/ui/GenericModal'
-import { TableRowSkeleton } from '@/components/Skeletons'
 import { RoastingCalculator } from '@/components/RoastingCalculator'
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge'
+import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { formatCRC, formatKg } from '@/lib/format'
 import { useRoastingOrders, useCreateRoastingOrder, useCancelRoastingOrder } from '@/hooks/queries'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { DictionaryKey } from '@/i18n/dictionaries'
-import type { RoastingOrderStatus } from '@/types'
+import type { RoastingOrderStatus, RoastingOrderRecord } from '@/types'
 import { toast } from 'sonner'
 
 const statusTones: Record<RoastingOrderStatus, StatusTone> = {
@@ -35,6 +35,67 @@ export default function PartnerRoastingOrders() {
   const createMutation = useCreateRoastingOrder()
   const cancelMutation = useCancelRoastingOrder()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const rowActions = (order: RoastingOrderRecord) =>
+    order.status === 'pending' ? (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() =>
+          cancelMutation.mutate(order.id, {
+            onSuccess: () => toast.success(t('roasting_order_cancelled')),
+            onError: (err: Error) => toast.error(err.message),
+          })
+        }
+        disabled={cancelMutation.isPending}
+        className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg gap-1 max-md:min-h-11"
+      >
+        <X className="h-4 w-4" /> {t('roasting_order_cancel')}
+      </Button>
+    ) : null
+
+  const columns: ResponsiveListColumn<RoastingOrderRecord>[] = [
+    {
+      id: 'output',
+      role: 'title',
+      header: t('roasting_col_output'),
+      cell: (o) => (
+        <>
+          <span className="font-medium text-expresso">{formatKg(o.roasted_grams_out)}</span>
+          <div className="text-xs text-expresso/60">
+            {formatKg(o.green_grams_in)} {t('roasting_green_in')}
+          </div>
+        </>
+      ),
+      cardCell: (o) => formatKg(o.roasted_grams_out),
+    },
+    {
+      id: 'date',
+      role: 'meta',
+      header: t('roasting_col_date'),
+      cell: (o) => (
+        <span className="font-bold text-coffee-fruit">
+          {new Date(o.created_at).toLocaleDateString()}
+        </span>
+      ),
+      cardCell: (o) => new Date(o.created_at).toLocaleDateString(),
+    },
+    {
+      id: 'batches',
+      header: t('roasting_col_batches'),
+      cell: (o) => `${o.batches_needed} · ${Number(o.hours_required).toFixed(1)} h`,
+    },
+    {
+      id: 'cost',
+      header: t('roasting_col_service_cost'),
+      cell: (o) => <span className="font-bold text-warm-roast">{formatCRC(o.total_cost)}</span>,
+    },
+    {
+      id: 'status',
+      header: t('roasting_col_status'),
+      cell: (o) => <StatusBadge tone={statusTones[o.status]}>{t(statusKeys[o.status])}</StatusBadge>,
+    },
+  ]
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -80,136 +141,23 @@ export default function PartnerRoastingOrders() {
       />
 
       <div className="bg-card rounded-2xl shadow-sm shadow-warm-roast/5 border border-warm-roast/10 overflow-hidden">
-        {/* Mobile Card View */}
-        <div className="md:hidden flex flex-col gap-4 p-4 bg-warm-roast/5">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-32 bg-card rounded-xl border border-warm-roast/10 animate-pulse" />
-            ))
-          ) : !orders || orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-expresso/50">
+        <ResponsiveList
+          data={orders ?? []}
+          columns={columns}
+          rowKey={(o) => o.id}
+          actions={rowActions}
+          actionsHeader={t('roasting_col_actions')}
+          isLoading={isLoading}
+          loadingRows={4}
+          caption={t('roasting_orders_title')}
+          emptyState={
+            <div className="flex flex-col items-center justify-center gap-2">
               <Flame className="h-8 w-8 opacity-20" />
               <p>{t('roasting_orders_empty')}</p>
             </div>
-          ) : (
-            orders.map((order) => (
-              <div key={order.id} className="flex flex-col bg-card rounded-xl border border-warm-roast/10 shadow-sm overflow-hidden">
-                <div className="flex items-start justify-between p-4 border-b border-warm-roast/5 bg-white-pergamino/30">
-                  <div>
-                    <div className="font-bold text-coffee-fruit text-base">{formatKg(order.roasted_grams_out)}</div>
-                    <div className="text-xs text-expresso/60 mt-0.5">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <StatusBadge tone={statusTones[order.status]}>
-                    {t(statusKeys[order.status])}
-                  </StatusBadge>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('roasting_col_batches')}</div>
-                    <div className="font-medium text-expresso">{order.batches_needed} · {Number(order.hours_required).toFixed(1)} h</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-expresso/50 mb-1">{t('roasting_col_service_cost')}</div>
-                    <div className="font-bold text-warm-roast">{formatCRC(order.total_cost)}</div>
-                  </div>
-                </div>
-                {order.status === 'pending' && (
-                  <div className="px-4 pb-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        cancelMutation.mutate(order.id, {
-                          onSuccess: () => toast.success(t('roasting_order_cancelled')),
-                          onError: (err: Error) => toast.error(err.message),
-                        })
-                      }
-                      disabled={cancelMutation.isPending}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg gap-1 w-full"
-                    >
-                      <X className="h-4 w-4" /> {t('roasting_order_cancel')}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+          }
+        />
 
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm text-left min-w-[800px]">
-            <thead className="text-xs text-expresso/60 uppercase bg-white-pergamino border-b border-warm-roast/10 font-bold tracking-wider">
-              <tr>
-                <th scope="col" className="px-6 py-4">{t('roasting_col_date')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasting_col_output')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasting_col_batches')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasting_col_service_cost')}</th>
-                <th scope="col" className="px-6 py-4">{t('roasting_col_status')}</th>
-                <th scope="col" className="px-6 py-4 text-right">{t('roasting_col_actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <TableRowSkeleton cols={6} rows={4} />
-              ) : !orders || orders.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-expresso/50">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Flame className="h-8 w-8 opacity-20" />
-                      <p>{t('roasting_orders_empty')}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order) => (
-                  <tr key={order.id} className="bg-card border-b border-warm-roast/5 hover:bg-warm-roast/5 transition-colors">
-                    <td className="px-6 py-4 font-bold text-coffee-fruit">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-expresso">
-                      {formatKg(order.roasted_grams_out)}
-                      <div className="text-xs text-expresso/60">
-                        {formatKg(order.green_grams_in)} {t('roasting_green_in')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-expresso/80">
-                      {order.batches_needed} · {Number(order.hours_required).toFixed(1)} h
-                    </td>
-                    <td className="px-6 py-4 font-bold text-warm-roast">
-                      {formatCRC(order.total_cost)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge tone={statusTones[order.status]}>
-                        {t(statusKeys[order.status])}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {order.status === 'pending' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            cancelMutation.mutate(order.id, {
-                              onSuccess: () => toast.success(t('roasting_order_cancelled')),
-                              onError: (err: Error) => toast.error(err.message),
-                            })
-                          }
-                          disabled={cancelMutation.isPending}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg gap-1"
-                        >
-                          <X className="h-4 w-4" /> {t('roasting_order_cancel')}
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   )
