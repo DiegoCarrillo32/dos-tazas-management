@@ -55,7 +55,23 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Shared.
+          "fixed z-50 grid w-full gap-4 bg-popover p-4 text-sm text-popover-foreground outline-none",
+          // Centred dialog — what every width from `sm` up keeps.
+          "top-1/2 left-1/2 max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl ring-1 ring-foreground/10 duration-100 sm:max-w-sm",
+          "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Below `sm` the same popup is a bottom sheet: unpinned from the centre,
+          // stuck to the bottom edge, full bleed.
+          "max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:max-w-none max-sm:translate-none",
+          "max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:border-t max-sm:border-warm-roast/10 max-sm:shadow-lg max-sm:shadow-warm-roast/10 max-sm:ring-0",
+          // dvh, not vh: it tracks the visible viewport, so the sheet is never taller
+          // than the screen while the browser chrome is showing.
+          "max-sm:max-h-[90dvh] max-sm:overflow-y-auto max-sm:overscroll-contain",
+          "max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]",
+          // Slide up from the edge instead of zooming in from the middle.
+          "max-sm:duration-200 max-sm:data-open:zoom-in-100 max-sm:data-closed:zoom-out-100 max-sm:data-open:slide-in-from-bottom-full max-sm:data-closed:slide-out-to-bottom-full",
+          // A sheet opened from inside another insets so the parent's edge stays visible.
+          "max-sm:data-nested:mx-2 max-sm:data-nested:mb-2 max-sm:data-nested:rounded-b-2xl",
           className
         )}
         {...props}
@@ -81,13 +97,21 @@ function DialogContent({
   )
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DialogHeader({ className, children, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
       className={cn("flex flex-col gap-2", className)}
       {...props}
-    />
+    >
+      {/* Sheet grabber. It lives here rather than on DialogContent so it never
+          floats on the backdrop of a modal that switches off its own chrome. */}
+      <div
+        aria-hidden="true"
+        className="mx-auto mb-1 h-1.5 w-10 shrink-0 rounded-full bg-warm-roast/20 sm:hidden"
+      />
+      {children}
+    </div>
   )
 }
 
@@ -104,6 +128,11 @@ function DialogFooter({
       data-slot="dialog-footer"
       className={cn(
         "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        // In a sheet the actions stay put while the body scrolls, and clear the
+        // home indicator. The negative margin has to match DialogContent's padding.
+        "max-sm:sticky max-sm:bottom-0 max-sm:rounded-b-none max-sm:-mb-[max(1rem,env(safe-area-inset-bottom))] max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]",
+        // Full-width, comfortable actions on a phone.
+        "max-sm:[&>button]:w-full max-sm:[&>button]:min-h-11",
         className
       )}
       {...props}

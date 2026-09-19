@@ -8,6 +8,11 @@ import { Toaster } from "@/components/ui/sonner"
 
 export const viewport: Viewport = {
   themeColor: "#FCF9F2",
+  // Chrome shrinks the layout viewport when the on-screen keyboard opens, so the
+  // dvh-capped bottom sheets follow it instead of hiding behind the keyboard.
+  // Deliberately no viewportFit: "cover" — the mobile header sits in normal flow,
+  // and cover would push it under the status bar in standalone PWA mode.
+  interactiveWidget: "resizes-content",
 };
 
 export const metadata: Metadata = {
