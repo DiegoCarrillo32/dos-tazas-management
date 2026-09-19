@@ -202,3 +202,25 @@ h1, h2, h3, h4, h5, h6 {
     @apply font-sans;
   }
 }
+/*
+ * How far toasts sit from the bottom edge.
+ *
+ * Below md the tab bar owns that edge, so a toast at sonner's default 16px
+ * lands on top of it — covering navigation and putting the toast's own close
+ * button under a tab. Lift it clear of the bar plus the home indicator.
+ *
+ * This is a variable rather than a prop value because sonner writes its offsets
+ * into an inline style (which a stylesheet rule could not override) and swaps
+ * to its mobile offsets at 600px, while our tab bar appears below 768px. The
+ * Toaster passes `var(--toast-offset-bottom)` for both, so one media query here
+ * governs the whole range.
+ */
+:root {
+  --toast-offset-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+@media (width >= 48rem) {
+  :root {
+    --toast-offset-bottom: 1.5rem;
+  }
+}

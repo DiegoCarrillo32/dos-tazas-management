@@ -36,6 +36,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
+      // Clear the mobile tab bar — see --toast-offset-bottom in globals.css.
+      offset={{ bottom: "var(--toast-offset-bottom)" }}
+      mobileOffset={{ bottom: "var(--toast-offset-bottom)", left: "1rem", right: "1rem" }}
       toastOptions={{
         classNames: {
           toast: "cn-toast",
