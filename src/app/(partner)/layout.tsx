@@ -1,5 +1,7 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/AppSidebar"
+import { MobileTabBar } from "@/components/MobileTabBar"
+import { MobileTopBar } from "@/components/MobileTopBar"
 import { fetchSettings } from "@/actions/settings"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
@@ -42,13 +44,13 @@ export default async function PartnerLayout({
     <SidebarProvider>
       <AppSidebar businessName={businessName} userRole="partner" />
       <div className="flex flex-1 flex-col overflow-hidden w-full">
-        <header className="md:hidden flex h-14 items-center gap-4 border-b border-warm-roast/10 bg-white-pergamino px-4 lg:h-[60px] lg:px-6">
-          <SidebarTrigger className="text-expresso" />
-          <span className="font-heading text-lg text-expresso">{businessName}</span>
-        </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 w-full">
+        <MobileTopBar businessName={businessName} />
+        {/* The bottom padding clears the fixed tab bar (60px + the home
+            indicator) so the last row of a long list is never under it. */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 w-full pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6">
           {children}
         </main>
+        <MobileTabBar userRole="partner" />
       </div>
     </SidebarProvider>
   )

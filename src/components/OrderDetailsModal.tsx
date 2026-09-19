@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrderForm } from "@/components/OrderForm";
-import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord } from "@/types";
+import type { OrderWithCustomer, CustomerRecord, InventoryRecord, UserSettingsRecord, FulfillmentStatus } from "@/types";
+
+const FULFILLMENT_STAGES: FulfillmentStatus[] = ["pending", "roasted", "delivered"];
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useDeleteOrder } from "@/hooks/queries";
+import { useDeleteOrder, useUpdateFulfillment } from "@/hooks/queries";
 import { GenericModal } from "@/components/ui/GenericModal";
 import { StatusBadge } from "@/components/ui/status-badge";
 
@@ -39,6 +41,10 @@ export function OrderDetailsModal({
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const deleteMutation = useDeleteOrder();
+  const fulfillmentMutation = useUpdateFulfillment();
+
+  const stageLabel = (stage: FulfillmentStatus) =>
+    stage === 'pending' ? t('orders_pending') : stage === 'roasted' ? t('orders_roasted') : t('orders_delivered');
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -146,6 +152,33 @@ export function OrderDetailsModal({
               {order.payment_status === "pending" ? t('order_unpaid') : t('order_paid')}
             </span>
           </StatusBadge>
+        </div>
+
+        {/* Move to — the phone's replacement for dragging between kanban
+            columns, which is pointer-only and therefore desktop-only. Uses the
+            same mutation the drag handler does, so there is no second path. */}
+        <div className="md:hidden">
+          <h3 className="font-heading text-base text-expresso">{t('orders_move_to')}</h3>
+          <div className="mt-3 flex flex-col gap-2">
+            {FULFILLMENT_STAGES.map((stage) => {
+              const isCurrent = order.fulfillment_status === stage
+              return (
+                <Button
+                  key={stage}
+                  variant={isCurrent ? "secondary" : "outline"}
+                  disabled={isCurrent || fulfillmentMutation.isPending}
+                  onClick={() => fulfillmentMutation.mutate({ id: order.id, status: stage })}
+                  className="min-h-14 w-full justify-start gap-3 rounded-xl text-base"
+                >
+                  {fulfillmentIcons[stage]}
+                  <span className="flex-1 text-left capitalize">{stageLabel(stage)}</span>
+                  {isCurrent && (
+                    <span className="text-xs font-normal text-expresso/60">{t('orders_move_current')}</span>
+                  )}
+                </Button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Coffee Details */}

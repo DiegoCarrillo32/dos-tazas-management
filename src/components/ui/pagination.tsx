@@ -45,7 +45,7 @@ export function Pagination({
           size="sm"
           disabled={currentPage === 1}
           onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-          className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+          className="h-8 max-md:min-h-11 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
         >
           {t('pag_previous')}
         </Button>
@@ -59,7 +59,7 @@ export function Pagination({
                 size="sm"
                 onClick={() => onPageChange(page)}
                 className={cn(
-                  'h-8 w-8 p-0 text-xs font-bold',
+                  'h-8 w-8 p-0 text-xs font-bold max-md:size-11',
                   currentPage === page
                     ? 'bg-warm-roast hover:bg-coffee-fruit text-white'
                     : 'text-expresso border-warm-roast/20 hover:bg-warm-roast/10'
@@ -83,7 +83,7 @@ export function Pagination({
           size="sm"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-          className="h-8 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
+          className="h-8 max-md:min-h-11 text-xs font-bold text-expresso border-warm-roast/20 hover:bg-warm-roast/10"
         >
           {t('pag_next')}
         </Button>
