@@ -258,9 +258,9 @@ export function OrderDetailsModal({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('order_cost_roasting')}:</span>
+                <span className="text-muted-foreground">{t('order_cost_labor')}:</span>
                 <span className="font-bold text-foreground">
-                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.roasting_time ?? 0).toFixed(2)}
+                  {settings?.currency_symbol || '$'}{(order.cost_breakdown?.labor ?? order.cost_breakdown?.roasting_time ?? 0).toFixed(2)}
                 </span>
               </div>
             </div>

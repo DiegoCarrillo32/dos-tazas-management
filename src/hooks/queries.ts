@@ -16,6 +16,9 @@ import type {
   EquipmentRecord,
   EquipmentInsertParams,
   EquipmentUpdateParams,
+  BagTypeRecord,
+  BagTypeInsertParams,
+  BagTypeUpdateParams,
   MaintenanceLogRecord,
   MaintenanceLogInsertParams,
   MaintenanceLogUpdateParams,
@@ -51,6 +54,11 @@ import {
   updateEquipment,
   deleteEquipment,
 } from '@/actions/equipment'
+import {
+  createBagType,
+  updateBagType,
+  deleteBagType,
+} from '@/actions/bagTypes'
 import {
   createMaintenanceLog,
   updateMaintenanceLog,
@@ -101,6 +109,7 @@ export const queryKeys = {
   inventory: ['inventory'] as const,
   settings: ['settings'] as const,
   equipment: ['equipment'] as const,
+  bagTypes: ['bag_types'] as const,
   maintenanceLogs: (equipmentId: string) => ['maintenance_logs', equipmentId] as const,
   greenCoffeeLots: (inventoryId: string) => ['green_coffee_lots', inventoryId] as const,
   allGreenCoffeeLots: ['green_coffee_lots', 'all'] as const,
@@ -165,6 +174,13 @@ export function useEquipment() {
   return useQuery<EquipmentRecord[]>({
     queryKey: queryKeys.equipment,
     queryFn: () => fetchJson('/api/equipment'),
+  })
+}
+
+export function useBagTypes() {
+  return useQuery<BagTypeRecord[]>({
+    queryKey: queryKeys.bagTypes,
+    queryFn: () => fetchJson('/api/bag-types'),
   })
 }
 
@@ -472,6 +488,37 @@ export function useDeleteEquipment() {
     mutationFn: (id: string) => deleteEquipment(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.equipment })
+    },
+  })
+}
+
+export function useCreateBagType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (params: BagTypeInsertParams) => createBagType(params),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.bagTypes })
+    },
+  })
+}
+
+export function useUpdateBagType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, params }: { id: string; params: BagTypeUpdateParams }) =>
+      updateBagType(id, params),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.bagTypes })
+    },
+  })
+}
+
+export function useDeleteBagType() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteBagType(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.bagTypes })
     },
   })
 }

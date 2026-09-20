@@ -13,10 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { updateSettings } from '@/actions/settings'
 import { updateMyWorkerName } from '@/actions/team'
 import type { UserSettingsRecord } from '@/types'
-import { Save, Building2, Percent, DollarSign, Globe, Coins, SunMoon, User } from 'lucide-react'
+import { Save, Building2, DollarSign, Globe, Coins, SunMoon, User, Scale, Clock } from 'lucide-react'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { Language } from '@/i18n/dictionaries'
 import { useTheme } from '@/providers/ThemeProvider'
+import { roastYieldPercentage, roastLossPercentage, laborCostPerRoast, laborCostPerGram } from '@/utils/calculations'
 import { toast } from 'sonner'
 
 
@@ -28,20 +29,44 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
   const { theme, setTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
 
-  const { register, handleSubmit, formState: { errors } } = useForm<SettingsFormValues>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       business_name: initialData.business_name || '',
-      roast_loss_percentage: initialData.roast_loss_percentage ?? 20,
-      currency_symbol: initialData.currency_symbol || '$',
+      currency_symbol: initialData.currency_symbol || '₡',
       cost_per_bag: initialData.cost_per_bag ?? 0,
       cost_per_sticker: initialData.cost_per_sticker ?? 0,
       cost_electricity: initialData.cost_electricity_per_order ?? 0,
       cost_fuel: initialData.cost_fuel_per_order ?? 0,
-      cost_roasting_time: initialData.cost_roasting_time_per_order ?? 0,
+      roaster_capacity_grams: initialData.roaster_capacity_grams ?? 1200,
+      green_input_per_roast_grams: initialData.green_input_per_roast_grams ?? 960,
+      roasted_output_per_roast_grams: initialData.roasted_output_per_roast_grams ?? 760,
+      labor_hourly_rate: initialData.labor_hourly_rate ?? 1600,
+      roasts_per_hour: initialData.roasts_per_hour ?? 3,
       worker_name: workerName,
     }
   })
+
+  // Live readouts — recompute from the watched inputs so the roaster sees
+  // yield/loss and labor cost update as they type, before saving.
+  const watchedGreenInput = watch('green_input_per_roast_grams')
+  const watchedRoastedOutput = watch('roasted_output_per_roast_grams')
+  const watchedHourlyRate = watch('labor_hourly_rate')
+  const watchedRoastsPerHour = watch('roasts_per_hour')
+
+  const roasterSpec = {
+    green_input_per_roast_grams: watchedGreenInput || 0,
+    roasted_output_per_roast_grams: watchedRoastedOutput || 0,
+  }
+  const laborSpec = {
+    labor_hourly_rate: watchedHourlyRate || 0,
+    roasts_per_hour: watchedRoastsPerHour || 0,
+    roasted_output_per_roast_grams: watchedRoastedOutput || 0,
+  }
+  const liveYield = roastYieldPercentage(roasterSpec)
+  const liveLoss = roastLossPercentage(roasterSpec)
+  const liveLaborPerRoast = laborCostPerRoast(laborSpec)
+  const liveLaborPerKg = laborCostPerGram(laborSpec) * 1000
 
   const onSubmit = (data: SettingsFormValues) => {
     startTransition(async () => {
@@ -49,16 +74,19 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
         if (userRole !== 'worker') {
           await updateSettings({
             business_name: data.business_name || null,
-            roast_loss_percentage: data.roast_loss_percentage,
-            currency_symbol: data.currency_symbol || '$',
+            currency_symbol: data.currency_symbol || '₡',
             cost_per_bag: data.cost_per_bag,
             cost_per_sticker: data.cost_per_sticker,
             cost_electricity_per_order: data.cost_electricity,
             cost_fuel_per_order: data.cost_fuel,
-            cost_roasting_time_per_order: data.cost_roasting_time
+            roaster_capacity_grams: data.roaster_capacity_grams,
+            green_input_per_roast_grams: data.green_input_per_roast_grams,
+            roasted_output_per_roast_grams: data.roasted_output_per_roast_grams,
+            labor_hourly_rate: data.labor_hourly_rate,
+            roasts_per_hour: data.roasts_per_hour
           })
         }
-        
+
         if (userRole === 'worker' && data.worker_name !== undefined) {
           await updateMyWorkerName(data.worker_name)
         }
@@ -117,47 +145,23 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {userRole !== 'worker' && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="roast_loss_percentage" className="text-expresso flex items-center gap-2">
-                    <Percent className="h-4 w-4 text-warm-roast" />
-                    {t('settings_roast_loss')}
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      id="roast_loss_percentage" 
-                      type="number"
-                      min="0"
-                      max="100"
-                      {...register('roast_loss_percentage', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
-                      className="max-w-[120px]"
-                    />
-                    <span className="text-expresso font-medium">%</span>
-                  </div>
-                  {errors.roast_loss_percentage && <p className="text-red-500 text-xs">{errors.roast_loss_percentage.message}</p>}
-                  <p className="text-xs text-expresso/60">
-                    {t('settings_roast_loss_hint')}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="currency_symbol" className="text-expresso flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-warm-roast" />
-                    {t('settings_currency')}
-                  </Label>
-                  <Input 
-                    id="currency_symbol" 
-                    placeholder="$" 
-                    maxLength={3}
-                    {...register('currency_symbol')}
-                    className="max-w-[120px]"
-                  />
-                  {errors.currency_symbol && <p className="text-red-500 text-xs">{errors.currency_symbol.message}</p>}
-                  <p className="text-xs text-expresso/60">
-                    {t('settings_currency_hint')}
-                  </p>
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="currency_symbol" className="text-expresso flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-warm-roast" />
+                  {t('settings_currency')}
+                </Label>
+                <Input
+                  id="currency_symbol"
+                  placeholder="₡"
+                  maxLength={3}
+                  {...register('currency_symbol')}
+                  className="max-w-[120px]"
+                />
+                {errors.currency_symbol && <p className="text-red-500 text-xs">{errors.currency_symbol.message}</p>}
+                <p className="text-xs text-expresso/60">
+                  {t('settings_currency_hint')}
+                </p>
+              </div>
             )}
             
             <div className="space-y-2">
@@ -276,24 +280,128 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
                   {errors.cost_fuel && <p className="text-red-500 text-xs">{errors.cost_fuel.message}</p>}
                   <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
                 </div>
+              </div>
+            </div>
+          )}
 
+          {userRole !== 'worker' && (
+            <div className="border-t border-warm-roast/10 pt-6 mt-6">
+              <h3 className="text-lg font-heading text-expresso flex items-center gap-2">
+                <Scale className="h-5 w-5 text-warm-roast" />
+                {t('settings_roaster_title')}
+              </h3>
+              <p className="text-xs text-expresso/60 mb-4">{t('settings_roaster_subtitle')}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="cost_roasting_time" className="text-expresso flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-warm-roast" />
-                    {t('settings_cost_roasting_time')}
+                  <Label htmlFor="roaster_capacity_grams" className="text-expresso flex items-center gap-2">
+                    <Scale className="h-4 w-4 text-warm-roast" />
+                    {t('settings_roaster_capacity')}
                   </Label>
                   <Input
-                    id="cost_roasting_time"
+                    id="roaster_capacity_grams"
+                    type="number"
+                    step="1"
+                    min="1"
+                    {...register('roaster_capacity_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    className="max-w-[150px]"
+                  />
+                  {errors.roaster_capacity_grams && <p className="text-red-500 text-xs">{errors.roaster_capacity_grams.message}</p>}
+                  <p className="text-xs text-expresso/60">{t('settings_roaster_capacity_hint')}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="green_input_per_roast_grams" className="text-expresso flex items-center gap-2">
+                    <Scale className="h-4 w-4 text-warm-roast" />
+                    {t('settings_roaster_green_input')}
+                  </Label>
+                  <Input
+                    id="green_input_per_roast_grams"
+                    type="number"
+                    step="1"
+                    min="1"
+                    {...register('green_input_per_roast_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    className="max-w-[150px]"
+                  />
+                  {errors.green_input_per_roast_grams && <p className="text-red-500 text-xs">{errors.green_input_per_roast_grams.message}</p>}
+                  <p className="text-xs text-expresso/60">{t('settings_roaster_green_input_hint')}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="roasted_output_per_roast_grams" className="text-expresso flex items-center gap-2">
+                    <Scale className="h-4 w-4 text-warm-roast" />
+                    {t('settings_roaster_roasted_output')}
+                  </Label>
+                  <Input
+                    id="roasted_output_per_roast_grams"
+                    type="number"
+                    step="1"
+                    min="1"
+                    {...register('roasted_output_per_roast_grams', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    className="max-w-[150px]"
+                  />
+                  {errors.roasted_output_per_roast_grams && <p className="text-red-500 text-xs">{errors.roasted_output_per_roast_grams.message}</p>}
+                  <p className="text-xs text-expresso/60">{t('settings_roaster_roasted_output_hint')}</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-coffee-fruit font-medium mt-4">
+                {t('settings_roaster_derived')
+                  .replace('{yield}', liveYield.toFixed(1))
+                  .replace('{loss}', liveLoss.toFixed(1))}
+              </p>
+            </div>
+          )}
+
+          {userRole !== 'worker' && (
+            <div className="border-t border-warm-roast/10 pt-6 mt-6">
+              <h3 className="text-lg font-heading text-expresso flex items-center gap-2">
+                <Clock className="h-5 w-5 text-warm-roast" />
+                {t('settings_labor_title')}
+              </h3>
+              <p className="text-xs text-expresso/60 mb-4">{t('settings_labor_subtitle')}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="labor_hourly_rate" className="text-expresso flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-warm-roast" />
+                    {t('settings_labor_hourly_rate')}
+                  </Label>
+                  <Input
+                    id="labor_hourly_rate"
                     type="number"
                     step="0.01"
                     min="0"
-                    {...register('cost_roasting_time', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    {...register('labor_hourly_rate', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                     className="max-w-[150px]"
                   />
-                  {errors.cost_roasting_time && <p className="text-red-500 text-xs">{errors.cost_roasting_time.message}</p>}
-                  <p className="text-xs text-expresso/60">{t('settings_cost_hint')}</p>
+                  {errors.labor_hourly_rate && <p className="text-red-500 text-xs">{errors.labor_hourly_rate.message}</p>}
+                  <p className="text-xs text-expresso/60">{t('settings_labor_hourly_rate_hint')}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="roasts_per_hour" className="text-expresso flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-warm-roast" />
+                    {t('settings_labor_roasts_per_hour')}
+                  </Label>
+                  <Input
+                    id="roasts_per_hour"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    {...register('roasts_per_hour', { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    className="max-w-[150px]"
+                  />
+                  {errors.roasts_per_hour && <p className="text-red-500 text-xs">{errors.roasts_per_hour.message}</p>}
+                  <p className="text-xs text-expresso/60">{t('settings_labor_roasts_per_hour_hint')}</p>
                 </div>
               </div>
+
+              <p className="text-sm text-coffee-fruit font-medium mt-4">
+                {t('settings_labor_derived')
+                  .replace('{perRoast}', liveLaborPerRoast.toFixed(2))
+                  .replace('{perKg}', liveLaborPerKg.toFixed(2))}
+              </p>
             </div>
           )}
         </CardContent>

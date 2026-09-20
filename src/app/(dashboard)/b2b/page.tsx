@@ -15,7 +15,7 @@ import { GenericModal } from '@/components/ui/GenericModal'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { formatCurrency, formatCRC, formatKg } from '@/lib/format'
-import { aggregatePendingB2BOrders, calculateGreenCoffeeNeeded } from '@/utils/calculations'
+import { aggregatePendingB2BOrders, calculateRawGrams, roastLossPercentage } from '@/utils/calculations'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { DictionaryKey } from '@/i18n/dictionaries'
 import type { OrderWithCustomer, RoastingOrderWithPartner } from '@/types'
@@ -47,7 +47,7 @@ export default function B2BPage() {
   // don't quietly under-report what still has to be roasted.
   const unscheduledCount = pendingB2B.filter(o => !o.inventory_id).length
 
-  const roastLoss = settings?.roast_loss_percentage ?? 20
+  const roastLoss = settings ? roastLossPercentage(settings) : 20
 
   const fulfillmentLabel = (status: OrderWithCustomer['fulfillment_status']) =>
     status === 'delivered' ? t('orders_delivered')
@@ -342,7 +342,7 @@ export default function B2BPage() {
               <div className="space-y-4">
                 {Object.entries(scheduleData).map(([invId, amountNeeded]) => {
                   const inv = coffeeInventory.find(i => i.id === invId)
-                  const greenCoffeeNeeded = calculateGreenCoffeeNeeded(amountNeeded, roastLoss)
+                  const greenCoffeeNeeded = calculateRawGrams(amountNeeded, roastLoss)
                   const stockGrams = inv?.stock_grams ?? 0
                   const shortfall = greenCoffeeNeeded - stockGrams
                   return (

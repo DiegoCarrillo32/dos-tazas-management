@@ -26,7 +26,9 @@ export type CostBreakdown = {
   sticker: number
   electricity: number
   fuel: number
-  roasting_time: number
+  labor: number
+  /** @deprecated Replaced by `labor`. Kept so orders saved before that change still render their cost. */
+  roasting_time?: number
 }
 
 export type OrderRecord = {
@@ -43,6 +45,7 @@ export type OrderRecord = {
   inventory_id: string | null
   order_date: string
   bag_count: number
+  bag_type_id: string | null
   total_cost: number | null
   cost_breakdown: CostBreakdown | null
   company_name: string | null
@@ -70,6 +73,7 @@ export type OrderInsertParams = {
   origin_notes?: string | null
   inventory_id?: string | null
   bag_count?: number
+  bag_type_id?: string | null
   company_name?: string | null
   partner_id?: string | null
 }
@@ -152,26 +156,47 @@ export type UserSettingsRecord = {
   id: string
   user_id: string
   business_name: string | null
-  roast_loss_percentage: number
   currency_symbol: string
   cost_per_bag: number
   cost_per_sticker: number
   cost_electricity_per_order: number
   cost_fuel_per_order: number
-  cost_roasting_time_per_order: number
+  // Roaster spec — roast yield/loss is derived from these, not stored directly.
+  roaster_capacity_grams: number
+  green_input_per_roast_grams: number
+  roasted_output_per_roast_grams: number
+  // Roasting labor — cost per unit is derived from these.
+  labor_hourly_rate: number
+  roasts_per_hour: number
   updated_at: string
 }
 
 export type UserSettingsUpdateParams = {
   business_name?: string | null
-  roast_loss_percentage?: number
   currency_symbol?: string
   cost_per_bag?: number
   cost_per_sticker?: number
   cost_electricity_per_order?: number
   cost_fuel_per_order?: number
-  cost_roasting_time_per_order?: number
+  roaster_capacity_grams?: number
+  green_input_per_roast_grams?: number
+  roasted_output_per_roast_grams?: number
+  labor_hourly_rate?: number
+  roasts_per_hour?: number
 }
+
+// --- Bag Types ---
+export type BagTypeRecord = {
+  id: string
+  user_id: string
+  name: string
+  size_grams: number | null
+  cost: number
+  created_at: string
+}
+
+export type BagTypeInsertParams = Omit<BagTypeRecord, 'id' | 'user_id' | 'created_at'>
+export type BagTypeUpdateParams = Partial<BagTypeInsertParams>
 
 // --- Equipment ---
 export type EquipmentRecord = {
@@ -294,6 +319,7 @@ export type B2BRecurringOrderRecord = {
   roast_level: string
   amount_grams: number
   bag_count: number
+  bag_type_id: string | null
   frequency: RecurringFrequency
   day_of_week: number
   is_active: boolean

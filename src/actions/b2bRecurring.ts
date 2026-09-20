@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { B2BRecurringOrderRecord, B2BRecurringOrderInsertParams, B2BRecurringOrderUpdateParams, OrderRecord } from '@/types'
 import { findOrCreateB2BCustomer } from '@/utils/b2bCustomer'
-import { calculateOrderCosts, calculateRawGrams } from '@/utils/calculations'
+import { calculateOrderCosts, calculateRawGrams, roastLossPercentage } from '@/utils/calculations'
 import { fetchSettings } from '@/actions/settings'
 
 export async function getRecurringOrders(partnerId: string) {
@@ -178,7 +178,7 @@ export async function confirmOrderFromTemplate(recurringId: string) {
 
   if (invItem) {
     costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
-    const rawGramsUsed = calculateRawGrams(recurringOrder.amount_grams, settings.roast_loss_percentage)
+    const rawGramsUsed = calculateRawGrams(recurringOrder.amount_grams, roastLossPercentage(settings))
 
     const newStock = invItem.stock_grams - rawGramsUsed
     if (newStock < 0) {
@@ -190,11 +190,22 @@ export async function confirmOrderFromTemplate(recurringId: string) {
       .eq('id', recurringOrder.inventory_id)
   }
 
+  let bagUnitCost: number | null = null
+  if (recurringOrder.bag_type_id) {
+    const { data: bagType } = await supabase
+      .from('bag_types')
+      .select('cost')
+      .eq('id', recurringOrder.bag_type_id)
+      .single()
+    if (bagType) bagUnitCost = Number(bagType.cost)
+  }
+
   const { costBreakdown, totalCost } = calculateOrderCosts({
     amountGrams: recurringOrder.amount_grams,
     bagCount,
     settings,
     costPerKg,
+    bagUnitCost,
   })
 
   // 5. Create the actual order
@@ -209,6 +220,7 @@ export async function confirmOrderFromTemplate(recurringId: string) {
       total_price: totalPrice,
       inventory_id: recurringOrder.inventory_id,
       bag_count: bagCount,
+      bag_type_id: recurringOrder.bag_type_id,
       company_name: recurringOrder.partner.company_name,
       partner_id: recurringOrder.partner_id,
       fulfillment_status: 'pending',

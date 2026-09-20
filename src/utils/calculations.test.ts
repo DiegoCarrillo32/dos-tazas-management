@@ -1,20 +1,45 @@
 import { describe, it, expect } from 'vitest'
-import { calculateRawGrams, calculateOrderCosts, calculateYieldPercentage, calculateGreenCoffeeNeeded, aggregatePendingB2BOrders } from './calculations'
+import {
+  calculateRawGrams,
+  calculateOrderCosts,
+  calculateYieldPercentage,
+  roastYieldPercentage,
+  roastLossPercentage,
+  laborCostPerRoast,
+  laborCostPerGram,
+  aggregatePendingB2BOrders,
+} from './calculations'
 import type { UserSettingsRecord } from '@/types'
 
 describe('calculations', () => {
+  // green 1000g -> roasted 800g: 80% yield, 20% loss — chosen so the raw-gram
+  // math below matches the well-known "1000 / 0.8" case.
   const mockSettings: UserSettingsRecord = {
     id: 'test-settings-id',
     user_id: 'test-user-id',
     business_name: 'Test Roastery',
-    roast_loss_percentage: 20, // 20% loss means yield is 80% of raw grams
     currency_symbol: '$',
     cost_per_bag: 0.50,
     cost_per_sticker: 0.15,
     cost_electricity_per_order: 1.20,
     cost_fuel_per_order: 0.80,
-    cost_roasting_time_per_order: 3.50,
+    roaster_capacity_grams: 1200,
+    green_input_per_roast_grams: 1000,
+    roasted_output_per_roast_grams: 800,
+    labor_hourly_rate: 1600,
+    roasts_per_hour: 4, // -> 400/roast, 0.5/g
     updated_at: new Date().toISOString()
+  }
+
+  // The app's real defaults, for the worked example in the plan: capacity
+  // 1200g, green 960g in / 760g out per roast, ₡1,600/hr at 3 roasts/hr.
+  const defaultSettings: UserSettingsRecord = {
+    ...mockSettings,
+    roaster_capacity_grams: 1200,
+    green_input_per_roast_grams: 960,
+    roasted_output_per_roast_grams: 760,
+    labor_hourly_rate: 1600,
+    roasts_per_hour: 3,
   }
 
   describe('calculateRawGrams', () => {
@@ -33,6 +58,53 @@ describe('calculations', () => {
     it('handles 0% roast loss', () => {
       const result = calculateRawGrams(500, 0)
       expect(result).toBe(500)
+    })
+
+    it('returns 0 when loss is 100% or more, instead of dividing by zero', () => {
+      expect(calculateRawGrams(500, 100)).toBe(0)
+      expect(calculateRawGrams(500, 120)).toBe(0)
+    })
+  })
+
+  describe('roastYieldPercentage / roastLossPercentage', () => {
+    it('derives yield and loss from green input and roasted output', () => {
+      expect(roastYieldPercentage(mockSettings)).toBe(80)
+      expect(roastLossPercentage(mockSettings)).toBe(20)
+    })
+
+    it('matches the plan defaults: 960g in / 760g out -> 79.2% yield, 20.8% loss', () => {
+      expect(roastYieldPercentage(defaultSettings)).toBeCloseTo(79.1667, 3)
+      expect(Number(roastYieldPercentage(defaultSettings).toFixed(1))).toBe(79.2)
+      expect(Number(roastLossPercentage(defaultSettings).toFixed(1))).toBe(20.8)
+    })
+
+    it('returns 0 yield (100% loss) when green input is 0, instead of dividing by zero', () => {
+      const settings = { ...mockSettings, green_input_per_roast_grams: 0 }
+      expect(roastYieldPercentage(settings)).toBe(0)
+      expect(roastLossPercentage(settings)).toBe(100)
+    })
+  })
+
+  describe('laborCostPerRoast / laborCostPerGram', () => {
+    it('derives labor cost per roast and per gram', () => {
+      expect(laborCostPerRoast(mockSettings)).toBe(400)
+      expect(laborCostPerGram(mockSettings)).toBe(0.5)
+    })
+
+    it('matches the plan defaults: ₡1,600/hr at 3 roasts/hr -> ₡533.33/roast', () => {
+      expect(laborCostPerRoast(defaultSettings)).toBeCloseTo(533.33, 2)
+      expect(laborCostPerGram(defaultSettings)).toBeCloseTo(0.7018, 4)
+    })
+
+    it('returns 0 when roasts per hour is 0, instead of dividing by zero', () => {
+      const settings = { ...mockSettings, roasts_per_hour: 0 }
+      expect(laborCostPerRoast(settings)).toBe(0)
+      expect(laborCostPerGram(settings)).toBe(0)
+    })
+
+    it('returns 0 per-gram cost when roasted output is 0, instead of dividing by zero', () => {
+      const settings = { ...mockSettings, roasted_output_per_roast_grams: 0 }
+      expect(laborCostPerGram(settings)).toBe(0)
     })
   })
 
@@ -60,10 +132,11 @@ describe('calculations', () => {
       // Fixed costs:
       // Electricity: $1.20
       // Fuel: $0.80
-      // Roasting: $3.50
       expect(result.electricityCost).toBe(1.20)
       expect(result.fuelCost).toBe(0.80)
-      expect(result.roastingTimeCost).toBe(3.50)
+
+      // Labor: 1000g * 0.5/g = 500.00
+      expect(result.laborCost).toBe(500)
 
       // Breakdown matches expectation:
       expect(result.costBreakdown).toEqual({
@@ -72,11 +145,11 @@ describe('calculations', () => {
         sticker: 0.30,
         electricity: 1.20,
         fuel: 0.80,
-        roasting_time: 3.50
+        labor: 500
       })
 
-      // Total cost: 12.50 + 1.00 + 0.30 + 1.20 + 0.80 + 3.50 = 19.30
-      expect(result.totalCost).toBe(19.30)
+      // Total cost: 12.50 + 1.00 + 0.30 + 1.20 + 0.80 + 500 = 515.80
+      expect(result.totalCost).toBe(515.80)
     })
 
     it('calculates cost breakdown correctly when no coffee bean is provided (manual input)', () => {
@@ -91,9 +164,12 @@ describe('calculations', () => {
       expect(result.coffeeCost).toBe(0)
       expect(result.bagCost).toBe(0.50)
       expect(result.stickerCost).toBe(0.15)
-      
-      // Total cost: 0 + 0.50 + 0.15 + 1.20 + 0.80 + 3.50 = 6.15
-      expect(result.totalCost).toBe(6.15)
+
+      // Labor: 500g * 0.5/g = 250.00
+      expect(result.laborCost).toBe(250)
+
+      // Total cost: 0 + 0.50 + 0.15 + 1.20 + 0.80 + 250 = 252.65
+      expect(result.totalCost).toBe(252.65)
     })
 
     it('rounds currency results to 2 decimal places correctly', () => {
@@ -121,8 +197,53 @@ describe('calculations', () => {
       // Sticker: 3 * 0.111 = 0.333 -> rounds to 0.33
       expect(result.stickerCost).toBe(0.33)
 
-      // Sum of breakdown: 7.71 + 1.00 + 0.33 + 1.20 + 0.80 + 3.50 = 14.54
-      expect(result.totalCost).toBe(14.54)
+      // Sum of breakdown: 7.71 + 1.00 + 0.33 + 1.20 + 0.80 + 250 = 261.04
+      expect(result.totalCost).toBe(261.04)
+    })
+
+    it('uses bagUnitCost (a bag type\'s cost) over settings.cost_per_bag when given', () => {
+      const result = calculateOrderCosts({
+        amountGrams: 500,
+        bagCount: 2,
+        settings: mockSettings,
+        costPerKg: null,
+        bagUnitCost: 2.75
+      })
+
+      // Bag: 2 * 2.75 = 5.50, not 2 * 0.50
+      expect(result.bagCost).toBe(5.50)
+    })
+
+    it('falls back to settings.cost_per_bag when bagUnitCost is not given', () => {
+      const result = calculateOrderCosts({
+        amountGrams: 500,
+        bagCount: 2,
+        settings: mockSettings,
+        costPerKg: null
+      })
+
+      expect(result.bagCost).toBe(1.00) // 2 * 0.50
+    })
+
+    it('matches the plan\'s worked example: 250g at the app defaults', () => {
+      // green 960g / roasted 760g -> 79.1667% yield -> 20.8333% loss
+      // labor: 1600/3 = 533.33/roast -> /760 = 0.70175/g
+      const result = calculateOrderCosts({
+        amountGrams: 250,
+        bagCount: 1,
+        settings: defaultSettings,
+        costPerKg: 3000, // ₡3,000/kg green coffee
+        bagUnitCost: 280 // premium bag
+      })
+
+      // green needed: ceil(250 / 0.791667) = 316g
+      expect(result.rawGramsUsed).toBe(316)
+      // coffee: 316/1000 * 3000 = 948
+      expect(result.coffeeCost).toBe(948)
+      // labor: 250 * 0.70175 = 175.4386... -> rounds to 175.44
+      expect(result.laborCost).toBeCloseTo(175.44, 2)
+      // bag: 1 * 280
+      expect(result.bagCost).toBe(280)
     })
   })
 
@@ -134,18 +255,6 @@ describe('calculations', () => {
 
     it('returns 0 if weightIn is 0', () => {
       const result = calculateYieldPercentage(0, 1000)
-      expect(result).toBe(0)
-    })
-  })
-
-  describe('calculateGreenCoffeeNeeded', () => {
-    it('calculates correctly with 20% loss', () => {
-      const result = calculateGreenCoffeeNeeded(1000, 20)
-      expect(result).toBe(1250)
-    })
-
-    it('returns 0 if loss percentage is >= 100', () => {
-      const result = calculateGreenCoffeeNeeded(1000, 100)
       expect(result).toBe(0)
     })
   })

@@ -106,7 +106,6 @@ CREATE TABLE user_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   business_name TEXT,
-  roast_loss_percentage INTEGER NOT NULL DEFAULT 20,
   currency_symbol TEXT NOT NULL DEFAULT '$',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -129,12 +128,47 @@ ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_per_bag NUMERIC(10,2) NO
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_per_sticker NUMERIC(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_electricity_per_order NUMERIC(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_fuel_per_order NUMERIC(10,2) NOT NULL DEFAULT 0;
-ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cost_roasting_time_per_order NUMERIC(10,2) NOT NULL DEFAULT 0;
 
 -- Per-order cost tracking
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS bag_count INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_cost NUMERIC(10,2);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS cost_breakdown JSONB;
+
+-- ============================================================
+-- Production Cost Model
+-- ============================================================
+-- Roaster spec: yield/loss is derived from green input vs. roasted output
+-- per roast, instead of a hand-typed loss percentage.
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS roaster_capacity_grams INTEGER NOT NULL DEFAULT 1200;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS green_input_per_roast_grams INTEGER NOT NULL DEFAULT 960;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS roasted_output_per_roast_grams INTEGER NOT NULL DEFAULT 760;
+
+-- Roasting labor: cost per unit is derived from hourly rate and roasts per
+-- hour, instead of a flat per-order fee.
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS labor_hourly_rate NUMERIC(10,2) NOT NULL DEFAULT 1600;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS roasts_per_hour NUMERIC(10,2) NOT NULL DEFAULT 3;
+
+-- Bag types — each bag type has its own cost (and size, if relevant), so an
+-- order's bag cost reflects the actual bag used instead of one flat rate.
+CREATE TABLE bag_types (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  size_grams INTEGER,
+  cost NUMERIC(10,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_bag_types_user_id ON bag_types(user_id);
+ALTER TABLE bag_types ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own bag types"
+  ON bag_types
+  FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS bag_type_id UUID REFERENCES bag_types(id) ON DELETE SET NULL;
 
 -- ============================================================
 -- Cropster-inspired Enhancements
@@ -321,6 +355,7 @@ CREATE TABLE b2b_recurring_orders (
   roast_level TEXT NOT NULL,
   amount_grams INTEGER NOT NULL,
   bag_count INTEGER NOT NULL DEFAULT 1,
+  bag_type_id UUID REFERENCES bag_types(id) ON DELETE SET NULL,
   frequency TEXT NOT NULL DEFAULT 'weekly', -- 'weekly' | 'biweekly' | 'monthly'
   day_of_week INTEGER NOT NULL DEFAULT 1,   -- 0=Sun, 1=Mon, ... 6=Sat
   is_active BOOLEAN NOT NULL DEFAULT true,

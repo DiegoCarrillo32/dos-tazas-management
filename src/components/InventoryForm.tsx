@@ -12,6 +12,7 @@ import { FormCard } from '@/components/ui/form-card'
 import type { InventoryRecord, UserSettingsRecord } from '@/types'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { useCreateInventoryItem, useUpdateInventoryItem } from '@/hooks/queries'
+import { roastLossPercentage as calculateRoastLossPercentage } from '@/utils/calculations'
 import { toast } from 'sonner'
 
 
@@ -62,7 +63,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
   const updateMutation = useUpdateInventoryItem()
   const isPending = createMutation.isPending || updateMutation.isPending
 
-  const roastLossPercentage = settings?.roast_loss_percentage ?? 20
+  const roastLossPercentage = settings ? calculateRoastLossPercentage(settings) : 20
   const lossRatio = 1 - (roastLossPercentage / 100)
 
   // Calculate estimated yield immediately for the UI
@@ -217,7 +218,7 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
           
           {category === 'green_coffee' && !Number.isNaN(rawGrams) && rawGrams > 0 && (
             <p className="text-xs text-expresso/70 font-medium">
-              {t('inv_form_yield_est').replace('{loss}', roastLossPercentage.toString())} <span className="text-coffee-fruit font-bold">{(estimatedRoastedYield / 1000).toFixed(2)} kg</span>
+              {t('inv_form_yield_est').replace('{loss}', roastLossPercentage.toFixed(1))} <span className="text-coffee-fruit font-bold">{(estimatedRoastedYield / 1000).toFixed(2)} kg</span>
             </p>
           )}
         </div>

@@ -330,11 +330,8 @@ export const dictionaries = {
     settings_business_name_placeholder: "e.g. Dos Tazas Coffee Roasters",
     settings_business_name_hint:
       "Optional. Used for invoices and UI personalization.",
-    settings_roast_loss: "Roasting Loss (%)",
-    settings_roast_loss_hint:
-      "Default: 20%. This automatically scales raw inventory deductions when roasted orders are created.",
     settings_currency: "Currency Symbol",
-    settings_currency_hint: "Default: $. Used across the dashboard for prices.",
+    settings_currency_hint: "Default: ₡. Used across the dashboard for prices.",
     settings_language: "Language",
     settings_language_hint: "Choose your preferred language.",
     settings_theme: "Display Theme",
@@ -353,11 +350,33 @@ export const dictionaries = {
     settings_cost_per_sticker: "Cost per Sticker",
     settings_cost_electricity: "Electricity per Order",
     settings_cost_fuel: "Fuel per Order",
-    settings_cost_roasting_time: "Roasting Time per Order",
     settings_cost_hint: "Used to calculate order cost breakdown.",
+
+    // Roaster spec
+    settings_roaster_title: "Roaster",
+    settings_roaster_subtitle: "Configure your roaster's capacity and per-roast weights. Yield and loss are calculated automatically.",
+    settings_roaster_capacity: "Roaster Capacity (g)",
+    settings_roaster_capacity_hint: "Default: 1200g. The maximum a single roast can hold.",
+    settings_roaster_green_input: "Green Coffee per Roast (g)",
+    settings_roaster_green_input_hint: "Default: 960g. Green coffee loaded per roast.",
+    settings_roaster_roasted_output: "Roasted Output per Roast (g)",
+    settings_roaster_roasted_output_hint: "Default: 760g. Roasted coffee yielded per roast.",
+    settings_roaster_derived: "Yield {yield}% · Loss {loss}%",
+
+    // Roasting labor
+    settings_labor_title: "Roasting Labor",
+    settings_labor_subtitle: "Configure the roaster operator's pay. Labor cost per unit is calculated automatically.",
+    settings_labor_hourly_rate: "Hourly Rate",
+    settings_labor_hourly_rate_hint: "Default: ₡1,600/hour. What you pay the roaster operator.",
+    settings_labor_roasts_per_hour: "Roasts per Hour",
+    settings_labor_roasts_per_hour_hint: "Default: 3. How many roasts the operator completes per hour.",
+    settings_labor_derived: "₡{perRoast} per roast · ₡{perKg} per kg",
 
     // Order Cost/Revenue
     order_bag_count: "Number of Bags",
+    order_bag_type: "Bag Type",
+    order_bag_type_select: "Select a bag type",
+    order_bag_type_none: "None (use default bag cost)",
     order_cost: "Cost",
     order_profit: "Profit",
     order_margin: "Margin",
@@ -367,8 +386,27 @@ export const dictionaries = {
     order_cost_stickers: "Stickers",
     order_cost_electricity: "Electricity",
     order_cost_fuel: "Fuel",
-    order_cost_roasting: "Roasting Time",
+    order_cost_labor: "Labor",
     order_cost_na: "N/A",
+
+    // Bag Types
+    bag_types_title: "Bag Types",
+    bag_types_subtitle: "Manage the bag types used in production cost calculations.",
+    bag_types_empty: "No bag types yet",
+    bag_types_empty_desc: "Add a bag type to use its cost in your orders' production cost.",
+    bag_type_name: "Name",
+    bag_type_name_placeholder: "e.g. 250g Kraft Bag",
+    bag_type_size: "Size (g)",
+    bag_type_cost: "Cost",
+    bag_type_add: "Add Bag Type",
+    bag_type_edit: "Edit Bag Type",
+    bag_type_save: "Save Bag Type",
+    bag_type_created: "Bag type added successfully",
+    bag_type_updated: "Bag type updated successfully",
+    bag_type_save_failed: "Failed to save bag type",
+    bag_type_delete_confirm: "Delete bag type \"{name}\"?",
+    bag_type_deleted: "Bag type deleted",
+    bag_type_delete_failed: "Failed to delete bag type",
 
     // Analytics Cost
     analytics_total_cost: "Total Cost",
@@ -1073,12 +1111,9 @@ export const dictionaries = {
     settings_business_name_placeholder: "ej. Dos Tazas Coffee Roasters",
     settings_business_name_hint:
       "Opcional. Se utiliza para facturas y personalización de la interfaz.",
-    settings_roast_loss: "Pérdida por Tueste (%)",
-    settings_roast_loss_hint:
-      "Predeterminado: 20%. Esto escala automáticamente las deducciones de inventario crudo al crear pedidos de café tostado.",
     settings_currency: "Símbolo de Moneda",
     settings_currency_hint:
-      "Predeterminado: $. Se utiliza en todo el tablero para los precios.",
+      "Predeterminado: ₡. Se utiliza en todo el tablero para los precios.",
     settings_language: "Idioma",
     settings_language_hint: "Elige tu idioma preferido.",
     settings_theme: "Tema de Pantalla",
@@ -1097,11 +1132,33 @@ export const dictionaries = {
     settings_cost_per_sticker: "Costo por Etiqueta",
     settings_cost_electricity: "Electricidad por Pedido",
     settings_cost_fuel: "Combustible por Pedido",
-    settings_cost_roasting_time: "Tiempo de Tueste por Pedido",
     settings_cost_hint: "Usado para calcular el desglose de costos.",
+
+    // Roaster spec
+    settings_roaster_title: "Tostadora",
+    settings_roaster_subtitle: "Configura la capacidad de tu tostadora y los pesos por tueste. El rendimiento y la pérdida se calculan automáticamente.",
+    settings_roaster_capacity: "Capacidad de la Tostadora (g)",
+    settings_roaster_capacity_hint: "Predeterminado: 1200g. El máximo que puede contener un tueste.",
+    settings_roaster_green_input: "Café Verde por Tueste (g)",
+    settings_roaster_green_input_hint: "Predeterminado: 960g. Café verde cargado por tueste.",
+    settings_roaster_roasted_output: "Café Tostado por Tueste (g)",
+    settings_roaster_roasted_output_hint: "Predeterminado: 760g. Café tostado obtenido por tueste.",
+    settings_roaster_derived: "Rendimiento {yield}% · Pérdida {loss}%",
+
+    // Roasting labor
+    settings_labor_title: "Mano de Obra de Tueste",
+    settings_labor_subtitle: "Configura el pago del operador de la tostadora. El costo de mano de obra por unidad se calcula automáticamente.",
+    settings_labor_hourly_rate: "Tarifa por Hora",
+    settings_labor_hourly_rate_hint: "Predeterminado: ₡1,600/hora. Lo que le pagas al operador de la tostadora.",
+    settings_labor_roasts_per_hour: "Tuestes por Hora",
+    settings_labor_roasts_per_hour_hint: "Predeterminado: 3. Cuántos tuestes completa el operador por hora.",
+    settings_labor_derived: "₡{perRoast} por tueste · ₡{perKg} por kg",
 
     // Order Cost/Revenue
     order_bag_count: "Número de Bolsas",
+    order_bag_type: "Tipo de Bolsa",
+    order_bag_type_select: "Selecciona un tipo de bolsa",
+    order_bag_type_none: "Ninguno (usar costo de bolsa predeterminado)",
     order_cost: "Costo",
     order_profit: "Ganancia",
     order_margin: "Margen",
@@ -1111,8 +1168,27 @@ export const dictionaries = {
     order_cost_stickers: "Etiquetas",
     order_cost_electricity: "Electricidad",
     order_cost_fuel: "Combustible",
-    order_cost_roasting: "Tiempo de Tueste",
+    order_cost_labor: "Mano de Obra",
     order_cost_na: "N/A",
+
+    // Bag Types
+    bag_types_title: "Tipos de Bolsa",
+    bag_types_subtitle: "Administra los tipos de bolsa usados en el cálculo de costos de producción.",
+    bag_types_empty: "Aún no hay tipos de bolsa",
+    bag_types_empty_desc: "Agrega un tipo de bolsa para usar su costo en el costo de producción de tus pedidos.",
+    bag_type_name: "Nombre",
+    bag_type_name_placeholder: "ej. Bolsa Kraft 250g",
+    bag_type_size: "Tamaño (g)",
+    bag_type_cost: "Costo",
+    bag_type_add: "Agregar Tipo de Bolsa",
+    bag_type_edit: "Editar Tipo de Bolsa",
+    bag_type_save: "Guardar Tipo de Bolsa",
+    bag_type_created: "Tipo de bolsa agregado exitosamente",
+    bag_type_updated: "Tipo de bolsa actualizado exitosamente",
+    bag_type_save_failed: "Error al guardar el tipo de bolsa",
+    bag_type_delete_confirm: "¿Eliminar el tipo de bolsa \"{name}\"?",
+    bag_type_deleted: "Tipo de bolsa eliminado",
+    bag_type_delete_failed: "Error al eliminar el tipo de bolsa",
 
     // Analytics Cost
     analytics_total_cost: "Costo Total",

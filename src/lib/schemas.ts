@@ -55,6 +55,7 @@ export const orderSchema = z.object({
   roast_level: z.string().min(1, 'Roast level is required'),
   amount_grams: z.number().min(1, 'Amount must be greater than 0'),
   bag_count: z.number().min(1, 'At least 1 bag required').optional().nullable(),
+  bag_type_id: z.string().optional().nullable(),
   total_price: z.number().min(0, 'Cannot be negative'),
   origin_notes: z.string().optional().nullable(),
   company_name: z.string().optional().nullable(),
@@ -86,6 +87,7 @@ export const recurringSchema = z.object({
   roast_level: z.string().min(1, 'Roast level is required'),
   amount_grams: z.number().min(1, 'Amount must be greater than 0'),
   bag_count: z.number().min(1, 'At least 1 bag required'),
+  bag_type_id: z.string().optional().nullable(),
   frequency: z.enum(["weekly", "biweekly", "monthly"]),
   day_of_week: z.number().min(0).max(6),
 })
@@ -101,12 +103,24 @@ export const roastBatchSchema = z.object({
 
 export const settingsSchema = z.object({
   business_name: z.string().optional(),
-  roast_loss_percentage: z.number().min(0).max(100),
   currency_symbol: z.string().max(3, 'Max 3 chars').min(1, 'Required'),
   cost_per_bag: z.number().min(0),
   cost_per_sticker: z.number().min(0),
   cost_electricity: z.number().min(0),
   cost_fuel: z.number().min(0),
-  cost_roasting_time: z.number().min(0),
+  roaster_capacity_grams: z.number().min(1, 'Must be greater than 0'),
+  green_input_per_roast_grams: z.number().min(1, 'Must be greater than 0'),
+  roasted_output_per_roast_grams: z.number().min(1, 'Must be greater than 0'),
+  labor_hourly_rate: z.number().min(0),
+  roasts_per_hour: z.number().min(0.01, 'Must be greater than 0'),
   worker_name: z.string().optional(),
+}).refine((data) => data.green_input_per_roast_grams <= data.roaster_capacity_grams, {
+  message: 'Cannot exceed roaster capacity',
+  path: ['green_input_per_roast_grams'],
+})
+
+export const bagTypeSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  size_grams: z.number().min(0).nullable().optional(),
+  cost: z.number().min(0),
 })

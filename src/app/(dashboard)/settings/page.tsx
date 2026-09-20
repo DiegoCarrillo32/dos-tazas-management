@@ -1,6 +1,7 @@
 import { fetchSettings } from '@/actions/settings'
 import { getMyEmployer } from '@/actions/team'
 import { SettingsForm } from '@/components/SettingsForm'
+import { BagTypesSection } from '@/components/BagTypesSection'
 import { PageHeader } from '@/components/PageHeader'
 import { createClient } from '@/utils/supabase/server'
 
@@ -34,6 +35,7 @@ export default async function SettingsPage() {
       />
 
       <SettingsForm initialData={settings} userRole={userRole} workerName={workerName} />
+      {userRole !== 'worker' && <BagTypesSection />}
     </div>
   )
 }
