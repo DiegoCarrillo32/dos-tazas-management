@@ -19,7 +19,8 @@ import type { InventoryRecord, B2BRecurringOrderInsertParams, B2BRecurringOrderR
 import { useTranslation } from "@/i18n/LanguageProvider";
 import type { DictionaryKey } from "@/i18n/dictionaries";
 import { PREPARATION_METHODS, ROAST_LEVELS } from "@/config/orderOptions";
-import { useCreateRecurringOrder, useUpdateRecurringOrder } from '@/hooks/queries';
+import { useCreateRecurringOrder, useUpdateRecurringOrder, useBagTypes, useSettings } from '@/hooks/queries';
+import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 
 
@@ -59,6 +60,7 @@ export function RecurringOrderForm({
       roast_level: initialData?.roast_level || '',
       amount_grams: initialData?.amount_grams ?? ('' as unknown as number),
       bag_count: initialData?.bag_count ?? 1,
+      bag_type_id: initialData?.bag_type_id || undefined,
       frequency: initialData?.frequency || 'weekly',
       day_of_week: initialData?.day_of_week ?? 1,
     }
@@ -66,6 +68,8 @@ export function RecurringOrderForm({
 
   const createMutation = useCreateRecurringOrder(partnerId);
   const updateMutation = useUpdateRecurringOrder(partnerId);
+  const { data: bagTypes } = useBagTypes();
+  const { data: settings } = useSettings();
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const onSubmit = (data: RecurringFormValues) => {
@@ -76,6 +80,7 @@ export function RecurringOrderForm({
       amount_grams: data.amount_grams,
       inventory_id: data.inventory_id,
       bag_count: data.bag_count,
+      bag_type_id: data.bag_type_id || null,
       frequency: data.frequency,
       day_of_week: data.day_of_week,
       is_active: initialData?.is_active ?? true,
@@ -252,6 +257,34 @@ export function RecurringOrderForm({
             />
             {errors.bag_count && <p className="text-red-500 text-xs font-medium">{errors.bag_count.message}</p>}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="bag_type_id" className="text-expresso">
+            {t('order_bag_type')} <span className="text-expresso/50 font-normal text-xs ml-1">{t('order_form_optional')}</span>
+          </Label>
+          <Controller
+            control={control}
+            name="bag_type_id"
+            render={({ field }) => (
+              <Select
+                value={field.value || "none"}
+                onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+              >
+                <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
+                  <SelectValue placeholder={t('order_bag_type_select')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('order_bag_type_none')}</SelectItem>
+                  {(bagTypes || []).map((bt) => (
+                    <SelectItem key={bt.id} value={bt.id}>
+                      {bt.name}{bt.size_grams ? ` (${bt.size_grams} g)` : ''} — {formatCurrency(bt.cost, settings)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

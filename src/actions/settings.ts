@@ -6,13 +6,16 @@ import type { UserSettingsRecord, UserSettingsUpdateParams } from '@/types'
 
 const DEFAULT_SETTINGS: Omit<UserSettingsRecord, 'id' | 'user_id' | 'updated_at'> = {
   business_name: null,
-  roast_loss_percentage: 20,
-  currency_symbol: '$',
+  currency_symbol: '₡',
   cost_per_bag: 0,
   cost_per_sticker: 0,
   cost_electricity_per_order: 0,
   cost_fuel_per_order: 0,
-  cost_roasting_time_per_order: 0
+  roaster_capacity_grams: 1200,
+  green_input_per_roast_grams: 960,
+  roasted_output_per_roast_grams: 760,
+  labor_hourly_rate: 1600,
+  roasts_per_hour: 3
 }
 
 export async function fetchSettings(): Promise<UserSettingsRecord> {
@@ -84,13 +87,16 @@ export async function updateSettings(params: UserSettingsUpdateParams) {
       .insert([{
         user_id: user.id,
         business_name: params.business_name || null,
-        roast_loss_percentage: params.roast_loss_percentage ?? 20,
-        currency_symbol: params.currency_symbol || '$',
+        currency_symbol: params.currency_symbol || '₡',
         cost_per_bag: params.cost_per_bag ?? 0,
         cost_per_sticker: params.cost_per_sticker ?? 0,
         cost_electricity_per_order: params.cost_electricity_per_order ?? 0,
         cost_fuel_per_order: params.cost_fuel_per_order ?? 0,
-        cost_roasting_time_per_order: params.cost_roasting_time_per_order ?? 0
+        roaster_capacity_grams: params.roaster_capacity_grams ?? 1200,
+        green_input_per_roast_grams: params.green_input_per_roast_grams ?? 960,
+        roasted_output_per_roast_grams: params.roasted_output_per_roast_grams ?? 760,
+        labor_hourly_rate: params.labor_hourly_rate ?? 1600,
+        roasts_per_hour: params.roasts_per_hour ?? 3
       }])
       .select()
       .single()

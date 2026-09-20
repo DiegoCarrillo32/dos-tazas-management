@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateYieldPercentage,
-  calculateGreenCoffeeNeeded,
   aggregatePendingB2BOrders,
   calculateRawGrams,
 } from '@/utils/calculations'
@@ -39,6 +38,7 @@ function makeOrder(overrides: Partial<OrderWithCustomer> = {}): OrderWithCustome
     inventory_id: 'inv-001',
     order_date: '2024-06-01T00:00:00Z',
     bag_count: 1,
+    bag_type_id: null,
     total_cost: null,
     cost_breakdown: null,
     company_name: null,
@@ -160,31 +160,25 @@ describe('Roast Schedule Aggregation', () => {
 describe('Green Coffee Needed Calculation', () => {
   it('calculates green coffee needed for 20% roast loss', () => {
     // Need 1000g roasted → 1000 / 0.8 = 1250g green
-    expect(calculateGreenCoffeeNeeded(1000, 20)).toBe(1250)
+    expect(calculateRawGrams(1000, 20)).toBe(1250)
   })
 
   it('calculates green coffee needed for 15% roast loss', () => {
     // Need 1000g roasted → 1000 / 0.85 = 1177g green (rounded up)
-    expect(calculateGreenCoffeeNeeded(1000, 15)).toBe(1177)
+    expect(calculateRawGrams(1000, 15)).toBe(1177)
   })
 
   it('handles 0% loss (no shrinkage)', () => {
-    expect(calculateGreenCoffeeNeeded(1000, 0)).toBe(1000)
+    expect(calculateRawGrams(1000, 0)).toBe(1000)
   })
 
   it('handles 100% loss edge case (returns 0 since it is impossible)', () => {
-    expect(calculateGreenCoffeeNeeded(1000, 100)).toBe(0)
+    expect(calculateRawGrams(1000, 100)).toBe(0)
   })
 
   it('handles large wholesale quantities', () => {
     // 50kg roasted at 18% loss → 50000 / 0.82 = 60976g
-    expect(calculateGreenCoffeeNeeded(50000, 18)).toBe(60976)
-  })
-
-  it('matches the existing calculateRawGrams function (they are equivalent)', () => {
-    // Both functions compute the same formula
-    expect(calculateGreenCoffeeNeeded(2000, 20)).toBe(calculateRawGrams(2000, 20))
-    expect(calculateGreenCoffeeNeeded(1500, 15)).toBe(calculateRawGrams(1500, 15))
+    expect(calculateRawGrams(50000, 18)).toBe(60976)
   })
 })
 
@@ -282,7 +276,7 @@ describe('End-to-End Roast Schedule Scenario', () => {
     // Step 2: Calculate green coffee needed for each
     const greenNeeded: Record<string, number> = {}
     for (const [invId, amountNeeded] of Object.entries(aggregated)) {
-      greenNeeded[invId] = calculateGreenCoffeeNeeded(amountNeeded, roastLoss)
+      greenNeeded[invId] = calculateRawGrams(amountNeeded, roastLoss)
     }
 
     expect(greenNeeded).toEqual({

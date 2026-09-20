@@ -24,10 +24,11 @@ import { FormCard } from "@/components/ui/form-card";
 import { GenericModal } from "@/components/ui/GenericModal";
 import type { CustomerRecord, OrderInsertParams, InventoryRecord, UserSettingsRecord } from "@/types";
 import { useTranslation } from "@/i18n/LanguageProvider";
-import { useCreateOrder, useUpdateOrder, usePartners, usePartnerPricing } from '@/hooks/queries';
+import { useCreateOrder, useUpdateOrder, usePartners, usePartnerPricing, useBagTypes } from '@/hooks/queries';
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/format";
 import { PREPARATION_METHODS, ROAST_LEVELS } from "@/config/orderOptions";
+import { roastLossPercentage as calculateRoastLossPercentage } from "@/utils/calculations";
 
 
 
@@ -78,6 +79,7 @@ export function OrderForm({
           roast_level: initialData.roast_level,
           amount_grams: initialData.amount_grams,
           bag_count: initialData.bag_count || 1,
+          bag_type_id: initialData.bag_type_id || undefined,
           total_price: initialData.total_price || 0,
           origin_notes: initialData.origin_notes || "",
           company_name: initialData.company_name || "",
@@ -90,6 +92,7 @@ export function OrderForm({
           roast_level: "Medium",
           amount_grams: 250,
           bag_count: 1,
+          bag_type_id: undefined,
           total_price: 0,
           origin_notes: "",
           company_name: "",
@@ -101,9 +104,10 @@ export function OrderForm({
   const updateMutation = useUpdateOrder();
   const { data: partnersData } = usePartners();
   const partners = Array.isArray(partnersData) ? partnersData : [];
+  const { data: bagTypes } = useBagTypes();
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  const roastLossPercentage = settings?.roast_loss_percentage ?? 20;
+  const roastLossPercentage = settings ? calculateRoastLossPercentage(settings) : 20;
 
   // --- B2B custom pricing ------------------------------------------------
   // When the roaster has a price/kg on file for this partner + bean, prefill
@@ -147,6 +151,7 @@ export function OrderForm({
       origin_notes: data.origin_notes || null,
       inventory_id: data.inventory_id || null,
       bag_count: data.bag_count,
+      bag_type_id: data.bag_type_id || null,
       company_name: data.company_name || null,
       partner_id: data.partner_id || null,
     };
@@ -328,7 +333,7 @@ export function OrderForm({
           />
           {!initialData?.id && (
             <p className="text-xs text-expresso/60">
-              {t('order_form_deduct_info').replace('{loss}', roastLossPercentage.toString())}
+              {t('order_form_deduct_info').replace('{loss}', roastLossPercentage.toFixed(1))}
             </p>
           )}
           {initialData?.id && (
@@ -439,6 +444,34 @@ export function OrderForm({
             )}
             {errors.total_price && <p className="text-red-500 text-xs font-medium">{errors.total_price.message}</p>}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="bag_type_id" className="text-expresso">
+            {t('order_bag_type')} <span className="text-expresso/50 font-normal text-xs ml-1">{t('order_form_optional')}</span>
+          </Label>
+          <Controller
+            control={control}
+            name="bag_type_id"
+            render={({ field }) => (
+              <Select
+                value={field.value || "none"}
+                onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+              >
+                <SelectTrigger className="w-full border-warm-roast/30 focus:ring-coffee-fruit">
+                  <SelectValue placeholder={t('order_bag_type_select')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('order_bag_type_none')}</SelectItem>
+                  {(bagTypes || []).map((bt) => (
+                    <SelectItem key={bt.id} value={bt.id}>
+                      {bt.name}{bt.size_grams ? ` (${bt.size_grams} g)` : ''} — {formatCurrency(bt.cost, settings)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

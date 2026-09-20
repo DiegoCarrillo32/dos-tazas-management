@@ -248,6 +248,7 @@ describe('Type shapes and data contracts', () => {
         inventory_id: 'inv-001',
         order_date: '2024-05-01T00:00:00Z',
         bag_count: 5,
+        bag_type_id: null,
         total_cost: 80.0,
         cost_breakdown: null,
         company_name: 'Central Perk Cafe',
@@ -271,8 +272,9 @@ describe('Type shapes and data contracts', () => {
         inventory_id: null,
         order_date: '2024-05-10T00:00:00Z',
         bag_count: 1,
+        bag_type_id: null,
         total_cost: 5.5,
-        cost_breakdown: { coffee: 3, bag: 0.5, sticker: 0.15, electricity: 0.6, fuel: 0.4, roasting_time: 0.85 },
+        cost_breakdown: { coffee: 3, bag: 0.5, sticker: 0.15, electricity: 0.6, fuel: 0.4, labor: 0.85 },
         company_name: null,
       }
       expect(order.company_name).toBeNull()
@@ -297,6 +299,7 @@ describe('Type shapes and data contracts', () => {
         inventory_id: 'inv-001',
         order_date: '2024-05-01T00:00:00Z',
         bag_count: 5,
+        bag_type_id: null,
         total_cost: 80.0,
         cost_breakdown: null,
         company_name: 'Central Perk',

@@ -96,8 +96,8 @@ export const createOrder = authActionClient
 
     if (invItem) {
       costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
-      const { calculateRawGrams } = await import('@/utils/calculations')
-      rawGramsUsed = calculateRawGrams(params.amount_grams, settings.roast_loss_percentage)
+      const { calculateRawGrams, roastLossPercentage } = await import('@/utils/calculations')
+      rawGramsUsed = calculateRawGrams(params.amount_grams, roastLossPercentage(settings))
 
       // Deduct from inventory
       const newStock = invItem.stock_grams - rawGramsUsed
@@ -111,12 +111,23 @@ export const createOrder = authActionClient
     }
   }
 
+  let bagUnitCost: number | null = null
+  if (params.bag_type_id) {
+    const { data: bagType } = await supabase
+      .from('bag_types')
+      .select('cost')
+      .eq('id', params.bag_type_id)
+      .single()
+    if (bagType) bagUnitCost = Number(bagType.cost)
+  }
+
   const { calculateOrderCosts } = await import('@/utils/calculations')
   const { costBreakdown, totalCost } = calculateOrderCosts({
     amountGrams: params.amount_grams ?? 0,
     bagCount,
     settings,
-    costPerKg
+    costPerKg,
+    bagUnitCost
   })
 
   const { data, error } = await supabase
@@ -221,7 +232,7 @@ export const updateOrder = authActionClient
   // 1. Fetch original order details to reconcile inventory
   const { data: oldOrder, error: fetchError } = await supabase
     .from('orders')
-    .select('inventory_id, amount_grams, bag_count')
+    .select('inventory_id, amount_grams, bag_count, bag_type_id')
     .eq('id', orderId)
     .single()
 
@@ -243,12 +254,13 @@ export const updateOrder = authActionClient
       const newAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
       const sameBean = newInventoryId === oldOrder.inventory_id
 
-      const { calculateRawGrams } = await import('@/utils/calculations')
+      const { calculateRawGrams, roastLossPercentage } = await import('@/utils/calculations')
+      const lossPercentage = roastLossPercentage(settings)
 
       if (sameBean && oldOrder.inventory_id && oldOrder.amount_grams && newAmountGrams) {
         // Optimized path: same bean — compute diff and do a single SELECT + UPDATE
-        const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, settings.roast_loss_percentage)
-        const newRawGrams = calculateRawGrams(newAmountGrams, settings.roast_loss_percentage)
+        const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, lossPercentage)
+        const newRawGrams = calculateRawGrams(newAmountGrams, lossPercentage)
         const diffGrams = newRawGrams - oldRawGrams
 
         if (diffGrams !== 0) {
@@ -280,7 +292,7 @@ export const updateOrder = authActionClient
             .single()
 
           if (oldInvItem) {
-            const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, settings.roast_loss_percentage)
+            const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, lossPercentage)
             await supabase
               .from('inventory')
               .update({ stock_grams: oldInvItem.stock_grams + oldRawGrams })
@@ -297,7 +309,7 @@ export const updateOrder = authActionClient
             .single()
 
           if (newInvItem) {
-            const newRawGrams = calculateRawGrams(newAmountGrams, settings.roast_loss_percentage)
+            const newRawGrams = calculateRawGrams(newAmountGrams, lossPercentage)
             const updatedStock = newInvItem.stock_grams - newRawGrams
             if (updatedStock < 0) {
               console.warn(`[Inventory Warning] Stock for item ${newInventoryId} will go negative: ${updatedStock}g remaining after this order update.`)
@@ -317,7 +329,8 @@ export const updateOrder = authActionClient
   // 3. Recompute cost breakdown if cost-relevant fields changed
   const costRelevantChange = params.inventory_id !== undefined ||
     params.amount_grams !== undefined ||
-    params.bag_count !== undefined
+    params.bag_count !== undefined ||
+    params.bag_type_id !== undefined
 
   let costUpdate: Record<string, unknown> = {}
 
@@ -325,6 +338,7 @@ export const updateOrder = authActionClient
     const finalInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
     const finalAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
     const finalBagCount = params.bag_count !== undefined ? params.bag_count : (oldOrder.bag_count ?? 1)
+    const finalBagTypeId = params.bag_type_id !== undefined ? params.bag_type_id : oldOrder.bag_type_id
 
     let costPerKg: number | null = null
     if (finalInventoryId && finalAmountGrams) {
@@ -339,12 +353,23 @@ export const updateOrder = authActionClient
       }
     }
 
+    let bagUnitCost: number | null = null
+    if (finalBagTypeId) {
+      const { data: bagType } = await supabase
+        .from('bag_types')
+        .select('cost')
+        .eq('id', finalBagTypeId)
+        .single()
+      if (bagType) bagUnitCost = Number(bagType.cost)
+    }
+
     const { calculateOrderCosts } = await import('@/utils/calculations')
     const { costBreakdown, totalCost } = calculateOrderCosts({
       amountGrams: finalAmountGrams ?? 0,
       bagCount: finalBagCount,
       settings,
-      costPerKg
+      costPerKg,
+      bagUnitCost
     })
 
     costUpdate = { total_cost: totalCost, cost_breakdown: costBreakdown }
@@ -388,7 +413,7 @@ export const deleteOrder = authActionClient
     try {
       const { fetchSettings } = await import('./settings')
       const settings = await fetchSettings()
-      const { calculateRawGrams } = await import('@/utils/calculations')
+      const { calculateRawGrams, roastLossPercentage } = await import('@/utils/calculations')
 
       const { data: invItem } = await supabase
         .from('inventory')
@@ -397,7 +422,7 @@ export const deleteOrder = authActionClient
         .single()
 
       if (invItem) {
-        const rawGrams = calculateRawGrams(oldOrder.amount_grams, settings.roast_loss_percentage)
+        const rawGrams = calculateRawGrams(oldOrder.amount_grams, roastLossPercentage(settings))
         await supabase
           .from('inventory')
           .update({ stock_grams: invItem.stock_grams + rawGrams })

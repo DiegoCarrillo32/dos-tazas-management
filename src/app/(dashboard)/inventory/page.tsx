@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import type { InventoryRecord } from '@/types'
+import { roastLossPercentage } from '@/utils/calculations'
 import { toast } from 'sonner'
 
 export default function InventoryPage() {
@@ -35,7 +36,8 @@ export default function InventoryPage() {
   }
 
   const items = inventoryItems || []
-  const lossRatio = 1 - ((settings?.roast_loss_percentage || 20) / 100)
+  const lossPercentage = settings ? roastLossPercentage(settings) : 20
+  const lossRatio = 1 - (lossPercentage / 100)
 
   // Filter items
   const filteredItems = items.filter(item => {
@@ -160,7 +162,7 @@ export default function InventoryPage() {
     },
     {
       id: 'yield',
-      header: t('inventory_col_yield').replace('{loss}', String(settings?.roast_loss_percentage || 20)),
+      header: t('inventory_col_yield').replace('{loss}', lossPercentage.toFixed(1)),
       cardFullWidth: true,
       cell: (i) => {
         const y = roastedYieldOf(i)
