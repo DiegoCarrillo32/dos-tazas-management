@@ -201,6 +201,18 @@ h1, h2, h3, h4, h5, h6 {
   html {
     @apply font-sans;
   }
+  /* iOS Safari sizes native date inputs intrinsically, overflowing their container. */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+    max-width: 100%;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
 }
 /*
  * How far toasts sit from the bottom edge.
