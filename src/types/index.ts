@@ -94,6 +94,13 @@ export type AnalyticsFilters = {
   endDate?: string
   paymentStatus?: PaymentStatus | 'all'
   fulfillmentStatus?: FulfillmentStatus | 'all'
+  /** Inventory item (coffee) sold; 'none' = orders with no coffee assigned. */
+  coffeeId?: string | 'none' | 'all'
+}
+
+export type CoffeeOption = {
+  id: string
+  item_name: string
 }
 
 // One order as the analytics engine sees it: flattened joins, numeric money.
@@ -106,7 +113,10 @@ export type AnalyticsOrderRow = {
   partner_id: string | null
   roast_level: string
   preparation_method: string
-  origin: string | null
+  /** Inventory item (coffee) sold. */
+  coffee: string | null
+  /** Distinct varietals across that coffee's green lots, comma-separated. */
+  varietal: string | null
   amount_grams: number
   bag_count: number
   total_price: number

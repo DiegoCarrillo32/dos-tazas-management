@@ -7,6 +7,7 @@ import type {
   AnalyticsOrderRow,
   AnalyticsHistoryRow,
   AnalyticsRoastingRow,
+  CoffeeOption,
   CostBreakdown,
   FulfillmentStatus,
   PaymentStatus
@@ -17,7 +18,7 @@ const ORDER_COLUMNS = `
   preparation_method, amount_grams, bag_count, total_price, total_cost,
   cost_breakdown, payment_status, fulfillment_status,
   customers ( full_name ),
-  inventory ( item_name )
+  inventory ( item_name, green_coffee_lots ( varietal ) )
 `
 
 const DAY_MS = 86_400_000
@@ -46,6 +47,8 @@ function applyAnalyticsFilters(query: any, filters: AnalyticsFilters) {
   if (filters.endDate) query = query.lt('order_date', addDays(filters.endDate, 1))
   if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
   if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
+  if (filters.coffeeId === 'none') query = query.is('inventory_id', null)
+  else if (filters.coffeeId && filters.coffeeId !== 'all') query = query.eq('inventory_id', filters.coffeeId)
   return query
 }
 
@@ -54,8 +57,18 @@ function one<T>(value: T | T[] | null | undefined): T | null {
   return (Array.isArray(value) ? value[0] : value) ?? null
 }
 
+type InventoryJoin = { item_name: string; green_coffee_lots?: { varietal: string | null }[] | null }
+
+function varietalsOf(inventory: InventoryJoin | null): string | null {
+  const names = new Set(
+    (inventory?.green_coffee_lots ?? []).map((l) => l.varietal?.trim()).filter((v): v is string => Boolean(v))
+  )
+  return names.size ? [...names].sort().join(', ') : null
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toOrderRow(o: any): AnalyticsOrderRow {
+  const inventory = one<InventoryJoin>(o.inventory)
   return {
     id: o.id,
     order_date: o.order_date,
@@ -65,7 +78,8 @@ function toOrderRow(o: any): AnalyticsOrderRow {
     partner_id: o.partner_id ?? null,
     roast_level: o.roast_level,
     preparation_method: o.preparation_method,
-    origin: one<{ item_name: string }>(o.inventory)?.item_name ?? null,
+    coffee: inventory?.item_name ?? null,
+    varietal: varietalsOf(inventory),
     amount_grams: Number(o.amount_grams) || 0,
     bag_count: Number(o.bag_count) || 0,
     total_price: Number(o.total_price) || 0,
@@ -150,4 +164,19 @@ export async function fetchAnalyticsDataset(
   ])
 
   return { filters, orders, previousOrders, history, unpaid, roasting }
+}
+
+/** Green-coffee inventory items, for the analytics coffee filter. */
+export async function fetchCoffeeOptions(): Promise<CoffeeOption[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('inventory')
+    .select('id, item_name')
+    .eq('category', 'green_coffee')
+    .order('item_name', { ascending: true })
+  if (error) {
+    console.error('Error fetching coffee options:', error)
+    return []
+  }
+  return data || []
 }

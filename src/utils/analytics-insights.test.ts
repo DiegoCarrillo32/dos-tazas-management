@@ -27,7 +27,8 @@ function order(overrides: Partial<AnalyticsOrderRow> = {}): AnalyticsOrderRow {
     partner_id: null,
     roast_level: 'Medium',
     preparation_method: 'Whole Bean',
-    origin: 'Tarrazú',
+    coffee: 'Tarrazú',
+    varietal: 'Caturra',
     amount_grams: 500,
     bag_count: 1,
     total_price: 100,
@@ -96,8 +97,8 @@ describe('trend bucketing', () => {
 describe('groupMix', () => {
   it('computes per-group margin and revenue share', () => {
     const mix = groupMix(
-      [order({ origin: 'A', total_price: 300, total_cost: 100 }), order({ origin: 'B', total_price: 100, total_cost: 90 })],
-      (o) => o.origin ?? ''
+      [order({ coffee: 'A', total_price: 300, total_cost: 100 }), order({ coffee: 'B', total_price: 100, total_cost: 90 })],
+      (o) => o.coffee ?? ''
     )
     expect(mix[0]).toMatchObject({ name: 'A', share: 75 })
     expect(mix[0].margin).toBeCloseTo(66.67, 1)
@@ -208,10 +209,10 @@ describe('computeAnalytics insights', () => {
     expect(got).toContain('uncosted')
   })
 
-  it('flags an origin with a margin well below average', () => {
+  it('flags a coffee with a margin well below average', () => {
     const orders = [
-      ...Array.from({ length: 4 }, () => order({ origin: 'Good', total_price: 100, total_cost: 40 })),
-      ...Array.from({ length: 3 }, () => order({ origin: 'Thin', total_price: 100, total_cost: 90 }))
+      ...Array.from({ length: 4 }, () => order({ coffee: 'Good', total_price: 100, total_cost: 40 })),
+      ...Array.from({ length: 3 }, () => order({ coffee: 'Thin', total_price: 100, total_cost: 90 }))
     ]
     const insight = computeAnalytics(dataset({ orders })).insights.find((i) => i.id === 'weak_margin')
     expect(insight?.params.name).toBe('Thin')

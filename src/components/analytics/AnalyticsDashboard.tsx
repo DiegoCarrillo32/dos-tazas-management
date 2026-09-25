@@ -16,6 +16,7 @@ import { SortableStatCard } from '@/components/analytics/SortableStatCard'
 import { RevenueChart } from '@/components/analytics/RevenueChart'
 import { InsightsPanel } from '@/components/analytics/InsightsPanel'
 import { ChannelCard } from '@/components/analytics/ChannelCard'
+import { CoffeesSoldCard } from '@/components/analytics/CoffeesSoldCard'
 import { WeekdayChart } from '@/components/analytics/WeekdayChart'
 import { ProductMix } from '@/components/analytics/ProductMix'
 import { CostStructure } from '@/components/analytics/CostStructure'
@@ -46,6 +47,7 @@ import { computeAnalytics, pctChange } from '@/utils/analytics-insights'
 import type {
   AnalyticsDataset,
   AnalyticsFilters,
+  CoffeeOption,
   FulfillmentStatus,
   PaymentStatus,
   UserSettingsRecord,
@@ -53,6 +55,7 @@ import type {
 
 interface AnalyticsDashboardProps {
   initialDataset: AnalyticsDataset
+  coffeeOptions: CoffeeOption[]
   settings?: UserSettingsRecord
   defaultStartDate?: string
   defaultEndDate?: string
@@ -79,6 +82,7 @@ const TAB_TRIGGER = 'flex-1 min-w-0 rounded-lg data-active:bg-coffee-fruit/10 da
 
 export function AnalyticsDashboard({
   initialDataset,
+  coffeeOptions,
   settings,
   defaultStartDate,
   defaultEndDate
@@ -255,6 +259,7 @@ export function AnalyticsDashboard({
   const [endDate, setEndDate] = useState(defaultEndDate || '')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all')
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentStatus | 'all'>('all')
+  const [coffeeFilter, setCoffeeFilter] = useState<string>('all')
 
   const load = (filters: AnalyticsFilters) => {
     startTransition(async () => {
@@ -267,7 +272,8 @@ export function AnalyticsDashboard({
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       paymentStatus: paymentFilter,
-      fulfillmentStatus: fulfillmentFilter
+      fulfillmentStatus: fulfillmentFilter,
+      coffeeId: coffeeFilter
     })
   }
 
@@ -276,6 +282,7 @@ export function AnalyticsDashboard({
     setEndDate('')
     setPaymentFilter('all')
     setFulfillmentFilter('all')
+    setCoffeeFilter('all')
     load({})
   }
 
@@ -289,7 +296,7 @@ export function AnalyticsDashboard({
 
       {/* Filters */}
       <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-5 shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
           <div className="space-y-1.5 w-full min-w-0">
             <Label className="text-foreground text-xs font-bold">{t('filter_start_date')}</Label>
             <Input
@@ -332,6 +339,29 @@ export function AnalyticsDashboard({
                 <SelectItem value="pending">{t('orders_pending')}</SelectItem>
                 <SelectItem value="roasted">{t('orders_roasted')}</SelectItem>
                 <SelectItem value="delivered">{t('orders_delivered')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 w-full min-w-0">
+            <Label className="text-foreground text-xs font-bold">{t('filter_coffee')}</Label>
+            <Select
+              value={coffeeFilter}
+              onValueChange={(val) => setCoffeeFilter(String(val || 'all'))}
+              items={[
+                { value: 'all', label: t('filter_all') },
+                ...coffeeOptions.map((c) => ({ value: c.id, label: c.item_name })),
+                { value: 'none', label: t('analytics_coffee_none') },
+              ]}
+            >
+              <SelectTrigger className="h-10 border-border focus:ring-coffee-fruit text-sm w-full bg-background focus:bg-background transition-colors">
+                <SelectValue placeholder={t('filter_all')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('filter_all')}</SelectItem>
+                {coffeeOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.item_name}</SelectItem>
+                ))}
+                <SelectItem value="none">{t('analytics_coffee_none')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -420,9 +450,10 @@ export function AnalyticsDashboard({
           <InsightsPanel insights={report.insights} format={format} />
           <RevenueChart data={report.trend} granularity={report.granularity} format={format} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CoffeesSoldCard coffees={report.mix.coffee} format={format} />
             <ChannelCard channel={report.channel} format={format} />
-            <WeekdayChart data={report.weekdays} format={format} />
           </div>
+          <WeekdayChart data={report.weekdays} format={format} />
         </TabsContent>
 
         <TabsContent value="products" className="space-y-6">

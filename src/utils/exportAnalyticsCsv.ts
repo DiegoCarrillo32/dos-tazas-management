@@ -35,7 +35,8 @@ function orderRows(orders: AnalyticsOrderRow[]): Cell[][] {
       o.customer_name,
       o.company_name,
       o.partner_id || o.company_name ? 'b2b' : 'retail',
-      o.origin,
+      o.coffee,
+      o.varietal,
       o.roast_level,
       o.preparation_method,
       o.amount_grams,
@@ -61,7 +62,7 @@ export function buildCsv(kind: CsvExportKind, dataset: AnalyticsDataset, report:
     case 'orders':
       return toCsv(
         [
-          'order_id', 'order_date', 'customer', 'company', 'channel', 'origin', 'roast_level',
+          'order_id', 'order_date', 'customer', 'company', 'channel', 'coffee', 'varietal', 'roast_level',
           'preparation_method', 'grams', 'bags', 'revenue', 'cost', 'profit', 'margin_pct',
           'cost_coffee', 'cost_bag', 'cost_sticker', 'cost_electricity', 'cost_fuel', 'cost_labor',
           'payment_status', 'fulfillment_status'
@@ -82,10 +83,10 @@ export function buildCsv(kind: CsvExportKind, dataset: AnalyticsDataset, report:
       )
     case 'products':
       return toCsv(
-        ['dimension', 'name', 'orders', 'grams', 'revenue', 'cost', 'profit', 'margin_pct', 'revenue_share_pct'],
-        (['origin', 'roast', 'prep'] as const).flatMap((dimension) =>
+        ['dimension', 'name', 'varietal', 'orders', 'grams', 'revenue', 'cost', 'profit', 'margin_pct', 'revenue_share_pct'],
+        (['coffee', 'roast', 'prep'] as const).flatMap((dimension) =>
           report.mix[dimension].map((m) => [
-            dimension, m.name, m.orders, m.grams, m.revenue, m.cost, m.profit, m.margin, m.share
+            dimension, m.name, m.detail, m.orders, m.grams, m.revenue, m.cost, m.profit, m.margin, m.share
           ])
         )
       )

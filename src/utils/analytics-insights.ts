@@ -52,6 +52,8 @@ export type MixRow = {
   orders: number
   /** Share of total revenue, 0–100. */
   share: number
+  /** Extra descriptor, e.g. a coffee's varietals. */
+  detail?: string | null
 }
 
 export type CustomerStat = {
@@ -99,7 +101,7 @@ export type AnalyticsReport = {
   previousKpis: KpiSet | null
   granularity: Granularity
   trend: TrendPoint[]
-  mix: { roast: MixRow[]; prep: MixRow[]; origin: MixRow[] }
+  mix: { roast: MixRow[]; prep: MixRow[]; coffee: MixRow[] }
   channel: { retail: MixRow; b2b: MixRow; partners: MixRow[]; previousB2bShare: number | null }
   customers: {
     all: CustomerStat[]
@@ -456,7 +458,7 @@ export function buildInsights(report: Omit<AnalyticsReport, 'insights'>): Insigh
     }
   }
 
-  const products = mix.origin.some((m) => m.name) ? mix.origin : mix.roast
+  const products = mix.coffee.some((m) => m.name) ? mix.coffee : mix.roast
   const best = products.find((m) => m.name)
   if (best && kpis.orders >= MIN_ORDERS_FOR_PATTERNS) {
     insights.push({ id: 'best_seller', tone: 'neutral', params: { name: best.name, pct: best.share } })
@@ -539,6 +541,11 @@ export function buildInsights(report: Omit<AnalyticsReport, 'insights'>): Insigh
   return insights
 }
 
+function withVarietals(rows: MixRow[], orders: AnalyticsOrderRow[]): MixRow[] {
+  const varietals = new Map(orders.map((o) => [o.coffee ?? '', o.varietal]))
+  return rows.map((r) => ({ ...r, detail: varietals.get(r.name) ?? null }))
+}
+
 // ------------------------------------------------------------
 // Entry point
 // ------------------------------------------------------------
@@ -570,7 +577,7 @@ export function computeAnalytics(dataset: AnalyticsDataset, now: Date = new Date
     mix: {
       roast: groupMix(orders, (o) => o.roast_level),
       prep: groupMix(orders, (o) => o.preparation_method),
-      origin: groupMix(orders, (o) => o.origin ?? '')
+      coffee: withVarietals(groupMix(orders, (o) => o.coffee ?? ''), orders)
     },
     channel: {
       retail,

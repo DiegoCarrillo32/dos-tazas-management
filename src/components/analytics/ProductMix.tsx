@@ -11,7 +11,7 @@ type Dimension = keyof AnalyticsReport['mix']
 
 export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; format: AnalyticsFormat }) {
   const { t, money, pct, kg, number, label } = format
-  const [dimension, setDimension] = useState<Dimension>('origin')
+  const [dimension, setDimension] = useState<Dimension>('coffee')
   const avgMargin = (() => {
     const rows = mix[dimension]
     const revenue = rows.reduce((s, r) => s + r.revenue, 0)
@@ -19,7 +19,16 @@ export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; forma
   })()
 
   const columns: Column<MixRow>[] = [
-    { key: 'name', header: t(`analytics_dim_${dimension}`), cell: (r) => <span className="font-bold text-expresso">{label(r.name)}</span> },
+    {
+      key: 'name',
+      header: t(`analytics_dim_${dimension}`),
+      cell: (r) => (
+        <div className="min-w-0">
+          <p className="font-bold text-expresso">{label(r.name)}</p>
+          {r.detail && <p className="text-xs text-expresso/50">{r.detail}</p>}
+        </div>
+      )
+    },
     { key: 'orders', header: t('analytics_orders'), align: 'right', className: 'hidden sm:table-cell', cell: (r) => number(r.orders) },
     { key: 'kg', header: 'kg', align: 'right', className: 'hidden md:table-cell', cell: (r) => kg(r.grams) },
     { key: 'revenue', header: t('analytics_revenue'), align: 'right', cell: (r) => money(r.revenue) },
@@ -62,7 +71,7 @@ export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; forma
           size="sm"
           value={dimension}
           onValueChange={(v) => setDimension(v as Dimension)}
-          options={(['origin', 'roast', 'prep'] as const).map((d) => ({ value: d, label: t(`analytics_dim_${d}`) }))}
+          options={(['coffee', 'roast', 'prep'] as const).map((d) => ({ value: d, label: t(`analytics_dim_${d}`) }))}
         />
       </CardHeader>
       <CardContent className="pb-5">
