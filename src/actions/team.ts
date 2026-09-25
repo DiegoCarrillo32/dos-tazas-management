@@ -3,6 +3,14 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { TeamMemberRecord, TeamMemberUpdateParams } from '@/types'
+import { z } from 'zod'
+
+// Fields a roaster may change on a team member (never worker_user_id).
+const teamMemberUpdate = z.object({
+  name: z.string().trim().max(100),
+  hourly_rate: z.number().min(0),
+  status: z.enum(['pending', 'active']),
+}).partial()
 
 /**
  * Generate a new invite code for a team member (worker).
@@ -47,44 +55,9 @@ export async function acceptTeamInvite(inviteCode: string) {
     throw new Error('Not authenticated')
   }
 
-  const { data: teamData, error: teamError } = await supabase
-    .from('team_members')
-    .select('id, status, roaster_user_id')
-    .eq('invite_code', inviteCode)
-    .single()
-
-  if (teamError || !teamData) {
-    throw new Error('Invalid invite code.')
-  }
-
-  if (teamData.status !== 'pending') {
-    throw new Error('Invite code has already been used or revoked.')
-  }
-
-  // Update team_members
-  const { error: updateError } = await supabase
-    .from('team_members')
-    .update({
-      worker_user_id: userData.user.id,
-      status: 'active',
-    })
-    .eq('id', teamData.id)
-
-  if (updateError) {
-    throw new Error(`Failed to accept invite: ${updateError.message}`)
-  }
-
-  // Update user profile
-  const { error: profileError } = await supabase
-    .from('user_profiles')
-    .upsert({
-      user_id: userData.user.id,
-      role: 'worker',
-      linked_to: teamData.roaster_user_id,
-    }, { onConflict: 'user_id' })
-
-  if (profileError) {
-    throw new Error(`Failed to update profile: ${profileError.message}`)
+  const { error } = await supabase.rpc('claim_invite', { p_code: inviteCode })
+  if (error) {
+    throw new Error(error.message)
   }
 
   revalidatePath('/')
@@ -150,9 +123,14 @@ export async function updateTeamMember(memberId: string, updates: TeamMemberUpda
     throw new Error('Not authenticated')
   }
 
+  const parsed = teamMemberUpdate.safeParse(updates)
+  if (!parsed.success) {
+    throw new Error(`Invalid team member update: ${parsed.error.issues[0]?.message}`)
+  }
+
   const { error } = await supabase
     .from('team_members')
-    .update(updates)
+    .update(parsed.data)
     .eq('id', memberId)
     .eq('roaster_user_id', userData.user.id) // Ensure ownership
 
@@ -198,10 +176,7 @@ export async function updateMyWorkerName(name: string) {
     throw new Error('Not authenticated')
   }
 
-  const { error } = await supabase
-    .from('team_members')
-    .update({ name })
-    .eq('worker_user_id', userData.user.id)
+  const { error } = await supabase.rpc('update_my_worker_name', { p_name: name })
 
   if (error) {
     throw new Error(`Failed to update name: ${error.message}`)

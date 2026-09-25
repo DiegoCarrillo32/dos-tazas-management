@@ -40,6 +40,10 @@ export async function setPartnerPricing(
     throw new Error('Not authenticated')
   }
 
+  if (!Number.isFinite(pricePerKg) || pricePerKg <= 0) {
+    throw new Error('Price per kg must be greater than zero.')
+  }
+
   const { data, error } = await supabase
     .from('b2b_pricing')
     .upsert(
@@ -57,14 +61,14 @@ export async function setPartnerPricing(
     throw new Error(`Failed to set pricing: ${error.message}`)
   }
 
-  revalidatePath(`/dashboard/partners/${partnerId}`)
+  revalidatePath('/b2b')
   return data as B2BPricingRecord
 }
 
 /**
  * Delete custom pricing for a specific partner and inventory item.
  */
-export async function deletePartnerPricing(pricingId: string, partnerId: string) {
+export async function deletePartnerPricing(pricingId: string) {
   const supabase = await createClient()
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError || !userData.user) {
@@ -80,6 +84,6 @@ export async function deletePartnerPricing(pricingId: string, partnerId: string)
     throw new Error(`Failed to delete pricing: ${error.message}`)
   }
 
-  revalidatePath(`/dashboard/partners/${partnerId}`)
+  revalidatePath('/b2b')
   return true
 }

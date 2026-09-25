@@ -36,7 +36,8 @@ export async function GET() {
       .from('b2b_partners')
       .select('*')
       .eq('partner_user_id', userData.user.id)
-      .single()
+      .limit(1)
+      .maybeSingle()
 
     if (roasterError) {
       return NextResponse.json({ error: roasterError.message }, { status: 500 })

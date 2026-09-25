@@ -1,113 +1,90 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import type { FulfillmentStatus, PaymentStatus, OrderWithCustomer } from '@/types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { authActionClient } from '@/lib/safe-action'
 import { orderSchema } from '@/lib/schemas'
 import { B2B_AUTO_CUSTOMER_ID, findOrCreateB2BCustomer } from '@/utils/b2bCustomer'
+import { calculateOrderCosts, calculateRawGrams, roastLossPercentage } from '@/utils/calculations'
+import { fetchSettings } from './settings'
 import * as z from 'zod'
 
-export async function fetchOrders(): Promise<OrderWithCustomer[]> {
-  const supabase = await createClient()
+/**
+ * Atomically add `delta` grams to an inventory item (negative to deduct).
+ * Returns the new stock level; throws if the update fails.
+ */
+async function adjustStock(supabase: SupabaseClient, inventoryId: string, delta: number): Promise<number> {
+  const { data, error } = await supabase.rpc('adjust_stock', {
+    p_inventory_id: inventoryId,
+    p_delta: Math.round(delta),
+  })
+  if (error) throw new Error(`Failed to update inventory: ${error.message}`)
+  return data as number
+}
 
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      customers (
-        full_name,
-        phone
-      ),
-      inventory (
-        item_name
-      )
-    `)
-    .or('fulfillment_status.neq.delivered,payment_status.neq.paid')
-    .order('order_date', { ascending: false })
+/**
+ * The B2B form submits a sentinel instead of a customer id: resolve it from
+ * the linked partner, or from the typed company name when the order is a
+ * manual (unlinked) B2B entry.
+ */
+async function resolveB2BCustomer(
+  supabase: SupabaseClient,
+  userId: string,
+  { company_name, partner_id }: { company_name?: string | null; partner_id?: string | null }
+): Promise<string> {
+  let companyName = company_name?.trim() || ''
+  let contactPhone: string | null = null
 
-  if (error) {
-    console.error('Error fetching orders:', error)
-    return []
+  if (partner_id) {
+    const { data: partner, error: partnerError } = await supabase
+      .from('b2b_partners')
+      .select('company_name, contact_phone')
+      .eq('id', partner_id)
+      .single()
+
+    if (partnerError || !partner) {
+      throw new Error('The selected partner could not be found.')
+    }
+
+    companyName = partner.company_name
+    contactPhone = partner.contact_phone
   }
 
-  return (orders || []).map(order => ({
-    ...order,
-    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers,
-    inventory: Array.isArray(order.inventory) ? order.inventory[0] : order.inventory
-  })) as OrderWithCustomer[]
+  if (!companyName) {
+    throw new Error(
+      'Could not resolve a customer for this B2B order — select a partner or enter a company name.'
+    )
+  }
+
+  return findOrCreateB2BCustomer(supabase, { userId, companyName, phone: contactPhone })
 }
+
+const orderId = z.string().uuid()
 
 export const createOrder = authActionClient
   .schema(orderSchema)
   .action(async ({ parsedInput: params, ctx: { user, supabase } }) => {
 
-  // Handle B2B auto customer resolution. The form submits a sentinel instead of
-  // a customer id: resolve it from the linked partner, or from the typed
-  // company name when the order is a manual (unlinked) B2B entry.
-  let customerId = params.customer_id
-  if (customerId === B2B_AUTO_CUSTOMER_ID) {
-    let companyName = params.company_name?.trim() || ''
-    let contactPhone: string | null = null
+  const customerId = params.customer_id === B2B_AUTO_CUSTOMER_ID
+    ? await resolveB2BCustomer(supabase, user.id, params)
+    : params.customer_id
 
-    if (params.partner_id) {
-      const { data: partner, error: partnerError } = await supabase
-        .from('b2b_partners')
-        .select('company_name, contact_phone')
-        .eq('id', params.partner_id)
-        .single()
-
-      if (partnerError || !partner) {
-        throw new Error('The selected partner could not be found.')
-      }
-
-      companyName = partner.company_name
-      contactPhone = partner.contact_phone
-    }
-
-    if (!companyName) {
-      throw new Error(
-        'Could not resolve a customer for this B2B order — select a partner or enter a company name.'
-      )
-    }
-
-    customerId = await findOrCreateB2BCustomer(supabase, {
-      userId: user.id,
-      companyName,
-      phone: contactPhone,
-    })
-  }
-
-  // Fetch settings for roasting loss and cost rates
-  const { fetchSettings } = await import('./settings')
   const settings = await fetchSettings()
   const bagCount = params.bag_count ?? 1
 
-  // Compute cost breakdown
   let costPerKg: number | null = null
-  let rawGramsUsed = 0
+  let rawGramsUsed: number | null = null
 
   if (params.inventory_id && params.amount_grams) {
     const { data: invItem } = await supabase
       .from('inventory')
-      .select('stock_grams, cost_per_kg')
+      .select('cost_per_kg')
       .eq('id', params.inventory_id)
       .single()
 
     if (invItem) {
       costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
-      const { calculateRawGrams, roastLossPercentage } = await import('@/utils/calculations')
-      rawGramsUsed = calculateRawGrams(params.amount_grams, roastLossPercentage(settings))
-
-      // Deduct from inventory
-      const newStock = invItem.stock_grams - rawGramsUsed
-      if (newStock < 0) {
-        console.warn(`[Inventory Warning] Stock for item ${params.inventory_id} will go negative: ${newStock}g remaining after this order.`)
-      }
-      await supabase
-        .from('inventory')
-        .update({ stock_grams: newStock })
-        .eq('id', params.inventory_id)
+      rawGramsUsed = Math.round(calculateRawGrams(params.amount_grams, roastLossPercentage(settings)))
     }
   }
 
@@ -121,7 +98,6 @@ export const createOrder = authActionClient
     if (bagType) bagUnitCost = Number(bagType.cost)
   }
 
-  const { calculateOrderCosts } = await import('@/utils/calculations')
   const { costBreakdown, totalCost } = calculateOrderCosts({
     amountGrams: params.amount_grams ?? 0,
     bagCount,
@@ -140,7 +116,8 @@ export const createOrder = authActionClient
       fulfillment_status: 'pending',
       payment_status: 'pending',
       total_cost: totalCost,
-      cost_breakdown: costBreakdown
+      cost_breakdown: costBreakdown,
+      raw_grams_used: rawGramsUsed,
     }])
     .select()
     .single()
@@ -150,12 +127,23 @@ export const createOrder = authActionClient
     throw new Error(error.message)
   }
 
+  // Deduct stock only once the order exists; undo the order if that fails.
+  let stockAfter: number | null = null
+  if (params.inventory_id && rawGramsUsed) {
+    try {
+      stockAfter = await adjustStock(supabase, params.inventory_id, -rawGramsUsed)
+    } catch (err) {
+      await supabase.from('orders').delete().eq('id', data.id)
+      throw err
+    }
+  }
+
   revalidatePath('/', 'layout')
-  return data
+  return { ...data, stock_went_negative: stockAfter !== null && stockAfter < 0 }
 })
 
 export const updateFulfillmentStatus = authActionClient
-  .schema(z.object({ id: z.string(), status: z.custom<FulfillmentStatus>() }))
+  .schema(z.object({ id: orderId, status: z.enum(['pending', 'roasted', 'delivered']) }))
   .action(async ({ parsedInput: { id: orderId, status }, ctx: { supabase } }) => {
 
   const { data, error } = await supabase
@@ -175,7 +163,7 @@ export const updateFulfillmentStatus = authActionClient
 })
 
 export const updatePaymentStatus = authActionClient
-  .schema(z.object({ id: z.string(), status: z.custom<PaymentStatus>() }))
+  .schema(z.object({ id: orderId, status: z.enum(['pending', 'paid']) }))
   .action(async ({ parsedInput: { id: orderId, status }, ctx: { supabase } }) => {
 
   const { data, error } = await supabase
@@ -194,45 +182,14 @@ export const updatePaymentStatus = authActionClient
   return data
 })
 
-export async function fetchCompletedOrders(): Promise<OrderWithCustomer[]> {
-  const supabase = await createClient()
-
-  const { data: orders, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      customers (
-        full_name,
-        phone
-      ),
-      inventory (
-        item_name
-      )
-    `)
-    .eq('fulfillment_status', 'delivered')
-    .eq('payment_status', 'paid')
-    .order('order_date', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching completed orders:', error)
-    return []
-  }
-
-  return (orders || []).map(order => ({
-    ...order,
-    customers: Array.isArray(order.customers) ? order.customers[0] : order.customers,
-    inventory: Array.isArray(order.inventory) ? order.inventory[0] : order.inventory
-  })) as OrderWithCustomer[]
-}
-
 export const updateOrder = authActionClient
-  .schema(z.object({ id: z.string(), params: orderSchema.partial() }))
-  .action(async ({ parsedInput: { id: orderId, params }, ctx: { supabase } }) => {
+  .schema(z.object({ id: orderId, params: orderSchema.partial() }))
+  .action(async ({ parsedInput: { id: orderId, params }, ctx: { user, supabase } }) => {
 
   // 1. Fetch original order details to reconcile inventory
   const { data: oldOrder, error: fetchError } = await supabase
     .from('orders')
-    .select('inventory_id, amount_grams, bag_count, bag_type_id')
+    .select('inventory_id, amount_grams, bag_count, bag_type_id, raw_grams_used')
     .eq('id', orderId)
     .single()
 
@@ -241,102 +198,47 @@ export const updateOrder = authActionClient
     throw new Error('Failed to retrieve original order details for inventory reconciliation.')
   }
 
-  // Fetch settings for roasting loss and cost rates
-  const { fetchSettings } = await import('./settings')
-  const settings = await fetchSettings()
+  if (params.customer_id === B2B_AUTO_CUSTOMER_ID) {
+    params.customer_id = await resolveB2BCustomer(supabase, user.id, params)
+  }
 
-  // 2. Reconcile inventory if inventory_id or amount_grams is updated
+  const settings = await fetchSettings()
+  const lossPercentage = roastLossPercentage(settings)
+
+  const finalInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
+  const finalAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
+
+  // 2. Reconcile inventory: give back what this order actually consumed (older
+  // rows predate raw_grams_used, so fall back to recomputing), then take the
+  // new amount.
   const inventoryChanged = params.inventory_id !== undefined || params.amount_grams !== undefined
+  const oldRawGrams = oldOrder.inventory_id && oldOrder.amount_grams
+    ? (oldOrder.raw_grams_used ?? Math.round(calculateRawGrams(oldOrder.amount_grams, lossPercentage)))
+    : 0
+  let newRawGrams = oldOrder.raw_grams_used ?? null
 
   if (inventoryChanged) {
-    try {
-      const newInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
-      const newAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
-      const sameBean = newInventoryId === oldOrder.inventory_id
+    newRawGrams = finalInventoryId && finalAmountGrams
+      ? Math.round(calculateRawGrams(finalAmountGrams, lossPercentage))
+      : null
 
-      const { calculateRawGrams, roastLossPercentage } = await import('@/utils/calculations')
-      const lossPercentage = roastLossPercentage(settings)
-
-      if (sameBean && oldOrder.inventory_id && oldOrder.amount_grams && newAmountGrams) {
-        // Optimized path: same bean — compute diff and do a single SELECT + UPDATE
-        const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, lossPercentage)
-        const newRawGrams = calculateRawGrams(newAmountGrams, lossPercentage)
-        const diffGrams = newRawGrams - oldRawGrams
-
-        if (diffGrams !== 0) {
-          const { data: invItem } = await supabase
-            .from('inventory')
-            .select('stock_grams')
-            .eq('id', oldOrder.inventory_id)
-            .single()
-
-          if (invItem) {
-            const updatedStock = invItem.stock_grams - diffGrams
-            if (updatedStock < 0) {
-              console.warn(`[Inventory Warning] Stock for item ${oldOrder.inventory_id} will go negative: ${updatedStock}g remaining after this order update.`)
-            }
-            await supabase
-              .from('inventory')
-              .update({ stock_grams: updatedStock })
-              .eq('id', oldOrder.inventory_id)
-          }
-        }
-      } else {
-        // Different bean — revert old deduction, then apply new deduction
-        // Step A: Revert old inventory deduction
-        if (oldOrder.inventory_id && oldOrder.amount_grams) {
-          const { data: oldInvItem } = await supabase
-            .from('inventory')
-            .select('stock_grams')
-            .eq('id', oldOrder.inventory_id)
-            .single()
-
-          if (oldInvItem) {
-            const oldRawGrams = calculateRawGrams(oldOrder.amount_grams, lossPercentage)
-            await supabase
-              .from('inventory')
-              .update({ stock_grams: oldInvItem.stock_grams + oldRawGrams })
-              .eq('id', oldOrder.inventory_id)
-          }
-        }
-
-        // Step B: Apply new inventory deduction
-        if (newInventoryId && newAmountGrams) {
-          const { data: newInvItem } = await supabase
-            .from('inventory')
-            .select('stock_grams')
-            .eq('id', newInventoryId)
-            .single()
-
-          if (newInvItem) {
-            const newRawGrams = calculateRawGrams(newAmountGrams, lossPercentage)
-            const updatedStock = newInvItem.stock_grams - newRawGrams
-            if (updatedStock < 0) {
-              console.warn(`[Inventory Warning] Stock for item ${newInventoryId} will go negative: ${updatedStock}g remaining after this order update.`)
-            }
-            await supabase
-              .from('inventory')
-              .update({ stock_grams: updatedStock })
-              .eq('id', newInventoryId)
-          }
-        }
-      }
-    } catch (invErr) {
-      console.error('Failed to reconcile inventory after order update:', invErr)
+    if (finalInventoryId === oldOrder.inventory_id) {
+      const diff = (newRawGrams ?? 0) - oldRawGrams
+      if (finalInventoryId && diff !== 0) await adjustStock(supabase, finalInventoryId, -diff)
+    } else {
+      if (oldOrder.inventory_id && oldRawGrams) await adjustStock(supabase, oldOrder.inventory_id, oldRawGrams)
+      if (finalInventoryId && newRawGrams) await adjustStock(supabase, finalInventoryId, -newRawGrams)
     }
   }
 
   // 3. Recompute cost breakdown if cost-relevant fields changed
-  const costRelevantChange = params.inventory_id !== undefined ||
-    params.amount_grams !== undefined ||
+  const costRelevantChange = inventoryChanged ||
     params.bag_count !== undefined ||
     params.bag_type_id !== undefined
 
   let costUpdate: Record<string, unknown> = {}
 
   if (costRelevantChange) {
-    const finalInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
-    const finalAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
     const finalBagCount = params.bag_count !== undefined ? params.bag_count : (oldOrder.bag_count ?? 1)
     const finalBagTypeId = params.bag_type_id !== undefined ? params.bag_type_id : oldOrder.bag_type_id
 
@@ -363,16 +265,15 @@ export const updateOrder = authActionClient
       if (bagType) bagUnitCost = Number(bagType.cost)
     }
 
-    const { calculateOrderCosts } = await import('@/utils/calculations')
     const { costBreakdown, totalCost } = calculateOrderCosts({
       amountGrams: finalAmountGrams ?? 0,
-      bagCount: finalBagCount,
+      bagCount: finalBagCount ?? 1,
       settings,
       costPerKg,
       bagUnitCost
     })
 
-    costUpdate = { total_cost: totalCost, cost_breakdown: costBreakdown }
+    costUpdate = { total_cost: totalCost, cost_breakdown: costBreakdown, raw_grams_used: newRawGrams }
   }
 
   // 4. Perform database update
@@ -393,13 +294,12 @@ export const updateOrder = authActionClient
 })
 
 export const deleteOrder = authActionClient
-  .schema(z.object({ id: z.string() }))
+  .schema(z.object({ id: orderId }))
   .action(async ({ parsedInput: { id: orderId }, ctx: { supabase } }) => {
 
-  // 1. Fetch original order details to reconcile inventory
   const { data: oldOrder, error: fetchError } = await supabase
     .from('orders')
-    .select('inventory_id, amount_grams')
+    .select('inventory_id, amount_grams, raw_grams_used')
     .eq('id', orderId)
     .single()
 
@@ -408,32 +308,6 @@ export const deleteOrder = authActionClient
     throw new Error('Failed to retrieve order details for deletion.')
   }
 
-  // 2. Revert inventory deduction if applicable
-  if (oldOrder.inventory_id && oldOrder.amount_grams) {
-    try {
-      const { fetchSettings } = await import('./settings')
-      const settings = await fetchSettings()
-      const { calculateRawGrams, roastLossPercentage } = await import('@/utils/calculations')
-
-      const { data: invItem } = await supabase
-        .from('inventory')
-        .select('stock_grams')
-        .eq('id', oldOrder.inventory_id)
-        .single()
-
-      if (invItem) {
-        const rawGrams = calculateRawGrams(oldOrder.amount_grams, roastLossPercentage(settings))
-        await supabase
-          .from('inventory')
-          .update({ stock_grams: invItem.stock_grams + rawGrams })
-          .eq('id', oldOrder.inventory_id)
-      }
-    } catch (invErr) {
-      console.error('Failed to restore inventory during order deletion:', invErr)
-    }
-  }
-
-  // 3. Delete order
   const { error } = await supabase
     .from('orders')
     .delete()
@@ -442,6 +316,13 @@ export const deleteOrder = authActionClient
   if (error) {
     console.error('Error deleting order:', error)
     throw new Error(error.message)
+  }
+
+  // Give back the coffee this order consumed.
+  if (oldOrder.inventory_id && oldOrder.amount_grams) {
+    const rawGrams = oldOrder.raw_grams_used ??
+      Math.round(calculateRawGrams(oldOrder.amount_grams, roastLossPercentage(await fetchSettings())))
+    await adjustStock(supabase, oldOrder.inventory_id, rawGrams)
   }
 
   revalidatePath('/', 'layout')

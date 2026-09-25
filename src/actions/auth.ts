@@ -39,40 +39,10 @@ export async function signup(formData: FormData) {
 
   const supabase = await createClient()
 
-  // Find partner or worker invite if code is provided
-  let linkedToId: string | null = null
-  let recordId: string | null = null
-  let roleToAssign: 'partner' | 'worker' | null = null
-
   if (inviteCode) {
-    // Check B2B partners first
-    const { data: partnerData } = await supabase
-      .from('b2b_partners')
-      .select('id, roaster_user_id')
-      .eq('invite_code', inviteCode)
-      .eq('status', 'pending')
-      .single()
-
-    if (partnerData) {
-      linkedToId = partnerData.roaster_user_id
-      recordId = partnerData.id
-      roleToAssign = 'partner'
-    } else {
-      // Check team members if not a partner
-      const { data: teamData } = await supabase
-        .from('team_members')
-        .select('id, roaster_user_id')
-        .eq('invite_code', inviteCode)
-        .eq('status', 'pending')
-        .single()
-        
-      if (teamData) {
-        linkedToId = teamData.roaster_user_id
-        recordId = teamData.id
-        roleToAssign = 'worker'
-      } else {
-        return { error: 'Invalid or expired invite code.' }
-      }
+    const { data: invite } = await supabase.rpc('get_invite', { p_code: inviteCode }).maybeSingle()
+    if (!invite) {
+      return { error: 'Invalid or expired invite code.' }
     }
   }
 
@@ -102,30 +72,9 @@ export async function signup(formData: FormData) {
       })
     }
 
-    if (inviteCode && linkedToId && recordId && roleToAssign) {
-      // Create user profile
-      const { error: profileErr } = await dbClient.from('user_profiles').insert({
-        user_id: user.id,
-        role: roleToAssign,
-        linked_to: linkedToId,
-      })
-      if (profileErr) console.error("Profile creation error:", profileErr)
-
-      if (roleToAssign === 'partner') {
-        // Update partner row
-        const { error: partnerErr } = await dbClient.from('b2b_partners').update({
-          partner_user_id: user.id,
-          status: 'active',
-        }).eq('id', recordId)
-        if (partnerErr) console.error("Partner update error:", partnerErr)
-      } else if (roleToAssign === 'worker') {
-        // Update team member row
-        const { error: teamErr } = await dbClient.from('team_members').update({
-          worker_user_id: user.id,
-          status: 'active',
-        }).eq('id', recordId)
-        if (teamErr) console.error("Team member update error:", teamErr)
-      }
+    if (inviteCode) {
+      const { error: claimErr } = await dbClient.rpc('claim_invite', { p_code: inviteCode })
+      if (claimErr) console.error("Invite claim error:", claimErr)
     } else {
       // Create roaster profile
       const { error: profileErr } = await dbClient.from('user_profiles').insert({

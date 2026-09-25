@@ -89,9 +89,9 @@ export async function createRoastingOrder(input: RoastingOrderInput): Promise<Ro
 }
 
 /**
- * Cancel a pending roasting order. RLS ensures the partner can only touch
- * their own; we additionally guard the status so accepted/completed orders
- * cannot be retroactively cancelled.
+ * Cancel a pending roasting order. Partners have no UPDATE policy on
+ * roasting_orders, so this goes through an RPC that only allows the
+ * pending -> cancelled transition on the caller's own orders.
  */
 export async function cancelRoastingOrder(id: string): Promise<RoastingOrderRecord> {
   const supabase = await createClient()
@@ -100,13 +100,7 @@ export async function cancelRoastingOrder(id: string): Promise<RoastingOrderReco
     throw new Error('Not authenticated')
   }
 
-  const { data, error } = await supabase
-    .from('roasting_orders')
-    .update({ status: 'cancelled' })
-    .eq('id', id)
-    .eq('status', 'pending')
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('cancel_roasting_order', { p_id: id })
 
   if (error) {
     throw new Error(`Failed to cancel roasting order: ${error.message}`)

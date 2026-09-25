@@ -46,7 +46,7 @@ export async function generateInvite(
     throw new Error(`Failed to generate invite: ${error.message}`)
   }
 
-  revalidatePath('/dashboard/partners')
+  revalidatePath('/b2b')
   return data as B2BPartnerRecord
 }
 
@@ -61,44 +61,9 @@ export async function acceptInvite(inviteCode: string) {
     throw new Error('Not authenticated')
   }
 
-  const { data: partnerData, error: partnerError } = await supabase
-    .from('b2b_partners')
-    .select('id, status, roaster_user_id')
-    .eq('invite_code', inviteCode)
-    .single()
-
-  if (partnerError || !partnerData) {
-    throw new Error('Invalid invite code.')
-  }
-
-  if (partnerData.status !== 'pending') {
-    throw new Error('Invite code has already been used or revoked.')
-  }
-
-  // Update b2b_partners
-  const { error: updateError } = await supabase
-    .from('b2b_partners')
-    .update({
-      partner_user_id: userData.user.id,
-      status: 'active',
-    })
-    .eq('id', partnerData.id)
-
-  if (updateError) {
-    throw new Error(`Failed to accept invite: ${updateError.message}`)
-  }
-
-  // Update user profile
-  const { error: profileError } = await supabase
-    .from('user_profiles')
-    .upsert({
-      user_id: userData.user.id,
-      role: 'partner',
-      linked_to: partnerData.roaster_user_id,
-    }, { onConflict: 'user_id' })
-
-  if (profileError) {
-    throw new Error(`Failed to update profile: ${profileError.message}`)
+  const { error } = await supabase.rpc('claim_invite', { p_code: inviteCode })
+  if (error) {
+    throw new Error(error.message)
   }
 
   revalidatePath('/')
@@ -125,7 +90,7 @@ export async function revokePartner(partnerId: string) {
     throw new Error(`Failed to revoke partner: ${error.message}`)
   }
 
-  revalidatePath('/dashboard/partners')
+  revalidatePath('/b2b')
   return true
 }
 
@@ -144,12 +109,13 @@ export async function restorePartner(partnerId: string) {
     .update({ status: 'active' })
     .eq('id', partnerId)
     .eq('roaster_user_id', userData.user.id) // Ensure ownership
+    .eq('status', 'revoked') // Never activate an unclaimed invite
 
   if (error) {
     throw new Error(`Failed to restore partner: ${error.message}`)
   }
 
-  revalidatePath('/dashboard/partners')
+  revalidatePath('/b2b')
   return true
 }
 
@@ -173,7 +139,7 @@ export async function deletePartner(partnerId: string) {
     throw new Error(`Failed to delete partner: ${error.message}`)
   }
 
-  revalidatePath('/dashboard/partners')
+  revalidatePath('/b2b')
   return true
 }
 
@@ -214,15 +180,12 @@ export async function getMyRoaster() {
     .from('b2b_partners')
     .select('*')
     .eq('partner_user_id', userData.user.id)
-    .single()
+    .limit(1)
+    .maybeSingle()
 
   if (error) {
-    // If not found, return null instead of throwing error
-    if (error.code === 'PGRST116') {
-        return null
-    }
     throw new Error(`Failed to fetch roaster connection: ${error.message}`)
   }
 
-  return data as B2BPartnerRecord
+  return data as B2BPartnerRecord | null
 }

@@ -6,6 +6,30 @@ import { B2BRecurringOrderRecord, B2BRecurringOrderInsertParams, B2BRecurringOrd
 import { findOrCreateB2BCustomer } from '@/utils/b2bCustomer'
 import { calculateOrderCosts, calculateRawGrams, roastLossPercentage } from '@/utils/calculations'
 import { fetchSettings } from '@/actions/settings'
+import { z } from 'zod'
+
+const recurringFields = z.object({
+  partner_id: z.string().uuid(),
+  inventory_id: z.string().uuid().nullable(),
+  preparation_method: z.string().min(1),
+  roast_level: z.string().min(1),
+  amount_grams: z.number().int().positive(),
+  bag_count: z.number().int().positive(),
+  bag_type_id: z.string().uuid().nullable(),
+  frequency: z.enum(['weekly', 'biweekly', 'monthly']),
+  day_of_week: z.number().int().min(0).max(6),
+  is_active: z.boolean(),
+})
+// partner_id is fixed once created.
+const recurringUpdate = recurringFields.omit({ partner_id: true }).partial()
+
+function parseOrThrow<T>(schema: z.ZodType<T>, input: unknown): T {
+  const parsed = schema.safeParse(input)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; '))
+  }
+  return parsed.data
+}
 
 export async function getRecurringOrders(partnerId: string) {
   const supabase = await createClient()
@@ -36,7 +60,7 @@ export async function createRecurringOrder(params: B2BRecurringOrderInsertParams
 
   const { data, error } = await supabase
     .from('b2b_recurring_orders')
-    .insert(params)
+    .insert(parseOrThrow(recurringFields, params))
     .select()
     .single()
 
@@ -44,7 +68,7 @@ export async function createRecurringOrder(params: B2BRecurringOrderInsertParams
     throw new Error(`Failed to create recurring order: ${error.message}`)
   }
 
-  revalidatePath(`/dashboard/partners/${params.partner_id}`)
+  revalidatePath('/b2b')
   return data as B2BRecurringOrderRecord
 }
 
@@ -68,7 +92,7 @@ export async function updateRecurringOrder(id: string, params: B2BRecurringOrder
 
   const { data, error } = await supabase
     .from('b2b_recurring_orders')
-    .update(params)
+    .update(parseOrThrow(recurringUpdate, params))
     .eq('id', id)
     .select()
     .single()
@@ -77,7 +101,7 @@ export async function updateRecurringOrder(id: string, params: B2BRecurringOrder
     throw new Error(`Failed to update recurring order: ${error.message}`)
   }
 
-  revalidatePath(`/dashboard/partners/${recurringData.partner_id}`)
+  revalidatePath('/b2b')
   return data as B2BRecurringOrderRecord
 }
 
@@ -108,7 +132,7 @@ export async function deleteRecurringOrder(id: string) {
     throw new Error(`Failed to delete recurring order: ${error.message}`)
   }
 
-  revalidatePath(`/dashboard/partners/${recurringData.partner_id}`)
+  revalidatePath('/b2b')
   return true
 }
 
@@ -122,12 +146,22 @@ export async function confirmOrderFromTemplate(recurringId: string) {
   // 1. Fetch recurring order details
   const { data: recurringOrder, error: recurringError } = await supabase
     .from('b2b_recurring_orders')
-    .select('*, partner:b2b_partners(company_name, roaster_user_id)')
+    .select('*, partner:b2b_partners(company_name, roaster_user_id, status)')
     .eq('id', recurringId)
     .single()
 
   if (recurringError || !recurringOrder) {
     throw new Error(`Failed to fetch template: ${recurringError?.message || 'Not found'}`)
+  }
+
+  if (recurringOrder.partner.roaster_user_id !== userData.user.id) {
+    throw new Error('Only the roaster can generate orders from a standing order.')
+  }
+  if (!recurringOrder.is_active) {
+    throw new Error('This standing order is paused.')
+  }
+  if (recurringOrder.partner.status !== 'active') {
+    throw new Error('This partner is not active.')
   }
 
   // 2. Fetch custom pricing if any
@@ -168,27 +202,16 @@ export async function confirmOrderFromTemplate(recurringId: string) {
   const settings = await fetchSettings()
   const bagCount = recurringOrder.bag_count ?? 1
 
-  let costPerKg: number | null = null
-
   const { data: invItem } = await supabase
     .from('inventory')
-    .select('stock_grams, cost_per_kg')
+    .select('cost_per_kg')
     .eq('id', recurringOrder.inventory_id)
     .single()
 
-  if (invItem) {
-    costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
-    const rawGramsUsed = calculateRawGrams(recurringOrder.amount_grams, roastLossPercentage(settings))
-
-    const newStock = invItem.stock_grams - rawGramsUsed
-    if (newStock < 0) {
-      console.warn(`[Inventory Warning] Stock for item ${recurringOrder.inventory_id} will go negative: ${newStock}g remaining after this standing order.`)
-    }
-    await supabase
-      .from('inventory')
-      .update({ stock_grams: newStock })
-      .eq('id', recurringOrder.inventory_id)
-  }
+  const costPerKg = invItem?.cost_per_kg ? Number(invItem.cost_per_kg) : null
+  const rawGramsUsed = invItem
+    ? calculateRawGrams(recurringOrder.amount_grams, roastLossPercentage(settings))
+    : null
 
   let bagUnitCost: number | null = null
   if (recurringOrder.bag_type_id) {
@@ -227,12 +250,25 @@ export async function confirmOrderFromTemplate(recurringId: string) {
       payment_status: 'pending',
       total_cost: totalCost,
       cost_breakdown: costBreakdown,
+      raw_grams_used: rawGramsUsed,
     })
     .select()
     .single()
 
   if (orderError) {
     throw new Error(`Failed to create order from template: ${orderError.message}`)
+  }
+
+  // Deduct stock only once the order exists; undo the order if that fails.
+  if (rawGramsUsed) {
+    const { error: stockError } = await supabase.rpc('adjust_stock', {
+      p_inventory_id: recurringOrder.inventory_id,
+      p_delta: -rawGramsUsed,
+    })
+    if (stockError) {
+      await supabase.from('orders').delete().eq('id', newOrder.id)
+      throw new Error(`Failed to update inventory: ${stockError.message}`)
+    }
   }
 
   revalidatePath('/', 'layout')

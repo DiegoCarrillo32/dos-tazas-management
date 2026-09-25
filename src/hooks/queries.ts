@@ -699,7 +699,7 @@ export function useSetPartnerPricing(partnerId: string) {
 export function useDeletePartnerPricing(partnerId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (pricingId: string) => deletePartnerPricing(pricingId, partnerId),
+    mutationFn: (pricingId: string) => deletePartnerPricing(pricingId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.b2bPartnerPricing(partnerId) })
     },

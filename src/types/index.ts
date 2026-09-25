@@ -50,6 +50,7 @@ export type OrderRecord = {
   cost_breakdown: CostBreakdown | null
   company_name: string | null
   partner_id: string | null
+  raw_grams_used?: number | null
 }
 
 // Joined type for order + customer
