@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import type {
   OrderWithCustomer,
   CustomerWithLastPurchase,
@@ -142,10 +142,11 @@ export function useOrders() {
   })
 }
 
-export function useCompletedOrders(page: number = 1, limit: number = 10) {
+export function useCompletedOrders(page: number = 1, limit: number = 10, search: string = '') {
   return useQuery<{ data: OrderWithCustomer[]; total: number }>({
-    queryKey: [...queryKeys.completedOrders, page, limit],
-    queryFn: () => fetchJson(`/api/orders/completed?page=${page}&limit=${limit}`),
+    queryKey: [...queryKeys.completedOrders, page, limit, search],
+    queryFn: () => fetchJson(`/api/orders/completed?page=${page}&limit=${limit}&q=${encodeURIComponent(search)}`),
+    placeholderData: keepPreviousData,
   })
 }
 

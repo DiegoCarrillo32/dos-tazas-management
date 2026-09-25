@@ -12,6 +12,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { toast } from 'sonner'
 
 interface OrderCardProps {
   order: OrderWithCustomer
@@ -51,9 +52,15 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
   }
 
   const handlePaymentToggle = () => {
+    const previous = payment
     const newStatus = payment === 'pending' ? 'paid' : 'pending'
     setPayment(newStatus)
-    paymentMutation.mutate({ id: order.id, status: newStatus })
+    paymentMutation.mutate({ id: order.id, status: newStatus }, {
+      onError: () => {
+        setPayment(previous)
+        toast.error(t('order_update_failed'))
+      },
+    })
   }
 
   const fulfillmentColors: Record<FulfillmentStatus, string> = {
@@ -145,9 +152,15 @@ export function OrderCard({ order, customers, inventoryItems, settings }: OrderC
         <Select
           value={fulfillment}
           onValueChange={(val) => {
+            const previous = fulfillment;
             const newStatus = val as FulfillmentStatus;
             setFulfillment(newStatus);
-            fulfillmentMutation.mutate({ id: order.id, status: newStatus });
+            fulfillmentMutation.mutate({ id: order.id, status: newStatus }, {
+              onError: () => {
+                setFulfillment(previous);
+                toast.error(t('order_update_failed'));
+              },
+            });
           }}
         >
           <SelectTrigger size="sm" className={`flex-1 max-md:min-h-11 h-7 py-0 text-[0.8rem] font-bold px-2.5 border-transparent transition-colors rounded-[12px] [&>svg]:size-3.5 ${fulfillmentColors[fulfillment]}`}>

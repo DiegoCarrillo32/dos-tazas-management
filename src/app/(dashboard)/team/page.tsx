@@ -785,8 +785,8 @@ export default function TeamPage() {
             {!inviteCode ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-expresso mb-1">Worker Name</label>
-                  <input 
+                  <label htmlFor="team-field-1" className="block text-sm font-medium text-expresso mb-1">Worker Name</label>
+                  <input id="team-field-1" 
                     type="text" 
                     value={inviteName} 
                     onChange={e => setInviteName(e.target.value)} 
@@ -795,8 +795,8 @@ export default function TeamPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-expresso mb-1">Hourly Rate ({currencySymbol})</label>
-                  <input 
+                  <label htmlFor="team-field-2" className="block text-sm font-medium text-expresso mb-1">Hourly Rate ({currencySymbol})</label>
+                  <input id="team-field-2" 
                     type="number" 
                     value={inviteRate} 
                     onChange={e => setInviteRate(e.target.value)} 
@@ -835,8 +835,8 @@ export default function TeamPage() {
             {managingMember && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-expresso mb-1">Status</label>
-                  <select 
+                  <label htmlFor="team-field-3" className="block text-sm font-medium text-expresso mb-1">Status</label>
+                  <select id="team-field-3" 
                     value={managedStatus} 
                     onChange={e => setManagedStatus(e.target.value as TeamMemberStatus)}
                     className="w-full p-2 border border-warm-roast/20 dark:border-border rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none bg-card"
@@ -846,8 +846,8 @@ export default function TeamPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-expresso mb-1">Hourly Rate ({currencySymbol})</label>
-                  <input 
+                  <label htmlFor="team-field-4" className="block text-sm font-medium text-expresso mb-1">Hourly Rate ({currencySymbol})</label>
+                  <input id="team-field-4" 
                     type="number" 
                     value={managedRate} 
                     onChange={e => setManagedRate(e.target.value)} 
@@ -857,9 +857,9 @@ export default function TeamPage() {
                 
                 {managingMember.status === 'pending' && (
                   <div className="pt-2 border-t border-warm-roast/10">
-                    <label className="block text-sm font-medium text-expresso mb-1">Invite URL</label>
+                    <label htmlFor="team-field-5" className="block text-sm font-medium text-expresso mb-1">Invite URL</label>
                     <div className="flex gap-2">
-                      <input 
+                      <input id="team-field-5" 
                         type="text" 
                         readOnly 
                         value={typeof window !== 'undefined' ? `${window.location.origin}/join?code=${managingMember.invite_code}` : managingMember.invite_code}
@@ -1148,8 +1148,8 @@ export default function TeamPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_hours_override_label')}</label>
-              <input
+              <label htmlFor="team-field-6" className="block text-sm font-medium text-expresso mb-1">{t('tracker_hours_override_label')}</label>
+              <input id="team-field-6"
                 type="number"
                 min="0"
                 step="0.25"
@@ -1160,8 +1160,8 @@ export default function TeamPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_adjustment_reason_label')}</label>
-              <textarea
+              <label htmlFor="team-field-7" className="block text-sm font-medium text-expresso mb-1">{t('tracker_adjustment_reason_label')}</label>
+              <textarea id="team-field-7"
                 rows={2}
                 value={editAdjustmentNote}
                 onChange={e => setEditAdjustmentNote(e.target.value)}
@@ -1225,8 +1225,8 @@ export default function TeamPage() {
         </h2>
         <form onSubmit={handleAddLogSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-expresso mb-1">{t('team_add_log_worker')}</label>
-            <select
+            <label htmlFor="team-field-8" className="block text-sm font-medium text-expresso mb-1">{t('team_add_log_worker')}</label>
+            <select id="team-field-8"
               required
               value={addLogWorkerId}
               onChange={e => setAddLogWorkerId(e.target.value)}
@@ -1239,8 +1239,8 @@ export default function TeamPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_date')}</label>
-            <input
+            <label htmlFor="team-field-9" className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_date')}</label>
+            <input id="team-field-9"
               type="date"
               required
               value={addLogDate}
@@ -1250,8 +1250,8 @@ export default function TeamPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_start')}</label>
-              <input
+              <label htmlFor="team-field-10" className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_start')}</label>
+              <input id="team-field-10"
                 type="time"
                 required
                 value={addLogStart}
@@ -1260,8 +1260,8 @@ export default function TeamPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_end')}</label>
-              <input
+              <label htmlFor="team-field-11" className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_end')}</label>
+              <input id="team-field-11"
                 type="time"
                 required
                 value={addLogEnd}
@@ -1289,8 +1289,8 @@ export default function TeamPage() {
             <p className="text-sm text-red-600 dark:text-red-400 text-center">{addLogFormError}</p>
           )}
           <div>
-            <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_notes')}</label>
-            <textarea
+            <label htmlFor="team-field-12" className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_notes')}</label>
+            <textarea id="team-field-12"
               rows={3}
               value={addLogNotes}
               onChange={e => setAddLogNotes(e.target.value)}

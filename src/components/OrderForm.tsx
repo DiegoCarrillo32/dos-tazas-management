@@ -156,8 +156,9 @@ export function OrderForm({
       partner_id: data.partner_id || null,
     };
 
-    const onMutationSuccess = () => {
+    const onMutationSuccess = (result?: { stock_went_negative?: boolean }) => {
       toast.success(initialData?.id ? t('of_order_updated') : t('of_order_created'));
+      if (result?.stock_went_negative) toast.warning(t('order_stock_negative'));
       if (onSuccess) onSuccess();
       if (!onSuccess && !initialData) {
         reset();

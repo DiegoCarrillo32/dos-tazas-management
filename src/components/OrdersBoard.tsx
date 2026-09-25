@@ -7,6 +7,7 @@ import { DndContext, useSensor, useSensors, PointerSensor, DragEndEvent, useDrop
 import { restrictToWindowEdges } from '@dnd-kit/modifiers'
 import { useUpdateFulfillment } from '@/hooks/queries'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface ColumnBodyProps {
   title: string
@@ -91,7 +92,9 @@ export function OrdersBoard({ orders, customers, inventoryItems, settings }: { o
 
       const order = orders.find(o => o.id === orderId)
       if (order && order.fulfillment_status !== newStatus) {
-        fulfillmentMutation.mutate({ id: orderId, status: newStatus })
+        fulfillmentMutation.mutate({ id: orderId, status: newStatus }, {
+          onError: () => toast.error(t('order_update_failed')),
+        })
       }
     }
   }

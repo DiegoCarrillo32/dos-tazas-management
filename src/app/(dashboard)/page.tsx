@@ -10,10 +10,11 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { exportOrdersPdf } from '@/utils/exportOrdersPdf'
+import { LoadError } from '@/components/LoadError'
 
 export default function OrdersPage() {
   const { t } = useTranslation()
-  const { data: orders, isLoading: loadingOrders } = useOrders()
+  const { data: orders, isLoading: loadingOrders, isError, refetch } = useOrders()
   const { data: customers, isLoading: loadingCustomers } = useCustomers()
   const { data: inventoryItems, isLoading: loadingInventory } = useInventory()
   const { data: settings } = useSettings()
@@ -58,6 +59,8 @@ export default function OrdersPage() {
           </div>
         }
       />
+
+      {isError && <LoadError onRetry={() => refetch()} />}
 
       <OrdersBoard orders={orders || []} customers={customers || []} inventoryItems={coffeeInventory} settings={settings} />
     </div>

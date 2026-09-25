@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import {
   Coffee,
@@ -67,6 +68,7 @@ export function OrderDetailsModal({
           onSuccess: () => {
             if (onClose) onClose();
           },
+          onError: () => toast.error(t('order_delete_failed')),
         });
       },
       "destructive"

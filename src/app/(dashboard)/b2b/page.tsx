@@ -12,6 +12,7 @@ import { PartnersList } from '@/components/PartnersList'
 import { OrderDetailsModal } from '@/components/OrderDetailsModal'
 import { RoastingOrderDetailsModal } from '@/components/RoastingOrderDetailsModal'
 import { GenericModal } from '@/components/ui/GenericModal'
+import { LoadError } from '@/components/LoadError'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { formatCurrency, formatCRC, formatKg } from '@/lib/format'
@@ -27,11 +28,11 @@ export default function B2BPage() {
   const [openOrderId, setOpenOrderId] = useState<string | null>(null)
   const { t } = useTranslation()
   
-  const { data: orders, isLoading: loadingOrders } = useOrders()
+  const { data: orders, isLoading: loadingOrders, isError: ordersError, refetch: refetchOrders } = useOrders()
   const { data: customers, isLoading: loadingCustomers } = useCustomers()
   const { data: inventoryItems, isLoading: loadingInventory } = useInventory()
   const { data: settings } = useSettings()
-  const { data: roastingOrders, isLoading: loadingRoasting } = useRoastingOrders()
+  const { data: roastingOrders, isLoading: loadingRoasting, isError: roastingError, refetch: refetchRoasting } = useRoastingOrders()
 
   const isLoading = loadingOrders || loadingCustomers || loadingInventory
 
@@ -258,6 +259,10 @@ export default function B2BPage() {
           </div>
         }
       />
+
+      {(ordersError || roastingError) && (
+        <LoadError onRetry={() => { refetchOrders(); refetchRoasting() }} />
+      )}
 
       <Tabs defaultValue="partners" className="w-full space-y-6">
         <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto group-data-horizontal/tabs:h-auto w-full grid grid-cols-2 sm:flex sm:flex-row gap-1 max-w-full sm:max-w-[540px]">

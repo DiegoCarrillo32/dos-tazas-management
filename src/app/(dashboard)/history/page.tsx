@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useDeferredValue } from 'react'
 import { useCompletedOrders, useCustomers, useInventory, useSettings } from '@/hooks/queries'
 import { OrderCard } from '@/components/OrderCard'
 import { CheckCircle, Search } from 'lucide-react'
@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n/LanguageProvider'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
+import { LoadError } from '@/components/LoadError'
 
 export default function HistoryPage() {
   const { t } = useTranslation()
@@ -17,7 +18,8 @@ export default function HistoryPage() {
   const [pageSize, setPageSize] = useState(10)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data, isLoading: loadingOrders } = useCompletedOrders(currentPage, pageSize)
+  const search = useDeferredValue(searchQuery.trim())
+  const { data, isLoading: loadingOrders, isError, refetch } = useCompletedOrders(currentPage, pageSize, search)
   const { data: customers, isLoading: loadingCustomers } = useCustomers()
   const { data: inventoryItems, isLoading: loadingInventory } = useInventory()
   const { data: settings } = useSettings()
@@ -34,20 +36,6 @@ export default function HistoryPage() {
   const activePage = Math.min(currentPage, totalPages)
 
   const coffeeInventory = (inventoryItems || []).filter(item => item.category === 'green_coffee')
-
-  // Client-side filtering on current page
-  const filteredOrders = orders.filter(order => {
-    if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    const customerName = order.customers?.full_name?.toLowerCase() || ''
-    const customerPhone = order.customers?.phone?.toLowerCase() || ''
-    const itemName = order.inventory?.item_name?.toLowerCase() || ''
-    return (
-      customerName.includes(query) ||
-      customerPhone.includes(query) ||
-      itemName.includes(query)
-    )
-  })
 
   const showingStart = total === 0 ? 0 : (activePage - 1) * pageSize + 1
   const showingEnd = Math.min(activePage * pageSize, total)
@@ -69,7 +57,10 @@ export default function HistoryPage() {
             type="text"
             placeholder={t('pag_search')}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentPage(1)
+            }}
             className="w-full pl-9 rounded-full"
           />
         </div>
@@ -93,7 +84,9 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {filteredOrders.length === 0 ? (
+      {isError && <LoadError onRetry={() => refetch()} />}
+
+      {orders.length === 0 ? (
         <div className="text-center py-20 bg-card rounded-xl border-2 border-dashed border-warm-roast/20">
           <CheckCircle className="h-16 w-16 text-warm-roast/30 mx-auto mb-4" />
           <h3 className="text-xl font-heading text-expresso mb-2">{t('history_no_orders')}</h3>
@@ -101,7 +94,7 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredOrders.map(order => (
+          {orders.map(order => (
             <OrderCard key={order.id} order={order} customers={customers || []} inventoryItems={coffeeInventory} settings={settings} />
           ))}
         </div>
