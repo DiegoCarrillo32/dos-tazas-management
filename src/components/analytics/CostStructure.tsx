@@ -17,7 +17,7 @@ export function CostStructure({
   const { t, money, pct } = format
   return (
     <Card className="shadow-md border-warm-roast/10">
-      <CardHeader className="pt-5 flex flex-row items-center justify-between gap-2">
+      <CardHeader className="pt-5 flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-lg font-heading text-expresso">{t('analytics_cost_structure')}</CardTitle>
         {costPerKg > 0 && (
           <span className="rounded-full bg-warm-roast/10 px-3 py-1 text-xs font-bold text-warm-roast">

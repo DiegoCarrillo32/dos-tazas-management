@@ -22,12 +22,8 @@ export function CoffeesSoldCard({ coffees, format }: { coffees: MixRow[]; format
           <BarList
             items={rows.map((c) => ({
               key: c.name || '__unassigned',
-              label: (
-                <>
-                  {label(c.name)}
-                  {c.detail && <span className="ml-1.5 text-xs text-expresso/50">{c.detail}</span>}
-                </>
-              ),
+              label: label(c.name),
+              sublabel: c.detail,
               value: c.grams,
               display: kg(c.grams),
               hint: money(c.revenue)

@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils'
 export interface BarListItem {
   key: string
   label: React.ReactNode
+  /** Secondary line under the label, e.g. a coffee's varietals. */
+  sublabel?: React.ReactNode
   value: number
   /** Right-hand text; defaults to the raw value. */
   display?: React.ReactNode
@@ -20,7 +22,10 @@ export function BarList({ items, barClassName }: { items: BarListItem[]; barClas
       {items.map((item) => (
         <li key={item.key} className="space-y-1">
           <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="min-w-0 truncate text-expresso/80">{item.label}</span>
+            <span className="min-w-0">
+              <span className="block truncate text-expresso/80">{item.label}</span>
+              {item.sublabel && <span className="block truncate text-xs text-expresso/50">{item.sublabel}</span>}
+            </span>
             <span className="shrink-0 font-bold text-expresso">
               {item.display ?? item.value}
               {item.hint && <span className="ml-1.5 text-xs font-medium text-expresso/50">{item.hint}</span>}

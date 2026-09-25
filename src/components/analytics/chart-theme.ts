@@ -77,8 +77,13 @@ export function useAnalyticsFormat(currencySymbol: string) {
     locale,
     number,
     money: (n: number) => `${n < 0 ? '-' : ''}${currencySymbol}${number(Math.abs(n), 2)}`,
+    /** Full amount below a million, compact (₡13.6M) from there up. */
+    shortMoney: (n: number) =>
+      Math.abs(n) >= 1_000_000
+        ? `${n < 0 ? '-' : ''}${currencySymbol}${Math.abs(n).toLocaleString(locale, { notation: 'compact', maximumFractionDigits: 1 })}`
+        : `${n < 0 ? '-' : ''}${currencySymbol}${number(Math.abs(n), 2)}`,
     compactMoney: (n: number) =>
-      `${currencySymbol}${Math.abs(n) >= 1000 ? `${number(n / 1000, 1)}k` : number(n)}`,
+      `${currencySymbol}${n.toLocaleString(locale, { notation: 'compact', maximumFractionDigits: 1 })}`,
     pct: (n: number | null) => (n === null ? '—' : `${number(n, 1)}%`),
     kg: (grams: number) => `${number(grams / 1000, 2)} kg`,
     date: (iso: string) => new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }),

@@ -26,7 +26,7 @@ export function RevenueChart({ data, granularity, format }: RevenueChartProps) {
 
   return (
     <Card className="shadow-md border-warm-roast/10 bg-card text-card-foreground">
-      <CardHeader className="pt-5 flex flex-row items-center justify-between gap-2">
+      <CardHeader className="pt-5 flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-lg font-heading text-expresso">{t('analytics_revenue_profit')}</CardTitle>
         <span className="rounded-full bg-warm-roast/10 px-3 py-1 text-xs font-bold text-warm-roast">
           {t(`analytics_trend_${granularity}`)}

@@ -10,7 +10,7 @@ import type { AnalyticsFormat } from './chart-theme'
 type Dimension = keyof AnalyticsReport['mix']
 
 export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; format: AnalyticsFormat }) {
-  const { t, money, pct, kg, number, label } = format
+  const { t, money, shortMoney, pct, kg, number, label } = format
   const [dimension, setDimension] = useState<Dimension>('coffee')
   const avgMargin = (() => {
     const rows = mix[dimension]
@@ -31,7 +31,12 @@ export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; forma
     },
     { key: 'orders', header: t('analytics_orders'), align: 'right', className: 'hidden sm:table-cell', cell: (r) => number(r.orders) },
     { key: 'kg', header: 'kg', align: 'right', className: 'hidden md:table-cell', cell: (r) => kg(r.grams) },
-    { key: 'revenue', header: t('analytics_revenue'), align: 'right', cell: (r) => money(r.revenue) },
+    { key: 'revenue', header: t('analytics_revenue'), align: 'right', cell: (r) => (
+      <span className="whitespace-nowrap">
+        <span className="sm:hidden">{shortMoney(r.revenue)}</span>
+        <span className="hidden sm:inline">{money(r.revenue)}</span>
+      </span>
+    ) },
     {
       key: 'share',
       header: t('analytics_share'),
@@ -76,6 +81,7 @@ export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; forma
       </CardHeader>
       <CardContent className="pb-5">
         <DataTable
+          className="overflow-x-auto"
           columns={columns}
           data={mix[dimension]}
           rowKey={(r) => r.name || '__unassigned'}

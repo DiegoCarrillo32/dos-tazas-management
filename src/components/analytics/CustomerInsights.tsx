@@ -17,7 +17,13 @@ function Tile({ label, value }: { label: string; value: string }) {
 }
 
 export function CustomerInsights({ customers, format }: { customers: AnalyticsReport['customers']; format: AnalyticsFormat }) {
-  const { t, money, pct, number, date } = format
+  const { t, money, shortMoney, pct, number, date } = format
+  const amount = (n: number) => (
+    <>
+      <span className="sm:hidden">{shortMoney(n)}</span>
+      <span className="hidden sm:inline">{money(n)}</span>
+    </>
+  )
   const days = (n: number) => fillTemplate(t('analytics_days'), { count: number(n) })
 
   const topColumns: Column<CustomerStat>[] = [
@@ -25,8 +31,8 @@ export function CustomerInsights({ customers, format }: { customers: AnalyticsRe
       key: 'name',
       header: t('analytics_customer'),
       cell: (c) => (
-        <span className="flex items-center gap-2 font-bold text-expresso">
-          <span className="truncate">{c.name}</span>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-bold text-expresso break-words">
+          {c.name}
           {c.isNew && <Badge variant="soft">{t('analytics_new_badge')}</Badge>}
         </span>
       )
@@ -34,7 +40,7 @@ export function CustomerInsights({ customers, format }: { customers: AnalyticsRe
     { key: 'orders', header: t('analytics_orders'), align: 'right', cell: (c) => number(c.orders) },
     { key: 'aov', header: t('analytics_aov'), align: 'right', className: 'hidden md:table-cell', cell: (c) => money(c.aov) },
     { key: 'last', header: t('analytics_last_order'), align: 'right', className: 'hidden sm:table-cell', cell: (c) => date(c.lastOrder) },
-    { key: 'revenue', header: t('analytics_revenue'), align: 'right', cell: (c) => <span className="font-bold text-expresso">{money(c.revenue)}</span> }
+    { key: 'revenue', header: t('analytics_revenue'), align: 'right', cell: (c) => <span className="font-bold text-expresso whitespace-nowrap">{amount(c.revenue)}</span> }
   ]
 
   const riskColumns: Column<AtRiskCustomer>[] = [
@@ -59,6 +65,7 @@ export function CustomerInsights({ customers, format }: { customers: AnalyticsRe
         </CardHeader>
         <CardContent className="pb-5">
           <DataTable
+            className="overflow-x-auto"
             columns={topColumns}
             data={customers.all.slice(0, TOP_LIMIT)}
             rowKey={(c) => c.id}
@@ -74,6 +81,7 @@ export function CustomerInsights({ customers, format }: { customers: AnalyticsRe
         </CardHeader>
         <CardContent className="pb-5">
           <DataTable
+            className="overflow-x-auto"
             columns={riskColumns}
             data={customers.atRisk.slice(0, TOP_LIMIT)}
             rowKey={(c) => c.id}

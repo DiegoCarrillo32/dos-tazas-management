@@ -30,14 +30,14 @@ export function ChannelCard({ channel, format }: { channel: AnalyticsReport['cha
                 row.revenue > 0 ? <div key={row.name} className={swatch} style={{ width: `${row.share}%` }} /> : null
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {rows.map(({ row, label, swatch }) => (
                 <div key={row.name} className="rounded-xl border border-warm-roast/10 bg-warm-roast/5 p-3 space-y-1">
                   <p className="flex items-center gap-2 text-xs font-bold text-expresso/60">
                     <span className={cn('h-2.5 w-2.5 rounded-full', swatch)} />
                     {label}
                   </p>
-                  <p className="text-xl font-heading text-expresso">{money(row.revenue)}</p>
+                  <p className="text-xl font-heading text-expresso break-words">{money(row.revenue)}</p>
                   <p className="text-xs text-expresso/60">
                     {pct(row.share)} · {number(row.orders)} {t('analytics_orders').toLowerCase()} · {t('analytics_margin')} {pct(row.margin)}
                   </p>

@@ -88,7 +88,7 @@ export function AnalyticsDashboard({
   defaultEndDate
 }: AnalyticsDashboardProps) {
   const format = useAnalyticsFormat(settings?.currency_symbol || '$')
-  const { t, money, pct, kg, number } = format
+  const { t, money, shortMoney, pct, kg, number } = format
   const [isPending, startTransition] = useTransition()
   const [dataset, setDataset] = useState(initialDataset)
   const report = useMemo(() => computeAnalytics(dataset), [dataset])
@@ -146,13 +146,14 @@ export function AnalyticsDashboard({
     previousKpis ? pctChange(kpis[key], previousKpis[key]) : null
   const marginDelta =
     kpis.margin !== null && previousKpis?.margin != null ? kpis.margin - previousKpis.margin : null
-  const cardClass = 'col-span-12 sm:col-span-6 lg:col-span-3'
+  const cardClass = 'col-span-6 lg:col-span-3'
 
   const baseCards: Record<string, CardConfig> = {
     revenue: {
       id: 'revenue',
       title: t('analytics_total_revenue'),
       value: money(kpis.revenue),
+      mobileValue: shortMoney(kpis.revenue),
       icon: DollarSign,
       color: 'text-coffee-fruit',
       change: delta('revenue'),
@@ -161,6 +162,7 @@ export function AnalyticsDashboard({
       id: 'cost',
       title: t('analytics_total_cost'),
       value: money(kpis.cost),
+      mobileValue: shortMoney(kpis.cost),
       icon: Coins,
       color: 'text-red-600',
       change: delta('cost'),
@@ -170,6 +172,7 @@ export function AnalyticsDashboard({
       id: 'profit',
       title: t('analytics_total_profit'),
       value: money(kpis.profit),
+      mobileValue: shortMoney(kpis.profit),
       icon: Wallet,
       color: kpis.profit >= 0 ? 'text-emerald-600' : 'text-red-600',
       change: delta('profit'),
@@ -202,6 +205,7 @@ export function AnalyticsDashboard({
       id: 'aov',
       title: t('analytics_aov'),
       value: money(kpis.aov),
+      mobileValue: shortMoney(kpis.aov),
       icon: Receipt,
       color: 'text-expresso',
       change: delta('aov'),
@@ -210,6 +214,7 @@ export function AnalyticsDashboard({
       id: 'revenue_per_kg',
       title: t('analytics_revenue_per_kg'),
       value: money(kpis.revenuePerKg),
+      mobileValue: shortMoney(kpis.revenuePerKg),
       subtitle: `${t('analytics_cost_per_kg')}: ${money(kpis.costPerKg)}`,
       icon: Scale,
       color: 'text-warm-roast',
@@ -227,6 +232,7 @@ export function AnalyticsDashboard({
       id: 'unpaid',
       title: t('analytics_unpaid'),
       value: money(report.receivables.total),
+      mobileValue: shortMoney(report.receivables.total),
       subtitle: fillTemplate(t('analytics_orders_count'), { count: number(report.receivables.orders) }),
       icon: Wallet,
       color: report.receivables.total > 0 ? 'text-coffee-fruit' : 'text-expresso',
@@ -235,6 +241,7 @@ export function AnalyticsDashboard({
       id: 'roasting_revenue',
       title: t('analytics_roasting_revenue'),
       value: money(roasting.revenue),
+      mobileValue: shortMoney(roasting.revenue),
       subtitle: `${kg(roasting.roastedGrams)} ${t('analytics_roasting_roasted')}`,
       icon: Flame,
       color: 'text-coffee-fruit',
@@ -398,7 +405,7 @@ export function AnalyticsDashboard({
           modifiers={[restrictToWindowEdges]}
         >
           <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-12 gap-4">
+            <div className="grid grid-cols-12 gap-3 sm:gap-4">
               {cardOrder.map((id) => {
                 const config = cardsConfig[id]
                 return config ? <SortableStatCard key={config.id} {...config} /> : null
@@ -414,7 +421,7 @@ export function AnalyticsDashboard({
           </DragOverlay>
         </DndContext>
       ) : (
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-3 sm:gap-4">
           {DEFAULT_CARD_ORDER.map((id) => {
             const config = cardsConfig[id]
             return config ? (

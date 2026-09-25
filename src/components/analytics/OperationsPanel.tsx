@@ -9,7 +9,7 @@ import { fillTemplate, type AnalyticsFormat } from './chart-theme'
 function Section({ title, aside, children }: { title: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card className="shadow-md border-warm-roast/10">
-      <CardHeader className="pt-5 flex flex-row items-center justify-between gap-2">
+      <CardHeader className="pt-5 flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-lg font-heading text-expresso">{title}</CardTitle>
         {aside}
       </CardHeader>
