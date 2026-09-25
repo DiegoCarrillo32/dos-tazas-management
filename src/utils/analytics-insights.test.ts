@@ -6,14 +6,16 @@ import {
   computeCustomers,
   computeKpis,
   computeReceivables,
+  computeRoasting,
   computeTrend,
+  groupPartners,
   groupMix,
   pctChange,
   pickGranularity,
   localDayKey
 } from './analytics-insights'
 import { toCsv } from './exportAnalyticsCsv'
-import type { AnalyticsDataset, AnalyticsOrderRow } from '@/types'
+import type { AnalyticsDataset, AnalyticsOrderRow, AnalyticsRoastingRow } from '@/types'
 
 let seq = 0
 function order(overrides: Partial<AnalyticsOrderRow> = {}): AnalyticsOrderRow {
@@ -59,7 +61,8 @@ describe('computeKpis', () => {
     expect(k.revenue).toBe(400)
     expect(k.cost).toBe(60)
     expect(k.profit).toBe(340)
-    expect(k.margin).toBe(85)
+    // Margin ignores the uncosted order: (100 - 60) / 100.
+    expect(k.margin).toBe(40)
     expect(k.aov).toBe(200)
     expect(k.revenuePerKg).toBe(200)
     expect(k.customers).toBe(2)
@@ -143,6 +146,43 @@ describe('computeCustomers', () => {
 
   it('skips new/returning without a period start', () => {
     expect(computeCustomers([order()], [], undefined, now).newCount).toBeNull()
+  })
+})
+
+describe('repeat rate', () => {
+  it('ignores orders placed after the period', () => {
+    const history = [
+      { customer_id: 'c1', customer_name: 'Ana', order_date: at(2026, 9, 10), total_price: 100 },
+      { customer_id: 'c1', customer_name: 'Ana', order_date: at(2026, 10, 5), total_price: 100 },
+    ]
+    const orders = [order({ order_date: at(2026, 9, 10) })]
+    const now = new Date(2026, 9, 20)
+    expect(computeCustomers(orders, history, '2026-09-01', now, '2026-09-30').repeatRate).toBe(0)
+    expect(computeCustomers(orders, history, '2026-09-01', now).repeatRate).toBe(100)
+  })
+})
+
+describe('groupPartners', () => {
+  it('groups by partner id and shows the latest name', () => {
+    const rows = groupPartners([
+      order({ partner_id: 'p1', company_name: 'Old Name' }),
+      order({ partner_id: 'p1', company_name: 'New Name' }),
+      order({ partner_id: 'p2', company_name: 'New Name' }),
+    ])
+    expect(rows).toHaveLength(2)
+    expect(rows.find((r) => r.orders === 2)?.name).toBe('New Name')
+  })
+})
+
+describe('computeRoasting', () => {
+  it('earns nothing from cancelled jobs', () => {
+    const row = (status: string): AnalyticsRoastingRow => ({
+      id: status, created_at: at(2026, 9, 10), partner_name: 'Café', status,
+      total_cost: 50, green_grams_in: 1000, roasted_grams_out: 800,
+    })
+    const r = computeRoasting([row('completed'), row('cancelled')])
+    expect(r.revenue).toBe(50)
+    expect(r.byStatus.find((s) => s.status === 'cancelled')).toMatchObject({ jobs: 1, revenue: 0 })
   })
 })
 

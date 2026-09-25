@@ -40,11 +40,41 @@ function previousPeriod(filters: AnalyticsFilters): AnalyticsFilters | null {
   }
 }
 
+// Local midnight of a YYYY-MM-DD day, as an ISO timestamp.
+function dayStart(date: string, filters: AnalyticsFilters): string {
+  const offsetMs = (filters.tzOffsetMinutes ?? 0) * 60_000
+  return new Date(Date.parse(`${date}T00:00:00Z`) + offsetMs).toISOString()
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyDateRange(query: any, column: string, filters: AnalyticsFilters) {
+  if (filters.startDate) query = query.gte(column, dayStart(filters.startDate, filters))
+  // endDate is inclusive: the column is a timestamp, so bound by the next day.
+  if (filters.endDate) query = query.lt(column, dayStart(addDays(filters.endDate, 1), filters))
+  return query
+}
+
+const PAGE_SIZE = 1000
+
+// PostgREST caps each response (1000 rows by default), so page until a short page.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchAll(buildQuery: () => any, label: string): Promise<any[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: any[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1)
+    if (error) {
+      console.error(`Error fetching ${label}:`, error)
+      throw new Error(`Failed to load ${label}.`)
+    }
+    rows.push(...(data || []))
+    if (!data || data.length < PAGE_SIZE) return rows
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyAnalyticsFilters(query: any, filters: AnalyticsFilters) {
-  if (filters.startDate) query = query.gte('order_date', filters.startDate)
-  // endDate is inclusive: order_date is a timestamp, so bound by the next day.
-  if (filters.endDate) query = query.lt('order_date', addDays(filters.endDate, 1))
+  query = applyDateRange(query, 'order_date', filters)
   if (filters.paymentStatus && filters.paymentStatus !== 'all') query = query.eq('payment_status', filters.paymentStatus)
   if (filters.fulfillmentStatus && filters.fulfillmentStatus !== 'all') query = query.eq('fulfillment_status', filters.fulfillmentStatus)
   if (filters.coffeeId === 'none') query = query.is('inventory_id', null)
@@ -92,27 +122,27 @@ function toOrderRow(o: any): AnalyticsOrderRow {
 
 async function fetchOrderRows(filters: AnalyticsFilters): Promise<AnalyticsOrderRow[]> {
   const supabase = await createClient()
-  let query = supabase.from('orders').select(ORDER_COLUMNS).order('order_date', { ascending: true })
-  query = applyAnalyticsFilters(query, filters)
-  const { data, error } = await query
-  if (error) {
-    console.error('Error fetching analytics orders:', error)
-    return []
-  }
-  return (data || []).map(toOrderRow)
+  const rows = await fetchAll(
+    () => applyAnalyticsFilters(
+      supabase.from('orders').select(ORDER_COLUMNS).order('order_date', { ascending: true }).order('id'),
+      filters
+    ),
+    'analytics orders'
+  )
+  return rows.map(toOrderRow)
 }
 
 async function fetchHistory(): Promise<AnalyticsHistoryRow[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('orders')
-    .select('customer_id, order_date, total_price, customers ( full_name )')
-    .order('order_date', { ascending: true })
-  if (error) {
-    console.error('Error fetching order history:', error)
-    return []
-  }
-  return (data || []).map((o) => ({
+  const rows = await fetchAll(
+    () => supabase
+      .from('orders')
+      .select('customer_id, order_date, total_price, customers ( full_name )')
+      .order('order_date', { ascending: true })
+      .order('id'),
+    'order history'
+  )
+  return rows.map((o) => ({
     customer_id: o.customer_id,
     customer_name: one<{ full_name: string }>(o.customers)?.full_name ?? '',
     order_date: o.order_date,
@@ -126,20 +156,19 @@ async function fetchRoastingRows(filters: AnalyticsFilters): Promise<AnalyticsRo
   // Roasting orders are dated by created_at and have their own lifecycle, so
   // only the date range applies here (payment/fulfillment filters are
   // order-specific).
-  let query = supabase
-    .from('roasting_orders')
-    .select('id, created_at, status, total_cost, green_grams_in, roasted_grams_out, b2b_partners ( company_name )')
-    .order('created_at', { ascending: true })
-
-  if (filters.startDate) query = query.gte('created_at', filters.startDate)
-  if (filters.endDate) query = query.lt('created_at', addDays(filters.endDate, 1))
-
-  const { data, error } = await query
-  if (error) {
-    console.error('Error fetching roasting analytics:', error)
-    return []
-  }
-  return (data || []).map((r) => ({
+  const rows = await fetchAll(
+    () => applyDateRange(
+      supabase
+        .from('roasting_orders')
+        .select('id, created_at, status, total_cost, green_grams_in, roasted_grams_out, b2b_partners ( company_name )')
+        .order('created_at', { ascending: true })
+        .order('id'),
+      'created_at',
+      filters
+    ),
+    'roasting analytics'
+  )
+  return rows.map((r) => ({
     id: r.id,
     created_at: r.created_at,
     partner_name: one<{ company_name: string }>(r.b2b_partners)?.company_name ?? null,
@@ -176,7 +205,7 @@ export async function fetchCoffeeOptions(): Promise<CoffeeOption[]> {
     .order('item_name', { ascending: true })
   if (error) {
     console.error('Error fetching coffee options:', error)
-    return []
+    throw new Error('Failed to load coffee options.')
   }
   return data || []
 }

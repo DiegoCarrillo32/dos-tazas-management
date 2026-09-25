@@ -110,6 +110,10 @@ export function downloadAnalyticsCsv(kind: CsvExportKind, dataset: AnalyticsData
   const a = document.createElement('a')
   a.href = url
   a.download = `dos-tazas-${kind}${range}.csv`
+  // Firefox/Safari need the link in the document and the URL alive until the
+  // download has started.
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

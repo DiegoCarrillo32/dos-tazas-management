@@ -11,6 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/PageHeader'
+import { PageSkeleton } from '@/components/Skeletons'
+import { LoadError } from '@/components/LoadError'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { StatCard, type StatCardProps } from '@/components/analytics/StatCard'
 import { SortableStatCard } from '@/components/analytics/SortableStatCard'
 import { RevenueChart } from '@/components/analytics/RevenueChart'
@@ -54,11 +58,24 @@ import type {
 } from '@/types'
 
 interface AnalyticsDashboardProps {
-  initialDataset: AnalyticsDataset
   coffeeOptions: CoffeeOption[]
   settings?: UserSettingsRecord
-  defaultStartDate?: string
-  defaultEndDate?: string
+}
+
+const EMPTY_DATASET: AnalyticsDataset = {
+  filters: {}, orders: [], previousOrders: null, history: [], unpaid: [], roasting: []
+}
+
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+// The viewer's current calendar month.
+function currentMonth(): { startDate: string; endDate: string } {
+  const now = new Date()
+  return {
+    startDate: ymd(new Date(now.getFullYear(), now.getMonth(), 1)),
+    endDate: ymd(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  }
 }
 
 const CARD_ORDER_KEY = 'dos_tazas_analytics_card_order'
@@ -81,16 +98,15 @@ type CardConfig = Omit<StatCardProps, 'dragHandleProps' | 'changeLabel'> & { id:
 const TAB_TRIGGER = 'flex-1 min-w-0 rounded-lg data-active:bg-coffee-fruit/10 data-active:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm'
 
 export function AnalyticsDashboard({
-  initialDataset,
   coffeeOptions,
   settings,
-  defaultStartDate,
-  defaultEndDate
 }: AnalyticsDashboardProps) {
   const format = useAnalyticsFormat(settings?.currency_symbol || '$')
   const { t, money, shortMoney, pct, kg, number } = format
   const [isPending, startTransition] = useTransition()
-  const [dataset, setDataset] = useState(initialDataset)
+  const [dataset, setDataset] = useState(EMPTY_DATASET)
+  const [loaded, setLoaded] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
   const report = useMemo(() => computeAnalytics(dataset), [dataset])
   const { kpis, previousKpis, roasting } = report
 
@@ -262,19 +278,50 @@ export function AnalyticsDashboard({
   )
 
   // Filter state
-  const [startDate, setStartDate] = useState(defaultStartDate || '')
-  const [endDate, setEndDate] = useState(defaultEndDate || '')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all')
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentStatus | 'all'>('all')
   const [coffeeFilter, setCoffeeFilter] = useState<string>('all')
 
+  // Keeps the last good dataset on failure.
   const load = (filters: AnalyticsFilters) => {
     startTransition(async () => {
-      setDataset(await fetchAnalyticsDataset(filters))
+      try {
+        const next = await fetchAnalyticsDataset({ ...filters, tzOffsetMinutes: new Date().getTimezoneOffset() })
+        setDataset(next)
+        setLoaded(true)
+        setLoadFailed(false)
+      } catch {
+        setLoadFailed(true)
+        toast.error(t('analytics_load_failed'))
+      }
     })
   }
 
+  const loadCurrentMonth = () => {
+    const month = currentMonth()
+    setStartDate(month.startDate)
+    setEndDate(month.endDate)
+    setPaymentFilter('all')
+    setFulfillmentFilter('all')
+    setCoffeeFilter('all')
+    load(month)
+  }
+
+  useEffect(() => {
+    // Runs once on mount: the default range is the viewer's local month.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    loadCurrentMonth()
+    /* eslint-enable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const applyFilters = () => {
+    if (startDate && endDate && startDate > endDate) {
+      toast.error(t('analytics_invalid_range'))
+      return
+    }
     load({
       startDate: startDate || undefined,
       endDate: endDate || undefined,
@@ -284,21 +331,14 @@ export function AnalyticsDashboard({
     })
   }
 
-  const clearFilters = () => {
-    setStartDate('')
-    setEndDate('')
-    setPaymentFilter('all')
-    setFulfillmentFilter('all')
-    setCoffeeFilter('all')
-    load({})
-  }
+  const clearFilters = loadCurrentMonth
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={t('analytics_title')}
         subtitle={t('analytics_subtitle_deep')}
-        action={<ExportMenu dataset={dataset} report={report} disabled={isPending} />}
+        action={<ExportMenu dataset={dataset} report={report} disabled={isPending || !loaded} />}
       />
 
       {/* Filters */}
@@ -394,6 +434,10 @@ export function AnalyticsDashboard({
         </div>
       </div>
 
+      {!loaded ? (
+        loadFailed && !isPending ? <LoadError onRetry={applyFilters} /> : <PageSkeleton rows={3} />
+      ) : (
+      <div className={cn('space-y-6 transition-opacity', isPending && 'opacity-60')} aria-busy={isPending}>
       {/* KPI Cards */}
       {isMounted ? (
         <DndContext
@@ -476,6 +520,8 @@ export function AnalyticsDashboard({
           <OperationsPanel report={report} format={format} />
         </TabsContent>
       </Tabs>
+      </div>
+      )}
     </div>
   )
 }

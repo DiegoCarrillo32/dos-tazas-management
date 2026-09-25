@@ -308,6 +308,15 @@ export const deleteOrder = authActionClient
     throw new Error('Failed to retrieve order details for deletion.')
   }
 
+  // Give back the coffee this order consumed, and take it again if the
+  // delete fails.
+  let restored = 0
+  if (oldOrder.inventory_id && oldOrder.amount_grams) {
+    restored = oldOrder.raw_grams_used ??
+      Math.round(calculateRawGrams(oldOrder.amount_grams, roastLossPercentage(await fetchSettings())))
+    await adjustStock(supabase, oldOrder.inventory_id, restored)
+  }
+
   const { error } = await supabase
     .from('orders')
     .delete()
@@ -315,14 +324,8 @@ export const deleteOrder = authActionClient
 
   if (error) {
     console.error('Error deleting order:', error)
+    if (oldOrder.inventory_id && restored) await adjustStock(supabase, oldOrder.inventory_id, -restored)
     throw new Error(error.message)
-  }
-
-  // Give back the coffee this order consumed.
-  if (oldOrder.inventory_id && oldOrder.amount_grams) {
-    const rawGrams = oldOrder.raw_grams_used ??
-      Math.round(calculateRawGrams(oldOrder.amount_grams, roastLossPercentage(await fetchSettings())))
-    await adjustStock(supabase, oldOrder.inventory_id, rawGrams)
   }
 
   revalidatePath('/', 'layout')

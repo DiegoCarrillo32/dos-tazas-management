@@ -182,12 +182,16 @@ export function computeKpis(orders: AnalyticsOrderRow[]): KpiSet {
   let cost = 0
   let grams = 0
   let uncostedOrders = 0
+  // Margin only counts orders with a known cost; otherwise their revenue
+  // would inflate it with no matching cost.
+  let costedRevenue = 0
   const customers = new Set<string>()
   for (const o of orders) {
     revenue += o.total_price
     cost += o.total_cost ?? 0
     grams += o.amount_grams
     if (o.total_cost === null) uncostedOrders++
+    else costedRevenue += o.total_price
     customers.add(o.customer_id)
   }
   const profit = revenue - cost
@@ -196,7 +200,7 @@ export function computeKpis(orders: AnalyticsOrderRow[]): KpiSet {
     revenue: round2(revenue),
     cost: round2(cost),
     profit: round2(profit),
-    margin: revenue > 0 ? pct(profit, revenue) : null,
+    margin: costedRevenue > 0 ? pct(costedRevenue - cost, costedRevenue) : null,
     orders: orders.length,
     grams,
     aov: orders.length ? revenue / orders.length : 0,
@@ -264,11 +268,22 @@ export function groupMix(orders: AnalyticsOrderRow[], keyOf: (o: AnalyticsOrderR
     .sort((a, b) => b.revenue - a.revenue)
 }
 
+// Groups B2B orders by partner id (falling back to the name for unlinked
+// orders) so renamed partners stay together and namesakes stay apart. Shows
+// the most recent name.
+export function groupPartners(orders: AnalyticsOrderRow[]): MixRow[] {
+  const names = new Map<string, string>()
+  const keyOf = (o: AnalyticsOrderRow) => o.partner_id || o.company_name || o.customer_name
+  for (const o of orders) names.set(keyOf(o), o.company_name || o.customer_name)
+  return groupMix(orders, keyOf).map((row) => ({ ...row, name: names.get(row.name) ?? row.name }))
+}
+
 export function computeCustomers(
   orders: AnalyticsOrderRow[],
   history: AnalyticsHistoryRow[],
   periodStart: string | undefined,
-  now: Date
+  now: Date,
+  periodEnd?: string
 ): AnalyticsReport['customers'] {
   const lifetime = new Map<string, { name: string; dates: number[]; revenue: number }>()
   for (const h of history) {
@@ -280,6 +295,8 @@ export function computeCustomers(
   for (const c of lifetime.values()) c.dates.sort((a, b) => a - b)
 
   const start = periodStart ? parseLocalDay(periodStart).getTime() : null
+  // Orders placed after the period don't make a customer a repeat buyer in it.
+  const endExclusive = periodEnd ? parseLocalDay(periodEnd).getTime() + 86_400_000 : Infinity
   const stats = new Map<string, CustomerStat>()
   for (const o of orders) {
     const life = lifetime.get(o.customer_id)
@@ -295,7 +312,7 @@ export function computeCustomers(
       lastOrder: o.order_date,
       firstOrder,
       isNew: start !== null && new Date(firstOrder).getTime() >= start,
-      lifetimeOrders: life?.dates.length ?? 1
+      lifetimeOrders: life ? Math.max(1, life.dates.filter((d) => d < endExclusive).length) : 1
     }
     s.revenue += o.total_price
     s.profit += o.total_price - (o.total_cost ?? 0)
@@ -407,7 +424,8 @@ export function computeRoasting(rows: AnalyticsRoastingRow[]): AnalyticsReport['
   for (const r of rows) {
     const s = byStatus.get(r.status) ?? { status: r.status, jobs: 0, revenue: 0 }
     s.jobs += 1
-    s.revenue += r.total_cost
+    // Cancelled jobs earn nothing.
+    if (r.status !== 'cancelled') s.revenue += r.total_cost
     byStatus.set(r.status, s)
   }
   const byPartner = new Map<string, { name: string; revenue: number; jobs: number }>()
@@ -582,10 +600,10 @@ export function computeAnalytics(dataset: AnalyticsDataset, now: Date = new Date
     channel: {
       retail,
       b2b,
-      partners: groupMix(orders.filter(isB2b), (o) => o.company_name || o.customer_name),
+      partners: groupPartners(orders.filter(isB2b)),
       previousB2bShare
     },
-    customers: computeCustomers(orders, dataset.history, filters.startDate, now),
+    customers: computeCustomers(orders, dataset.history, filters.startDate, now, filters.endDate),
     weekdays: computeWeekdays(orders),
     receivables: computeReceivables(dataset.unpaid, now),
     pipeline: computePipeline(orders),

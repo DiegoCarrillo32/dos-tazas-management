@@ -1,30 +1,20 @@
-import { fetchAnalyticsDataset, fetchCoffeeOptions } from '@/actions/analytics'
+import { fetchCoffeeOptions } from '@/actions/analytics'
 import { fetchSettings } from '@/actions/settings'
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard'
 
 export const dynamic = 'force-dynamic'
 
+// The dataset is loaded by the dashboard in the browser: date ranges and
+// day buckets depend on the viewer's timezone, which the server doesn't know.
 export default async function AnalyticsPage() {
-  const now = new Date()
-  const defaultStartDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const defaultEndDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
-
-  const [dataset, coffeeOptions, settings] = await Promise.all([
-    fetchAnalyticsDataset({ startDate: defaultStartDate, endDate: defaultEndDate }),
+  const [coffeeOptions, settings] = await Promise.all([
     fetchCoffeeOptions(),
     fetchSettings()
   ])
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <AnalyticsDashboard
-        initialDataset={dataset}
-        coffeeOptions={coffeeOptions}
-        settings={settings}
-        defaultStartDate={defaultStartDate}
-        defaultEndDate={defaultEndDate}
-      />
+      <AnalyticsDashboard coffeeOptions={coffeeOptions} settings={settings} />
     </div>
   )
 }

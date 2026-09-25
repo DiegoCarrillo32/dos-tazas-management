@@ -97,6 +97,8 @@ export type AnalyticsFilters = {
   fulfillmentStatus?: FulfillmentStatus | 'all'
   /** Inventory item (coffee) sold; 'none' = orders with no coffee assigned. */
   coffeeId?: string | 'none' | 'all'
+  /** Viewer's `Date#getTimezoneOffset()`, so day bounds are local midnights. */
+  tzOffsetMinutes?: number
 }
 
 export type CoffeeOption = {
