@@ -1,15 +1,28 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
-import { DollarSign, Package, Coffee, Coins, Flame, Hammer } from 'lucide-react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
+import {
+  DollarSign, Package, Coffee, Coins, Flame, Hammer, Percent, Receipt, Scale, Users, Wallet,
+  LayoutDashboard, ShoppingBag, UserRound, Settings2
+} from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { StatCard } from '@/components/analytics/StatCard'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageHeader } from '@/components/PageHeader'
+import { StatCard, type StatCardProps } from '@/components/analytics/StatCard'
 import { SortableStatCard } from '@/components/analytics/SortableStatCard'
 import { RevenueChart } from '@/components/analytics/RevenueChart'
-import { BreakdownCharts } from '@/components/analytics/BreakdownCharts'
+import { InsightsPanel } from '@/components/analytics/InsightsPanel'
+import { ChannelCard } from '@/components/analytics/ChannelCard'
+import { WeekdayChart } from '@/components/analytics/WeekdayChart'
+import { ProductMix } from '@/components/analytics/ProductMix'
+import { CostStructure } from '@/components/analytics/CostStructure'
+import { CustomerInsights } from '@/components/analytics/CustomerInsights'
+import { OperationsPanel } from '@/components/analytics/OperationsPanel'
+import { ExportMenu } from '@/components/analytics/ExportMenu'
+import { fillTemplate, useAnalyticsFormat } from '@/components/analytics/chart-theme'
 import {
   DndContext,
   closestCenter,
@@ -28,58 +41,54 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { restrictToWindowEdges } from '@dnd-kit/modifiers'
-import { useTranslation } from '@/i18n/LanguageProvider'
-import {
-  fetchAnalyticsSummary,
-  fetchRevenueTimeSeries,
-  fetchTopRoastLevels,
-  fetchTopPrepMethods,
-  fetchRoastingAnalytics
-} from '@/actions/analytics'
+import { fetchAnalyticsDataset } from '@/actions/analytics'
+import { computeAnalytics, pctChange } from '@/utils/analytics-insights'
 import type {
-  AnalyticsSummary,
-  RevenueDataPoint,
-  BreakdownItem,
+  AnalyticsDataset,
   AnalyticsFilters,
   FulfillmentStatus,
   PaymentStatus,
   UserSettingsRecord,
-  RoastingAnalytics
 } from '@/types'
 
 interface AnalyticsDashboardProps {
-  initialSummary: AnalyticsSummary
-  initialRevenue: RevenueDataPoint[]
-  initialRoast: BreakdownItem[]
-  initialPrep: BreakdownItem[]
-  initialRoasting: RoastingAnalytics
+  initialDataset: AnalyticsDataset
   settings?: UserSettingsRecord
   defaultStartDate?: string
   defaultEndDate?: string
 }
+
+const CARD_ORDER_KEY = 'dos_tazas_analytics_card_order'
+
 const DEFAULT_CARD_ORDER = [
   'revenue', 'cost', 'profit', 'margin', 'coffee_sold', 'total_orders',
+  'aov', 'revenue_per_kg', 'customers', 'unpaid',
   'roasting_revenue', 'roasting_jobs',
 ]
 
+// Keeps a saved order's known cards and appends any added since it was saved.
+function mergeCardOrder(saved: unknown): string[] {
+  if (!Array.isArray(saved)) return DEFAULT_CARD_ORDER
+  const known = saved.filter((id): id is string => DEFAULT_CARD_ORDER.includes(id))
+  return [...known, ...DEFAULT_CARD_ORDER.filter((id) => !known.includes(id))]
+}
+
+type CardConfig = Omit<StatCardProps, 'dragHandleProps' | 'changeLabel'> & { id: string }
+
+const TAB_TRIGGER = 'flex-1 min-w-0 rounded-lg data-active:bg-coffee-fruit/10 data-active:text-coffee-fruit text-expresso/70 transition-all py-2 text-xs sm:text-sm'
+
 export function AnalyticsDashboard({
-  initialSummary,
-  initialRevenue,
-  initialRoast,
-  initialPrep,
-  initialRoasting,
+  initialDataset,
   settings,
   defaultStartDate,
   defaultEndDate
 }: AnalyticsDashboardProps) {
-  const { t } = useTranslation()
-  const currencySymbol = settings?.currency_symbol || '$'
+  const format = useAnalyticsFormat(settings?.currency_symbol || '$')
+  const { t, money, pct, kg, number } = format
   const [isPending, startTransition] = useTransition()
-  const [summary, setSummary] = useState(initialSummary)
-  const [revenue, setRevenue] = useState(initialRevenue)
-  const [roastData, setRoastData] = useState(initialRoast)
-  const [prepData, setPrepData] = useState(initialPrep)
-  const [roasting, setRoasting] = useState(initialRoasting)
+  const [dataset, setDataset] = useState(initialDataset)
+  const report = useMemo(() => computeAnalytics(dataset), [dataset])
+  const { kpis, previousKpis, roasting } = report
 
   const [cardOrder, setCardOrder] = useState<string[]>(DEFAULT_CARD_ORDER)
   const [isMounted, setIsMounted] = useState(false)
@@ -88,16 +97,11 @@ export function AnalyticsDashboard({
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     setIsMounted(true)
-    const saved = localStorage.getItem('dos_tazas_analytics_card_order')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length === DEFAULT_CARD_ORDER.length) {
-          setCardOrder(parsed)
-        }
-      } catch {
-        // ignore
-      }
+    try {
+      const saved = localStorage.getItem(CARD_ORDER_KEY)
+      if (saved) setCardOrder(mergeCardOrder(JSON.parse(saved)))
+    } catch {
+      // ignore
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
@@ -122,7 +126,7 @@ export function AnalyticsDashboard({
         const oldIndex = items.indexOf(active.id as string)
         const newIndex = items.indexOf(over.id as string)
         const newOrder = arrayMove(items, oldIndex, newIndex)
-        localStorage.setItem('dos_tazas_analytics_card_order', JSON.stringify(newOrder))
+        localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(newOrder))
         return newOrder
       })
     }
@@ -133,74 +137,118 @@ export function AnalyticsDashboard({
     setActiveId(null)
   }
 
-  const cardsConfig = {
+  const changeLabel = t('analytics_vs_previous')
+  const delta = (key: 'revenue' | 'cost' | 'profit' | 'orders' | 'grams' | 'aov' | 'revenuePerKg' | 'customers') =>
+    previousKpis ? pctChange(kpis[key], previousKpis[key]) : null
+  const marginDelta =
+    kpis.margin !== null && previousKpis?.margin != null ? kpis.margin - previousKpis.margin : null
+  const cardClass = 'col-span-12 sm:col-span-6 lg:col-span-3'
+
+  const baseCards: Record<string, CardConfig> = {
     revenue: {
       id: 'revenue',
       title: t('analytics_total_revenue'),
-      value: `${currencySymbol}${summary.totalRevenue.toFixed(2)}`,
+      value: money(kpis.revenue),
       icon: DollarSign,
-      color: "text-coffee-fruit",
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      color: 'text-coffee-fruit',
+      change: delta('revenue'),
     },
     cost: {
       id: 'cost',
       title: t('analytics_total_cost'),
-      value: `${currencySymbol}${summary.totalCost.toFixed(2)}`,
+      value: money(kpis.cost),
       icon: Coins,
-      color: "text-red-600",
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      color: 'text-red-600',
+      change: delta('cost'),
+      invertChange: true,
     },
     profit: {
       id: 'profit',
       title: t('analytics_total_profit'),
-      value: `${summary.totalProfit >= 0 ? '' : '-'}${currencySymbol}${Math.abs(summary.totalProfit).toFixed(2)}`,
-      icon: DollarSign,
-      color: summary.totalProfit >= 0 ? 'text-emerald-600' : 'text-red-600',
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      value: money(kpis.profit),
+      icon: Wallet,
+      color: kpis.profit >= 0 ? 'text-emerald-600' : 'text-red-600',
+      change: delta('profit'),
     },
     margin: {
       id: 'margin',
       title: t('analytics_profit_margin'),
-      value: `${(summary.totalRevenue > 0 ? (summary.totalProfit / summary.totalRevenue) * 100 : 0).toFixed(1)}%`,
-      icon: Coins,
-      color: (summary.totalRevenue > 0 ? (summary.totalProfit / summary.totalRevenue) * 100 : 0) >= 0 ? 'text-emerald-600' : 'text-red-600',
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      value: pct(kpis.margin),
+      subtitle: marginDelta === null ? undefined : `${marginDelta >= 0 ? '+' : ''}${number(marginDelta, 1)} pts ${changeLabel}`,
+      icon: Percent,
+      color: (kpis.margin ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600',
     },
     coffee_sold: {
       id: 'coffee_sold',
       title: t('analytics_coffee_sold'),
-      value: `${(summary.totalCoffeeSoldGrams / 1000).toFixed(2)} kg`,
-      subtitle: `${summary.totalCoffeeSoldGrams.toLocaleString()} grams`,
+      value: kg(kpis.grams),
       icon: Coffee,
-      color: "text-warm-roast",
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      color: 'text-warm-roast',
+      change: delta('grams'),
     },
     total_orders: {
       id: 'total_orders',
       title: t('analytics_total_orders'),
-      value: summary.totalOrders.toString(),
+      value: number(kpis.orders),
       icon: Package,
-      color: "text-expresso",
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      color: 'text-expresso',
+      change: delta('orders'),
+    },
+    aov: {
+      id: 'aov',
+      title: t('analytics_aov'),
+      value: money(kpis.aov),
+      icon: Receipt,
+      color: 'text-expresso',
+      change: delta('aov'),
+    },
+    revenue_per_kg: {
+      id: 'revenue_per_kg',
+      title: t('analytics_revenue_per_kg'),
+      value: money(kpis.revenuePerKg),
+      subtitle: `${t('analytics_cost_per_kg')}: ${money(kpis.costPerKg)}`,
+      icon: Scale,
+      color: 'text-warm-roast',
+      change: delta('revenuePerKg'),
+    },
+    customers: {
+      id: 'customers',
+      title: t('analytics_active_customers'),
+      value: number(kpis.customers),
+      icon: Users,
+      color: 'text-expresso',
+      change: delta('customers'),
+    },
+    unpaid: {
+      id: 'unpaid',
+      title: t('analytics_unpaid'),
+      value: money(report.receivables.total),
+      subtitle: fillTemplate(t('analytics_orders_count'), { count: number(report.receivables.orders) }),
+      icon: Wallet,
+      color: report.receivables.total > 0 ? 'text-coffee-fruit' : 'text-expresso',
     },
     roasting_revenue: {
       id: 'roasting_revenue',
       title: t('analytics_roasting_revenue'),
-      value: `${currencySymbol}${roasting.roastingRevenue.toFixed(2)}`,
-      subtitle: `${(roasting.roastedGrams / 1000).toFixed(2)} kg ${t('analytics_roasting_roasted')}`,
+      value: money(roasting.revenue),
+      subtitle: `${kg(roasting.roastedGrams)} ${t('analytics_roasting_roasted')}`,
       icon: Flame,
-      color: "text-coffee-fruit",
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
+      color: 'text-coffee-fruit',
     },
     roasting_jobs: {
       id: 'roasting_jobs',
       title: t('analytics_roasting_jobs'),
-      value: roasting.roastingOrders.toString(),
+      value: number(roasting.jobs),
       icon: Hammer,
-      color: "text-warm-roast",
-      className: "col-span-12 sm:col-span-6 lg:col-span-4",
-    }
+      color: 'text-warm-roast',
+    },
   }
+  const cardsConfig = Object.fromEntries(
+    Object.entries(baseCards).map(([id, card]) => [
+      id,
+      { ...card, className: cardClass, changeLabel: card.change === undefined ? undefined : changeLabel },
+    ])
+  )
 
   // Filter state
   const [startDate, setStartDate] = useState(defaultStartDate || '')
@@ -208,27 +256,18 @@ export function AnalyticsDashboard({
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatus | 'all'>('all')
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentStatus | 'all'>('all')
 
+  const load = (filters: AnalyticsFilters) => {
+    startTransition(async () => {
+      setDataset(await fetchAnalyticsDataset(filters))
+    })
+  }
+
   const applyFilters = () => {
-    const filters: AnalyticsFilters = {
+    load({
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       paymentStatus: paymentFilter,
       fulfillmentStatus: fulfillmentFilter
-    }
-
-    startTransition(async () => {
-      const [newSummary, newRevenue, newRoast, newPrep, newRoasting] = await Promise.all([
-        fetchAnalyticsSummary(filters),
-        fetchRevenueTimeSeries(filters),
-        fetchTopRoastLevels(filters),
-        fetchTopPrepMethods(filters),
-        fetchRoastingAnalytics(filters)
-      ])
-      setSummary(newSummary)
-      setRevenue(newRevenue)
-      setRoastData(newRoast)
-      setPrepData(newPrep)
-      setRoasting(newRoasting)
     })
   }
 
@@ -237,29 +276,17 @@ export function AnalyticsDashboard({
     setEndDate('')
     setPaymentFilter('all')
     setFulfillmentFilter('all')
-
-    startTransition(async () => {
-      const [newSummary, newRevenue, newRoast, newPrep, newRoasting] = await Promise.all([
-        fetchAnalyticsSummary({}),
-        fetchRevenueTimeSeries({}),
-        fetchTopRoastLevels({}),
-        fetchTopPrepMethods({}),
-        fetchRoastingAnalytics({})
-      ])
-      setSummary(newSummary)
-      setRevenue(newRevenue)
-      setRoastData(newRoast)
-      setPrepData(newPrep)
-      setRoasting(newRoasting)
-    })
+    load({})
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-heading text-expresso">{t('analytics_title')}</h1>
-        <p className="text-expresso/70 font-medium text-sm">{t('analytics_subtitle')}</p>
-      </div>
+      <PageHeader
+        title={t('analytics_title')}
+        subtitle={t('analytics_subtitle_deep')}
+        action={<ExportMenu dataset={dataset} report={report} disabled={isPending} />}
+      />
+
       {/* Filters */}
       <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-5 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
@@ -343,15 +370,15 @@ export function AnalyticsDashboard({
           <SortableContext items={cardOrder} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-12 gap-4">
               {cardOrder.map((id) => {
-                const config = cardsConfig[id as keyof typeof cardsConfig]
+                const config = cardsConfig[id]
                 return config ? <SortableStatCard key={config.id} {...config} /> : null
               })}
             </div>
           </SortableContext>
           <DragOverlay adjustScale={false}>
-            {activeId && cardsConfig[activeId as keyof typeof cardsConfig] ? (
+            {activeId && cardsConfig[activeId] ? (
               <div className="w-full h-full opacity-90 cursor-grabbing shadow-2xl rounded-xl ring-2 ring-coffee-fruit/20">
-                <StatCard {...cardsConfig[activeId as keyof typeof cardsConfig]} />
+                <StatCard {...cardsConfig[activeId]} />
               </div>
             ) : null}
           </DragOverlay>
@@ -359,7 +386,7 @@ export function AnalyticsDashboard({
       ) : (
         <div className="grid grid-cols-12 gap-4">
           {DEFAULT_CARD_ORDER.map((id) => {
-            const config = cardsConfig[id as keyof typeof cardsConfig]
+            const config = cardsConfig[id]
             return config ? (
               <div key={config.id} className={config.className}>
                 <StatCard {...config} />
@@ -369,11 +396,48 @@ export function AnalyticsDashboard({
         </div>
       )}
 
-      {/* Revenue Chart */}
-      <RevenueChart data={revenue} currencySymbol={currencySymbol} />
+      <Tabs defaultValue="overview" className="w-full space-y-6">
+        <TabsList className="bg-card border border-warm-roast/10 rounded-xl p-1 h-auto group-data-horizontal/tabs:h-auto w-full grid grid-cols-2 sm:flex sm:flex-row gap-1 max-w-full sm:max-w-[640px]">
+          <TabsTrigger value="overview" className={TAB_TRIGGER}>
+            <LayoutDashboard className="w-4 h-4 mr-1 shrink-0" />
+            <span className="truncate">{t('analytics_tab_overview')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="products" className={TAB_TRIGGER}>
+            <ShoppingBag className="w-4 h-4 mr-1 shrink-0" />
+            <span className="truncate">{t('analytics_tab_products')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="customers" className={TAB_TRIGGER}>
+            <UserRound className="w-4 h-4 mr-1 shrink-0" />
+            <span className="truncate">{t('analytics_tab_customers')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="operations" className={TAB_TRIGGER}>
+            <Settings2 className="w-4 h-4 mr-1 shrink-0" />
+            <span className="truncate">{t('analytics_tab_operations')}</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Breakdown Charts */}
-      <BreakdownCharts roastData={roastData} prepData={prepData} />
+        <TabsContent value="overview" className="space-y-6">
+          <InsightsPanel insights={report.insights} format={format} />
+          <RevenueChart data={report.trend} granularity={report.granularity} format={format} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChannelCard channel={report.channel} format={format} />
+            <WeekdayChart data={report.weekdays} format={format} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="products" className="space-y-6">
+          <ProductMix mix={report.mix} format={format} />
+          <CostStructure costs={report.costs} costPerKg={kpis.costPerKg} format={format} />
+        </TabsContent>
+
+        <TabsContent value="customers">
+          <CustomerInsights customers={report.customers} format={format} />
+        </TabsContent>
+
+        <TabsContent value="operations">
+          <OperationsPanel report={report} format={format} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

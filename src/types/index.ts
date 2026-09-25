@@ -96,33 +96,56 @@ export type AnalyticsFilters = {
   fulfillmentStatus?: FulfillmentStatus | 'all'
 }
 
-export type AnalyticsSummary = {
-  totalRevenue: number
-  totalCoffeeSoldGrams: number
-  totalOrders: number
-  totalCost: number
-  totalProfit: number
+// One order as the analytics engine sees it: flattened joins, numeric money.
+export type AnalyticsOrderRow = {
+  id: string
+  order_date: string
+  customer_id: string
+  customer_name: string
+  company_name: string | null
+  partner_id: string | null
+  roast_level: string
+  preparation_method: string
+  origin: string | null
+  amount_grams: number
+  bag_count: number
+  total_price: number
+  total_cost: number | null
+  cost_breakdown: CostBreakdown | null
+  payment_status: PaymentStatus
+  fulfillment_status: FulfillmentStatus
 }
 
-// Roasting-service revenue, tracked separately from product-sales revenue.
-export type RoastingAnalytics = {
-  roastingRevenue: number
-  roastingOrders: number
-  roastedGrams: number
+// Lightweight all-time order history, used for customer lifecycle metrics.
+export type AnalyticsHistoryRow = {
+  customer_id: string
+  customer_name: string
+  order_date: string
+  total_price: number
 }
 
-export type RevenueDataPoint = {
-  date: string
-  revenue: number
-  orders: number
-  cost: number
-  profit: number
+// Roasting-service job, tracked separately from product-sales revenue.
+export type AnalyticsRoastingRow = {
+  id: string
+  created_at: string
+  partner_name: string | null
+  status: string
+  total_cost: number
+  green_grams_in: number
+  roasted_grams_out: number
 }
 
-export type BreakdownItem = {
-  name: string
-  value: number
-  count: number
+export type AnalyticsDataset = {
+  filters: AnalyticsFilters
+  /** Orders matching the filters. */
+  orders: AnalyticsOrderRow[]
+  /** Same filters over the preceding period of equal length; null without a full date range. */
+  previousOrders: AnalyticsOrderRow[] | null
+  /** Every order ever, regardless of filters. */
+  history: AnalyticsHistoryRow[]
+  /** Every unpaid order, regardless of filters. */
+  unpaid: AnalyticsOrderRow[]
+  roasting: AnalyticsRoastingRow[]
 }
 
 // Inventory types

@@ -1,16 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { StatCard } from './StatCard'
-import type { LucideIcon } from 'lucide-react'
+import { StatCard, type StatCardProps } from './StatCard'
 
-interface SortableStatCardProps {
+interface SortableStatCardProps extends Omit<StatCardProps, 'dragHandleProps'> {
   id: string
-  title: string
-  value: string
-  subtitle?: string
-  icon: LucideIcon
-  trend?: string
-  color?: string
   className?: string
 }
 
