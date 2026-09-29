@@ -710,7 +710,12 @@ export function useDeletePartnerPricing(partnerId: string) {
 export function useCreateRecurringOrder(partnerId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: B2BRecurringOrderInsertParams) => createRecurringOrder(params),
+    mutationFn: async (params: B2BRecurringOrderInsertParams) => {
+      const res = await createRecurringOrder(params)
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.b2bRecurringOrders(partnerId) })
     },
@@ -720,8 +725,12 @@ export function useCreateRecurringOrder(partnerId: string) {
 export function useUpdateRecurringOrder(partnerId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, params }: { id: string; params: B2BRecurringOrderUpdateParams }) =>
-      updateRecurringOrder(id, params),
+    mutationFn: async ({ id, params }: { id: string; params: B2BRecurringOrderUpdateParams }) => {
+      const res = await updateRecurringOrder({ id, params })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.b2bRecurringOrders(partnerId) })
     },
@@ -731,7 +740,12 @@ export function useUpdateRecurringOrder(partnerId: string) {
 export function useDeleteRecurringOrder(partnerId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteRecurringOrder(id),
+    mutationFn: async (id: string) => {
+      const res = await deleteRecurringOrder({ id })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.b2bRecurringOrders(partnerId) })
     },
@@ -741,7 +755,12 @@ export function useDeleteRecurringOrder(partnerId: string) {
 export function useConfirmOrderFromTemplate() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (recurringId: string) => confirmOrderFromTemplate(recurringId),
+    mutationFn: async (recurringId: string) => {
+      const res = await confirmOrderFromTemplate({ id: recurringId })
+      if (res?.serverError) throw new Error(res.serverError)
+      if (res?.validationErrors) throw new Error("Validation Error")
+      return res?.data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orders })
       qc.invalidateQueries({ queryKey: queryKeys.b2bOrders() })

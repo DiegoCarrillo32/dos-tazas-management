@@ -2,7 +2,8 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { B2BRecurringOrderRecord, B2BRecurringOrderInsertParams, B2BRecurringOrderUpdateParams, OrderRecord } from '@/types'
+import { B2BRecurringOrderRecord, OrderRecord } from '@/types'
+import { authActionClient } from '@/lib/safe-action'
 import { findOrCreateB2BCustomer } from '@/utils/b2bCustomer'
 import { calculateOrderCosts, calculateRawGrams, roastLossPercentage } from '@/utils/calculations'
 import { fetchSettings } from '@/actions/settings'
@@ -22,14 +23,7 @@ const recurringFields = z.object({
 })
 // partner_id is fixed once created.
 const recurringUpdate = recurringFields.omit({ partner_id: true }).partial()
-
-function parseOrThrow<T>(schema: z.ZodType<T>, input: unknown): T {
-  const parsed = schema.safeParse(input)
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; '))
-  }
-  return parsed.data
-}
+const recurringId = z.string().uuid()
 
 export async function getRecurringOrders(partnerId: string) {
   const supabase = await createClient()
@@ -51,16 +45,12 @@ export async function getRecurringOrders(partnerId: string) {
   return data
 }
 
-export async function createRecurringOrder(params: B2BRecurringOrderInsertParams) {
-  const supabase = await createClient()
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) {
-    throw new Error('Not authenticated')
-  }
-
+export const createRecurringOrder = authActionClient
+  .schema(recurringFields)
+  .action(async ({ parsedInput: params, ctx: { supabase } }) => {
   const { data, error } = await supabase
     .from('b2b_recurring_orders')
-    .insert(parseOrThrow(recurringFields, params))
+    .insert(params)
     .select()
     .single()
 
@@ -70,15 +60,11 @@ export async function createRecurringOrder(params: B2BRecurringOrderInsertParams
 
   revalidatePath('/b2b')
   return data as B2BRecurringOrderRecord
-}
+})
 
-export async function updateRecurringOrder(id: string, params: B2BRecurringOrderUpdateParams) {
-  const supabase = await createClient()
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) {
-    throw new Error('Not authenticated')
-  }
-
+export const updateRecurringOrder = authActionClient
+  .schema(z.object({ id: recurringId, params: recurringUpdate }))
+  .action(async ({ parsedInput: { id, params }, ctx: { supabase } }) => {
   // Get the partner_id to revalidate
   const { data: recurringData, error: recurringError } = await supabase
     .from('b2b_recurring_orders')
@@ -92,7 +78,7 @@ export async function updateRecurringOrder(id: string, params: B2BRecurringOrder
 
   const { data, error } = await supabase
     .from('b2b_recurring_orders')
-    .update(parseOrThrow(recurringUpdate, params))
+    .update(params)
     .eq('id', id)
     .select()
     .single()
@@ -103,15 +89,11 @@ export async function updateRecurringOrder(id: string, params: B2BRecurringOrder
 
   revalidatePath('/b2b')
   return data as B2BRecurringOrderRecord
-}
+})
 
-export async function deleteRecurringOrder(id: string) {
-  const supabase = await createClient()
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) {
-    throw new Error('Not authenticated')
-  }
-
+export const deleteRecurringOrder = authActionClient
+  .schema(z.object({ id: recurringId }))
+  .action(async ({ parsedInput: { id }, ctx: { supabase } }) => {
   // Get the partner_id to revalidate
   const { data: recurringData, error: recurringError } = await supabase
     .from('b2b_recurring_orders')
@@ -134,15 +116,11 @@ export async function deleteRecurringOrder(id: string) {
 
   revalidatePath('/b2b')
   return true
-}
+})
 
-export async function confirmOrderFromTemplate(recurringId: string) {
-  const supabase = await createClient()
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) {
-    throw new Error('Not authenticated')
-  }
-
+export const confirmOrderFromTemplate = authActionClient
+  .schema(z.object({ id: recurringId }))
+  .action(async ({ parsedInput: { id: recurringId }, ctx: { user, supabase } }) => {
   // 1. Fetch recurring order details
   const { data: recurringOrder, error: recurringError } = await supabase
     .from('b2b_recurring_orders')
@@ -154,14 +132,16 @@ export async function confirmOrderFromTemplate(recurringId: string) {
     throw new Error(`Failed to fetch template: ${recurringError?.message || 'Not found'}`)
   }
 
-  if (recurringOrder.partner.roaster_user_id !== userData.user.id) {
+  if (recurringOrder.partner.roaster_user_id !== user.id) {
     throw new Error('Only the roaster can generate orders from a standing order.')
   }
   if (!recurringOrder.is_active) {
     throw new Error('This standing order is paused.')
   }
-  if (recurringOrder.partner.status !== 'active') {
-    throw new Error('This partner is not active.')
+  // Pending partners never claimed an invite but are still roaster-managed
+  // customers; only a revoked partnership blocks new orders.
+  if (recurringOrder.partner.status === 'revoked') {
+    throw new Error('This partner has been revoked.')
   }
 
   // 2. Fetch custom pricing if any
@@ -273,4 +253,4 @@ export async function confirmOrderFromTemplate(recurringId: string) {
 
   revalidatePath('/', 'layout')
   return newOrder as OrderRecord
-}
+})
