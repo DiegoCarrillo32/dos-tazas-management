@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Flame, Plus, X } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { GenericModal, useConfirm } from '@/components/ui/GenericModal'
 import { RoastingCalculator } from '@/components/RoastingCalculator'
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
@@ -35,6 +35,7 @@ export default function PartnerRoastingOrders() {
   const createMutation = useCreateRoastingOrder()
   const cancelMutation = useCancelRoastingOrder()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const { confirm, confirmDialog } = useConfirm()
 
   const rowActions = (order: RoastingOrderRecord) =>
     order.status === 'pending' ? (
@@ -42,9 +43,16 @@ export default function PartnerRoastingOrders() {
         variant="ghost"
         size="sm"
         onClick={() =>
-          cancelMutation.mutate(order.id, {
-            onSuccess: () => toast.success(t('roasting_order_cancelled')),
-            onError: (err: Error) => toast.error(err.message),
+          confirm({
+            title: t('roasting_action_cancel'),
+            message: t('roasting_cancel_confirm'),
+            confirmText: t('roasting_action_cancel'),
+            cancelText: t('cancel'),
+            onConfirm: () =>
+              cancelMutation.mutate(order.id, {
+                onSuccess: () => toast.success(t('roasting_order_cancelled')),
+                onError: (err: Error) => toast.error(err.message),
+              }),
           })
         }
         disabled={cancelMutation.isPending}
@@ -99,6 +107,7 @@ export default function PartnerRoastingOrders() {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+      {confirmDialog}
       <PageHeader
         title={t('roasting_orders_title')}
         subtitle={t('roasting_orders_subtitle')}

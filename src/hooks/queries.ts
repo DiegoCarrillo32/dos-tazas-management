@@ -900,7 +900,7 @@ export function useUpdateWorkerTimeLog() {
 export function useAddTimeLogForWorker() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       workerId,
       startTime,
       endTime,
@@ -910,7 +910,7 @@ export function useAddTimeLogForWorker() {
       startTime: string
       endTime: string
       notes: string | null
-    }) => addTimeLogForWorker(workerId, startTime, endTime, notes),
+    }) => unwrap(await addTimeLogForWorker(workerId, startTime, endTime, notes)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.teamTimeLogs })
     },

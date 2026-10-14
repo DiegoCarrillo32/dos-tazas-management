@@ -18,10 +18,11 @@ import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/respo
 import type { InventoryRecord } from '@/types'
 import { roastLossPercentage } from '@/utils/calculations'
 import { toast } from 'sonner'
+import { LoadError } from '@/components/LoadError'
 
 export default function InventoryPage() {
   const { t } = useTranslation()
-  const { data: inventoryItems, isLoading: loadingInventory } = useInventory()
+  const { data: inventoryItems, isLoading: loadingInventory, isError, refetch } = useInventory()
   const { data: settings, isLoading: loadingSettings } = useSettings()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -208,6 +209,8 @@ export default function InventoryPage() {
           </FormModal>
         }
       />
+
+      {isError && <LoadError onRetry={() => refetch()} />}
 
       <Card className="shadow-lg border-warm-roast/10">
         <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col gap-4">

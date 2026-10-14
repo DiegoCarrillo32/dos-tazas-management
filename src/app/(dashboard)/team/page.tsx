@@ -34,6 +34,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { restrictToWindowEdges } from '@dnd-kit/modifiers'
+import { toCsv, downloadCsv } from '@/utils/exportAnalyticsCsv'
 
 export default function TeamPage() {
   const { t } = useTranslation()
@@ -290,7 +291,8 @@ export default function TeamPage() {
       setAddLogNotes('')
     } catch (err) {
       console.error(err)
-      setAddLogFormError(t('tracker_save_failed'))
+      const msg = err instanceof Error ? err.message : ''
+      setAddLogFormError(msg.startsWith('OVERLAP') ? t('tracker_overlap_error') : t('tracker_save_failed'))
     }
   }
 
@@ -327,36 +329,27 @@ export default function TeamPage() {
   }
 
   const handleExportCsv = () => {
-    const rows = [
-      ['Worker', 'Date', 'Start', 'End', 'Hours', 'Rate', 'Pay', 'Status', 'Notes', 'Adj Note'],
-      ...filteredLogs.map(log => {
-        const hours = resolveHours(log)
-        const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
-        const pay = (hours * rate).toFixed(2)
-        const s = new Date(log.start_time)
-        const e = new Date(log.end_time)
-        return [
-          log.team_members?.name || log.team_members?.invite_code || '',
-          s.toLocaleDateString(),
-          s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          e.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          hours.toFixed(2),
-          rate.toFixed(2),
-          pay,
-          log.status,
-          (log.notes || '').replace(/,/g, ';'),
-          (log.adjustment_note || '').replace(/,/g, ';'),
-        ]
-      })
-    ]
-    const csv = rows.map(r => r.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `timesheets-${selectedMonth === 'all' ? 'all' : selectedMonth}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    const rows = filteredLogs.map(log => {
+      const hours = resolveHours(log)
+      const rate = log.rate_snapshot ?? log.team_members?.hourly_rate ?? 0
+      const s = new Date(log.start_time)
+      const e = new Date(log.end_time)
+      return [
+        log.team_members?.name || log.team_members?.invite_code || '',
+        s.toLocaleDateString(),
+        s.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        e.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hours,
+        rate,
+        hours * rate,
+        log.status,
+        log.notes,
+        log.adjustment_note,
+      ]
+    })
+    // toCsv quotes commas/newlines and neutralises formula-like notes.
+    const csv = toCsv(['Worker', 'Date', 'Start', 'End', 'Hours', 'Rate', 'Pay', 'Status', 'Notes', 'Adj Note'], rows)
+    downloadCsv(`timesheets-${selectedMonth === 'all' ? 'all' : selectedMonth}.csv`, csv)
   }
 
   const availableMonths = useMemo(() => {

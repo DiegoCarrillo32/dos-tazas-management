@@ -6,7 +6,7 @@ import { Plus, Edit, Leaf, Trash2 } from 'lucide-react'
 import { useGreenCoffeeLots, useDeleteGreenCoffeeLot } from '@/hooks/queries'
 import { GreenCoffeeLotForm } from './GreenCoffeeLotForm'
 import { ShipLotModal } from './ShipLotModal'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { GenericModal, useConfirm } from '@/components/ui/GenericModal'
 import { toast } from 'sonner'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import type { GreenCoffeeLotRecord } from '@/types'
@@ -52,17 +52,24 @@ function LotCard({
 }) {
   const { t } = useTranslation()
   const deleteMutation = useDeleteGreenCoffeeLot(inventoryId)
+  const { confirm, confirmDialog } = useConfirm()
 
-  const handleDelete = () => {
-    if (!confirm(`${t('lot_toast_deleted')}?`)) return
-    deleteMutation.mutate(lot.id, {
-      onSuccess: () => toast.success(t('lot_toast_deleted')),
-      onError: () => toast.error(t('lot_toast_delete_error')),
+  const handleDelete = () =>
+    confirm({
+      title: t('lot_delete_title'),
+      message: t('lot_delete_confirm'),
+      confirmText: t('delete'),
+      cancelText: t('cancel'),
+      onConfirm: () =>
+        deleteMutation.mutate(lot.id, {
+          onSuccess: () => toast.success(t('lot_toast_deleted')),
+          onError: () => toast.error(t('lot_toast_delete_error')),
+        }),
     })
-  }
 
   return (
     <div className="bg-card rounded-lg border border-warm-roast/10 p-4 flex flex-col gap-3">
+      {confirmDialog}
       <div className="flex justify-between items-start">
         <div>
           <span className="font-bold text-expresso text-sm">{lot.name}</span>

@@ -81,6 +81,7 @@ export const dictionaries = {
     roasting_action_accept: "Accept",
     roasting_action_complete: "Mark Completed",
     roasting_action_cancel: "Cancel Order",
+    roasting_cancel_confirm: "Cancel this roasting order? This can't be undone.",
     b2b_roasting_tab: "Roasting",
 
     // Orders
@@ -219,6 +220,8 @@ export const dictionaries = {
     lot_toast_error: "Failed to save lot",
     lot_toast_deleted: "Lot deleted",
     lot_toast_delete_error: "Failed to delete lot",
+    lot_delete_title: "Delete Lot",
+    lot_delete_confirm: "Delete this lot? This can't be undone.",
 
     // Lot Dialog
     lot_dialog_subtitle: "Green Coffee Lots",
@@ -625,6 +628,7 @@ export const dictionaries = {
     common_date: "Date",
     common_name: "Name",
     orders_move_to: "Move to",
+    orders_moved_to: "Moved to {stage}",
     orders_move_current: "current",
     sidebar_more: "More",
     team_pending_timesheets: "Pending Timesheets",
@@ -963,6 +967,7 @@ export const dictionaries = {
     roasting_action_accept: "Aceptar",
     roasting_action_complete: "Marcar Completado",
     roasting_action_cancel: "Cancelar Pedido",
+    roasting_cancel_confirm: "¿Cancelar este pedido de tueste? Esto no se puede deshacer.",
     b2b_roasting_tab: "Tueste",
 
     // Orders
@@ -1102,6 +1107,8 @@ export const dictionaries = {
     lot_toast_error: "Error al guardar el lote",
     lot_toast_deleted: "Lote eliminado",
     lot_toast_delete_error: "Error al eliminar el lote",
+    lot_delete_title: "Eliminar Lote",
+    lot_delete_confirm: "¿Eliminar este lote? Esto no se puede deshacer.",
 
     // Lot Dialog
     lot_dialog_subtitle: "Lotes de Café Verde",
@@ -1511,6 +1518,7 @@ export const dictionaries = {
     common_date: "Fecha",
     common_name: "Nombre",
     orders_move_to: "Mover a",
+    orders_moved_to: "Movido a {stage}",
     orders_move_current: "actual",
     sidebar_more: "Más",
     team_pending_timesheets: "Hojas de Tiempo Pendientes",

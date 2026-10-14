@@ -1,5 +1,5 @@
 import type { AnalyticsDataset, AnalyticsOrderRow } from '@/types'
-import type { AnalyticsReport } from '@/utils/analytics-insights'
+import { roastingJobEarns, type AnalyticsReport } from '@/utils/analytics-insights'
 
 // Column headers are stable snake_case field names rather than translated
 // labels, so spreadsheets and scripts built on an export keep working
@@ -94,26 +94,32 @@ export function buildCsv(kind: CsvExportKind, dataset: AnalyticsDataset, report:
       return toCsv(
         ['job_id', 'created_at', 'partner', 'status', 'green_grams_in', 'roasted_grams_out', 'revenue'],
         dataset.roasting.map((r) => [
-          r.id, r.created_at, r.partner_name, r.status, r.green_grams_in, r.roasted_grams_out, r.total_cost
+          r.id, r.created_at, r.partner_name, r.status, r.green_grams_in, r.roasted_grams_out,
+          roastingJobEarns(r.status) ? r.total_cost : 0
         ])
       )
   }
 }
 
-/** Builds the CSV and triggers a browser download. */
-export function downloadAnalyticsCsv(kind: CsvExportKind, dataset: AnalyticsDataset, report: AnalyticsReport) {
-  const { startDate, endDate } = dataset.filters
-  const range = startDate || endDate ? `-${startDate || 'start'}_${endDate || 'today'}` : '-all'
+/** Triggers a browser download of a CSV string. */
+export function downloadCsv(filename: string, csv: string) {
   // BOM so Excel detects UTF-8 (accented names).
-  const blob = new Blob(['﻿', buildCsv(kind, dataset, report)], { type: 'text/csv;charset=utf-8' })
+  const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `dos-tazas-${kind}${range}.csv`
+  a.download = filename
   // Firefox/Safari need the link in the document and the URL alive until the
   // download has started.
   document.body.appendChild(a)
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+/** Builds the CSV and triggers a browser download. */
+export function downloadAnalyticsCsv(kind: CsvExportKind, dataset: AnalyticsDataset, report: AnalyticsReport) {
+  const { startDate, endDate } = dataset.filters
+  const range = startDate || endDate ? `-${startDate || 'start'}_${endDate || 'today'}` : '-all'
+  downloadCsv(`dos-tazas-${kind}${range}.csv`, buildCsv(kind, dataset, report))
 }

@@ -14,8 +14,8 @@ export function ProductMix({ mix, format }: { mix: AnalyticsReport['mix']; forma
   const [dimension, setDimension] = useState<Dimension>('coffee')
   const avgMargin = (() => {
     const rows = mix[dimension]
-    const revenue = rows.reduce((s, r) => s + r.revenue, 0)
-    return revenue > 0 ? (rows.reduce((s, r) => s + r.profit, 0) / revenue) * 100 : null
+    const costed = rows.reduce((s, r) => s + r.costedRevenue, 0)
+    return costed > 0 ? ((costed - rows.reduce((s, r) => s + r.cost, 0)) / costed) * 100 : null
   })()
 
   const columns: Column<MixRow>[] = [

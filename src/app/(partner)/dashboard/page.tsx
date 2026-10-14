@@ -18,10 +18,12 @@ const fulfillmentTone = (status: string): StatusTone =>
 export default function PartnerDashboard() {
   const { t } = useTranslation()
   const { data: orders, isLoading: ordersLoading } = useOrders()
-  const { data: partnerData } = usePartners()
+  const { data: partnerData, isLoading: partnersLoading } = usePartners()
   const partnerDataArray = Array.isArray(partnerData) ? partnerData : []
   const partnerId = partnerDataArray[0]?.id || (partnerData as B2BPartnerRecord)?.id
-  const { data: recurringOrders, isLoading: recurringLoading } = usePartnerRecurringOrders(partnerId || '')
+  const { data: recurringOrders, isLoading: recurringQueryLoading } = usePartnerRecurringOrders(partnerId || '')
+  // The recurring query is disabled until the partner loads; count that as loading.
+  const recurringLoading = partnersLoading || recurringQueryLoading
   const activeRecurringCount = (recurringOrders || []).filter((o) => o.is_active).length
 
   const pendingOrders = (orders || []).filter(o => o.fulfillment_status === 'pending' || o.fulfillment_status === 'roasted')

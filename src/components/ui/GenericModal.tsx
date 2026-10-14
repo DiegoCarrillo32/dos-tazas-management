@@ -127,3 +127,30 @@ export function FormModal({
     </GenericModal>
   )
 }
+
+type ConfirmRequest = {
+  title: string
+  message: string
+  confirmText?: string
+  cancelText?: string
+  onConfirm: () => void
+}
+
+/** `const { confirm, confirmDialog } = useConfirm()` — render `confirmDialog` once. */
+export function useConfirm() {
+  const [request, setRequest] = React.useState<ConfirmRequest | null>(null)
+  const confirmDialog = (
+    <GenericModal
+      isOpen={!!request}
+      onClose={() => setRequest(null)}
+      title={request?.title}
+      onConfirm={request?.onConfirm}
+      confirmText={request?.confirmText}
+      cancelText={request?.cancelText}
+      confirmVariant="destructive"
+    >
+      <p>{request?.message}</p>
+    </GenericModal>
+  )
+  return { confirm: setRequest, confirmDialog }
+}

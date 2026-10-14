@@ -7,19 +7,22 @@ import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/respo
 import type { B2BRecurringOrderRecord } from '@/types'
 import { RefreshCw, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { GenericModal, useConfirm } from '@/components/ui/GenericModal'
 import { RecurringOrderForm } from '@/components/RecurringOrderForm'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatKg, formatRecurringSchedule } from '@/lib/format'
 import { useTranslation } from '@/i18n/LanguageProvider'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 export default function PartnerRecurringOrders() {
   const { t } = useTranslation()
-  const { data: partnerData } = usePartners()
+  const { data: partnerData, isLoading: partnersLoading } = usePartners()
   const partnerDataArray = Array.isArray(partnerData) ? partnerData : []
   const partnerId = partnerDataArray[0]?.id || (partnerData as B2BPartnerRecord)?.id
-  const { data: recurringOrders, isLoading } = usePartnerRecurringOrders(partnerId || '')
+  const { data: recurringOrders, isLoading: recurringLoading } = usePartnerRecurringOrders(partnerId || '')
+  // The recurring query is disabled until the partner loads; count that as loading.
+  const isLoading = partnersLoading || recurringLoading
   // Partners order from the roaster's coffees they have pricing for.
   const { data: pricing } = usePartnerPricing(partnerId || '')
   const orderableCoffees = (pricing ?? []).map((p) => ({
@@ -28,11 +31,24 @@ export default function PartnerRecurringOrders() {
   }))
   const deleteMutation = useDeleteRecurringOrder(partnerId || '')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const { confirm, confirmDialog } = useConfirm()
   const rowActions = (order: B2BRecurringOrderRecord) => (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => deleteMutation.mutate(order.id)}
+      onClick={() =>
+        confirm({
+          title: t('pm_standing_delete_title'),
+          message: t('pm_standing_delete_msg'),
+          confirmText: t('delete'),
+          cancelText: t('cancel'),
+          onConfirm: () =>
+            deleteMutation.mutate(order.id, {
+              onSuccess: () => toast.success(t('pm_standing_deleted')),
+              onError: (err: Error) => toast.error(err.message),
+            }),
+        })
+      }
       disabled={deleteMutation.isPending}
       className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg size-11 md:size-8"
     >
@@ -152,6 +168,7 @@ export default function PartnerRecurringOrders() {
         />
 
       </div>
+      {confirmDialog}
     </div>
   )
 }

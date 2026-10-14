@@ -15,10 +15,11 @@ import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import type { EquipmentRecord } from '@/types'
+import { LoadError } from '@/components/LoadError'
 
 export default function EquipmentPage() {
   const { t } = useTranslation()
-  const { data: equipmentItems, isLoading: loadingEquipment } = useEquipment()
+  const { data: equipmentItems, isLoading: loadingEquipment, isError, refetch } = useEquipment()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -139,6 +140,8 @@ export default function EquipmentPage() {
           </FormModal>
         }
       />
+
+      {isError && <LoadError onRetry={() => refetch()} />}
 
       <Card className="shadow-lg border-warm-roast/10">
         <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col gap-4">

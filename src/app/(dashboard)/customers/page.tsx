@@ -15,10 +15,11 @@ import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import type { CustomerWithLastPurchase } from '@/types'
+import { LoadError } from '@/components/LoadError'
 
 export default function CustomersPage() {
   const { t } = useTranslation()
-  const { data: customers, isLoading } = useCustomers()
+  const { data: customers, isLoading, isError, refetch } = useCustomers()
   const deleteMutation = useDeleteCustomer()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -164,6 +165,8 @@ export default function CustomersPage() {
           </FormModal>
         }
       />
+
+      {isError && <LoadError onRetry={() => refetch()} />}
 
       <Card className="shadow-lg border-warm-roast/10">
         <CardHeader className="bg-white-pergamino dark:bg-card border-b border-warm-roast/5 dark:border-border pt-4 pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">

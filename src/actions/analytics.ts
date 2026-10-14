@@ -28,10 +28,19 @@ function addDays(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10)
 }
 
-// The period of equal length immediately before [startDate, endDate].
+// The viewer's local calendar day, as YYYY-MM-DD.
+function localToday(filters: AnalyticsFilters): string {
+  return new Date(Date.now() - (filters.tzOffsetMinutes ?? 0) * 60_000).toISOString().slice(0, 10)
+}
+
+// The period of equal length immediately before [startDate, endDate]. Days
+// that haven't happened yet don't count, so month-to-date is compared with the
+// same number of days before it rather than with a whole month.
 function previousPeriod(filters: AnalyticsFilters): AnalyticsFilters | null {
   if (!filters.startDate || !filters.endDate) return null
-  const days = Math.round((Date.parse(filters.endDate) - Date.parse(filters.startDate)) / DAY_MS) + 1
+  const today = localToday(filters)
+  const end = filters.endDate > today ? today : filters.endDate
+  const days = Math.round((Date.parse(end) - Date.parse(filters.startDate)) / DAY_MS) + 1
   if (days <= 0) return null
   return {
     ...filters,

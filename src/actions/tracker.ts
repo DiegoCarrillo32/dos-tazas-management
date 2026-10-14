@@ -5,6 +5,41 @@ import { revalidatePath } from 'next/cache'
 import { TimeLogRecord } from '@/types'
 import { userAction } from '@/lib/action-result'
 
+type Supabase = Awaited<ReturnType<typeof createClient>>
+
+const OVERLAP_ERROR = 'OVERLAP: This shift overlaps with an existing time log.'
+
+// The UI checks this too, but the server is the one that has to hold.
+function assertValidRange(startTime: string, endTime: string) {
+  const start = Date.parse(startTime)
+  const end = Date.parse(endTime)
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    throw new Error('End time must be after start time.')
+  }
+}
+
+async function assertNoOverlap(
+  supabase: Supabase,
+  workerId: string,
+  startTime: string,
+  endTime: string,
+  excludeLogId?: string
+) {
+  let query = supabase
+    .from('time_logs')
+    .select('id')
+    .eq('worker_id', workerId)
+    .lt('start_time', endTime)
+    .gt('end_time', startTime)
+    .limit(1)
+  if (excludeLogId) query = query.neq('id', excludeLogId)
+  const { data: overlapping } = await query
+  if (overlapping && overlapping.length > 0) {
+    throw new Error(OVERLAP_ERROR)
+  }
+}
+
+
 /**
  * Log time as a worker. Snapshots the worker's current hourly rate so
  * historical pay is not affected by future rate changes.
@@ -26,18 +61,8 @@ export const logTime = userAction(async function logTime(startTime: string, endT
     throw new Error('Not assigned to a team')
   }
 
-  // Overlap check: reject if any existing log for this worker overlaps
-  const { data: overlapping } = await supabase
-    .from('time_logs')
-    .select('id')
-    .eq('worker_id', teamData.id)
-    .lt('start_time', endTime)
-    .gt('end_time', startTime)
-    .limit(1)
-
-  if (overlapping && overlapping.length > 0) {
-    throw new Error('OVERLAP: This shift overlaps with an existing time log.')
-  }
+  assertValidRange(startTime, endTime)
+  await assertNoOverlap(supabase, teamData.id, startTime, endTime)
 
   const { data, error } = await supabase
     .from('time_logs')
@@ -209,21 +234,10 @@ export const updateWorkerTimeLog = userAction(async function updateWorkerTimeLog
     throw new Error('Not assigned to a team')
   }
 
-  // Overlap check: reject if any other log for this worker overlaps the new range
-  const { data: overlapping } = await supabase
-    .from('time_logs')
-    .select('id')
-    .eq('worker_id', teamData.id)
-    .neq('id', logId)
-    .lt('start_time', params.end_time)
-    .gt('end_time', params.start_time)
-    .limit(1)
+  assertValidRange(params.start_time, params.end_time)
+  await assertNoOverlap(supabase, teamData.id, params.start_time, params.end_time, logId)
 
-  if (overlapping && overlapping.length > 0) {
-    throw new Error('OVERLAP: This shift overlaps with an existing time log.')
-  }
-
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('time_logs')
     .update({
       start_time: params.start_time,
@@ -233,9 +247,13 @@ export const updateWorkerTimeLog = userAction(async function updateWorkerTimeLog
     .eq('id', logId)
     .eq('worker_id', teamData.id)
     .eq('status', 'pending')
+    .select('id')
 
   if (error) {
     throw new Error(`Failed to update time log: ${error.message}`)
+  }
+  if (!updated?.length) {
+    throw new Error('This log has already been paid and can no longer be edited.')
   }
 
   revalidatePath('/tracker')
@@ -270,7 +288,7 @@ export async function revertTimeLogToPending(logId: string) {
  * Admin creates a time log on behalf of a specific worker.
  * Snapshots the worker's current hourly rate.
  */
-export async function addTimeLogForWorker(
+export const addTimeLogForWorker = userAction(async function addTimeLogForWorker(
   workerId: string,
   startTime: string,
   endTime: string,
@@ -293,6 +311,9 @@ export async function addTimeLogForWorker(
     throw new Error('Worker not found or access denied')
   }
 
+  assertValidRange(startTime, endTime)
+  await assertNoOverlap(supabase, memberData.id, startTime, endTime)
+
   const { error } = await supabase
     .from('time_logs')
     .insert({
@@ -311,7 +332,7 @@ export async function addTimeLogForWorker(
 
   revalidatePath('/team')
   return true
-}
+})
 
 /**
  * Delete a time log (worker or admin).

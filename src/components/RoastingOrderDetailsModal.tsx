@@ -10,6 +10,7 @@ import { defaultRoastingConfig } from '@/config/roastingConfig'
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge'
 import { formatCRC } from '@/lib/format'
 import { toast } from 'sonner'
+import { useConfirm } from '@/components/ui/GenericModal'
 
 const statusTones: Record<RoastingOrderStatus, StatusTone> = {
   pending: 'info',
@@ -32,6 +33,7 @@ interface RoastingOrderDetailsModalProps {
 
 export function RoastingOrderDetailsModal({ order, onClose }: RoastingOrderDetailsModalProps) {
   const { t } = useTranslation()
+  const { confirm, confirmDialog } = useConfirm()
   const updateMutation = useUpdateRoastingOrderStatus()
 
   const machineName =
@@ -74,6 +76,7 @@ export function RoastingOrderDetailsModal({ order, onClose }: RoastingOrderDetai
 
   return (
     <div className="bg-card rounded-2xl shadow-2xl border border-warm-roast/10 p-6 space-y-5 w-full">
+      {confirmDialog}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-heading text-expresso">{t('roasting_order_details')}</h2>
@@ -131,7 +134,15 @@ export function RoastingOrderDetailsModal({ order, onClose }: RoastingOrderDetai
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-warm-roast/10 pt-4">
           <Button
             variant="outline"
-            onClick={() => runUpdate('cancelled', 'roasting_order_cancelled')}
+            onClick={() =>
+              confirm({
+                title: t('roasting_action_cancel'),
+                message: t('roasting_cancel_confirm'),
+                confirmText: t('roasting_action_cancel'),
+                cancelText: t('cancel'),
+                onConfirm: () => runUpdate('cancelled', 'roasting_order_cancelled'),
+              })
+            }
             disabled={updateMutation.isPending}
             className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/40 dark:hover:bg-red-900/20 gap-1 rounded-full"
           >

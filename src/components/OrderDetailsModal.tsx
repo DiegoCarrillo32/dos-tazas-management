@@ -169,7 +169,19 @@ export function OrderDetailsModal({
                   key={stage}
                   variant={isCurrent ? "secondary" : "outline"}
                   disabled={isCurrent || fulfillmentMutation.isPending}
-                  onClick={() => fulfillmentMutation.mutate({ id: order.id, status: stage })}
+                  onClick={() =>
+                    fulfillmentMutation.mutate(
+                      { id: order.id, status: stage },
+                      {
+                        // The order leaves this column, so close deliberately and say where it went.
+                        onSuccess: () => {
+                          toast.success(t('orders_moved_to').replace('{stage}', stageLabel(stage)))
+                          onClose?.()
+                        },
+                        onError: () => toast.error(t('order_update_failed')),
+                      }
+                    )
+                  }
                   className="min-h-14 w-full justify-start gap-3 rounded-xl text-base"
                 >
                   {fulfillmentIcons[stage]}

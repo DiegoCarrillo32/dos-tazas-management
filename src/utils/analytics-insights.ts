@@ -48,6 +48,8 @@ export type MixRow = {
   cost: number
   profit: number
   margin: number | null
+  /** Revenue from orders that have a recorded cost — the base for `margin`. */
+  costedRevenue: number
   grams: number
   orders: number
   /** Share of total revenue, 0–100. */
@@ -249,9 +251,11 @@ export function groupMix(orders: AnalyticsOrderRow[], keyOf: (o: AnalyticsOrderR
   const groups = new Map<string, MixRow>()
   for (const o of orders) {
     const name = keyOf(o)
-    const g = groups.get(name) ?? { name, revenue: 0, cost: 0, profit: 0, margin: null, grams: 0, orders: 0, share: 0 }
+    const g = groups.get(name) ?? { name, revenue: 0, cost: 0, profit: 0, margin: null, costedRevenue: 0, grams: 0, orders: 0, share: 0 }
     g.revenue += o.total_price
     g.cost += o.total_cost ?? 0
+    // Same rule as the KPI margin: uncosted orders would inflate it.
+    if (o.total_cost !== null) g.costedRevenue += o.total_price
     g.grams += o.amount_grams
     g.orders += 1
     groups.set(name, g)
@@ -262,7 +266,8 @@ export function groupMix(orders: AnalyticsOrderRow[], keyOf: (o: AnalyticsOrderR
       revenue: round2(g.revenue),
       cost: round2(g.cost),
       profit: round2(g.revenue - g.cost),
-      margin: g.revenue > 0 ? pct(g.revenue - g.cost, g.revenue) : null,
+      costedRevenue: round2(g.costedRevenue),
+      margin: g.costedRevenue > 0 ? pct(g.costedRevenue - g.cost, g.costedRevenue) : null,
       share: pct(g.revenue, total)
     }))
     .sort((a, b) => b.revenue - a.revenue)
@@ -418,26 +423,29 @@ export function computeCosts(orders: AnalyticsOrderRow[]): AnalyticsReport['cost
     .sort((a, b) => b.amount - a.amount)
 }
 
+// Only jobs the roaster has taken on earn; pending requests may still be
+// declined or cancelled.
+export const roastingJobEarns = (status: string) => status === 'accepted' || status === 'completed'
+
 export function computeRoasting(rows: AnalyticsRoastingRow[]): AnalyticsReport['roasting'] {
   const active = rows.filter((r) => r.status !== 'cancelled')
   const byStatus = new Map<string, { status: string; jobs: number; revenue: number }>()
   for (const r of rows) {
     const s = byStatus.get(r.status) ?? { status: r.status, jobs: 0, revenue: 0 }
     s.jobs += 1
-    // Cancelled jobs earn nothing.
-    if (r.status !== 'cancelled') s.revenue += r.total_cost
+    if (roastingJobEarns(r.status)) s.revenue += r.total_cost
     byStatus.set(r.status, s)
   }
   const byPartner = new Map<string, { name: string; revenue: number; jobs: number }>()
   for (const r of active) {
     const name = r.partner_name ?? ''
     const p = byPartner.get(name) ?? { name, revenue: 0, jobs: 0 }
-    p.revenue += r.total_cost
+    if (roastingJobEarns(r.status)) p.revenue += r.total_cost
     p.jobs += 1
     byPartner.set(name, p)
   }
   return {
-    revenue: round2(active.reduce((s, r) => s + r.total_cost, 0)),
+    revenue: round2(rows.reduce((s, r) => s + (roastingJobEarns(r.status) ? r.total_cost : 0), 0)),
     jobs: active.length,
     roastedGrams: active.reduce((s, r) => s + r.roasted_grams_out, 0),
     byStatus: [...byStatus.values()].map((s) => ({ ...s, revenue: round2(s.revenue) })),
@@ -578,7 +586,7 @@ export function computeAnalytics(dataset: AnalyticsDataset, now: Date = new Date
   const [retail, b2b] = (['retail', 'b2b'] as const).map(
     (name) =>
       channelMix.find((m) => m.name === name) ??
-      { name, revenue: 0, cost: 0, profit: 0, margin: null, grams: 0, orders: 0, share: 0 }
+      { name, revenue: 0, cost: 0, profit: 0, margin: null, costedRevenue: 0, grams: 0, orders: 0, share: 0 }
   )
   const previousB2bShare = previousOrders?.length
     ? pct(

@@ -107,6 +107,14 @@ describe('groupMix', () => {
     expect(mix[0].margin).toBeCloseTo(66.67, 1)
     expect(mix[1].margin).toBeCloseTo(10)
   })
+
+  it('bases margin on costed orders only, like the KPI margin', () => {
+    const mix = groupMix(
+      [order({ coffee: 'A', total_price: 100, total_cost: 60 }), order({ coffee: 'A', total_price: 100, total_cost: null })],
+      (o) => o.coffee ?? ''
+    )
+    expect(mix[0].margin).toBeCloseTo(40)
+  })
 })
 
 describe('computeCustomers', () => {
@@ -183,6 +191,16 @@ describe('computeRoasting', () => {
     const r = computeRoasting([row('completed'), row('cancelled')])
     expect(r.revenue).toBe(50)
     expect(r.byStatus.find((s) => s.status === 'cancelled')).toMatchObject({ jobs: 1, revenue: 0 })
+  })
+
+  it('does not count pending requests as revenue', () => {
+    const row = (status: string): AnalyticsRoastingRow => ({
+      id: status, created_at: at(2026, 9, 10), partner_name: 'Café', status,
+      total_cost: 50, green_grams_in: 1000, roasted_grams_out: 800,
+    })
+    const r = computeRoasting([row('pending'), row('accepted')])
+    expect(r.revenue).toBe(50)
+    expect(r.jobs).toBe(2)
   })
 })
 
