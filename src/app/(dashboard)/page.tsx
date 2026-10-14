@@ -7,7 +7,7 @@ import { Plus, FileDown } from 'lucide-react'
 import { OrderForm } from '@/components/OrderForm'
 import { PageSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { FormModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { exportOrdersPdf } from '@/utils/exportOrdersPdf'
 import { LoadError } from '@/components/LoadError'
@@ -43,8 +43,7 @@ export default function OrdersPage() {
               <FileDown className="h-5 w-5" />
               <span className="hidden sm:inline font-bold">{t('orders_export_pdf')}</span>
             </Button>
-            <GenericModal
-              variant="bare"
+            <FormModal
               title={t('orders_create_new') || "Create New Order"}
               contentClassName="sm:max-w-[480px]"
               trigger={
@@ -54,8 +53,8 @@ export default function OrdersPage() {
                 </Button>
               }
             >
-              <OrderForm customers={customers || []} inventoryItems={coffeeInventory} settings={settings} />
-            </GenericModal>
+              {(close) => <OrderForm customers={customers || []} inventoryItems={coffeeInventory} settings={settings} onSuccess={close} onCancel={close} />}
+            </FormModal>
           </div>
         }
       />

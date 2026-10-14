@@ -5,6 +5,7 @@ import { MobileTopBar } from "@/components/MobileTopBar"
 import { fetchSettings } from "@/actions/settings"
 import { createClient } from "@/utils/supabase/server"
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -37,6 +38,15 @@ export default async function DashboardLayout({
 
     if (profile?.role) {
       userRole = profile.role
+    } else if (user.user_metadata?.invite_code) {
+      // Signup couldn't claim the invite (e.g. email confirmation meant no
+      // session yet), so claim it on first visit instead of defaulting to roaster.
+      const { error } = await supabase.rpc('claim_invite', { p_code: user.user_metadata.invite_code })
+      if (error) {
+        console.error('Deferred invite claim failed:', error.message)
+      } else {
+        redirect('/')
+      }
     }
   }
 

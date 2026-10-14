@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Copy, Plus, Check } from 'lucide-react'
-import { generateInvite } from '@/actions/b2bPartners'
+import { useGenerateInvite } from '@/hooks/queries'
 import { GenericModal } from '@/components/ui/GenericModal'
 import { useTranslation } from '@/i18n/LanguageProvider'
 
 export function InvitePartnerDialog() {
   const { t } = useTranslation()
+  const generateInviteMutation = useGenerateInvite()
   const [isOpen, setIsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [inviteCode, setInviteCode] = useState<string | null>(null)
@@ -26,12 +27,13 @@ export function InvitePartnerDialog() {
       const contactPhone = formData.get('contactPhone') as string
       const email = formData.get('email') as string
       
-      const partner = await generateInvite(
+      // Through the hook so the partners list picks up the new invite.
+      const partner = await generateInviteMutation.mutateAsync({
         companyName,
-        contactName || null,
-        contactPhone || null,
-        email || null
-      )
+        contactName: contactName || null,
+        contactPhone: contactPhone || null,
+        inviteEmail: email || null,
+      })
       
       setInviteCode(partner.invite_code)
     } catch (err) {

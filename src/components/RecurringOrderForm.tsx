@@ -37,7 +37,7 @@ type RecurringFormValues = z.infer<typeof recurringSchema>;
 
 interface RecurringOrderFormProps {
   partnerId: string;
-  inventoryItems?: InventoryRecord[];
+  inventoryItems?: Pick<InventoryRecord, 'id' | 'item_name'>[];
   initialData?: B2BRecurringOrderRecord;
   onSuccess?: () => void;
   onCancel?: () => void;

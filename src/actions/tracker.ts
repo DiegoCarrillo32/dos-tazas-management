@@ -3,12 +3,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { TimeLogRecord } from '@/types'
+import { userAction } from '@/lib/action-result'
 
 /**
  * Log time as a worker. Snapshots the worker's current hourly rate so
  * historical pay is not affected by future rate changes.
  */
-export async function logTime(startTime: string, endTime: string, notes: string | null) {
+export const logTime = userAction(async function logTime(startTime: string, endTime: string, notes: string | null) {
   const supabase = await createClient()
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError || !userData.user) {
@@ -58,7 +59,7 @@ export async function logTime(startTime: string, endTime: string, notes: string 
 
   revalidatePath('/tracker')
   return data as TimeLogRecord
-}
+})
 
 /**
  * Get time logs for a worker (to view their own history).
@@ -188,7 +189,7 @@ export async function updateTimeLogHours(
  * Update a worker's own pending time log (date/start/end/notes).
  * Only applies to pending logs — paid logs are immutable.
  */
-export async function updateWorkerTimeLog(
+export const updateWorkerTimeLog = userAction(async function updateWorkerTimeLog(
   logId: string,
   params: { start_time: string; end_time: string; notes: string | null }
 ) {
@@ -239,7 +240,7 @@ export async function updateWorkerTimeLog(
 
   revalidatePath('/tracker')
   return true
-}
+})
 
 /**
  * Revert a paid time log back to pending (admin only).

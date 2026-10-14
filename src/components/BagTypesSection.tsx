@@ -7,7 +7,7 @@ import { Plus, Package, Edit, Trash2 } from 'lucide-react'
 import { BagTypeForm } from '@/components/BagTypeForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { FormModal } from '@/components/ui/GenericModal'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import { formatCurrency } from '@/lib/format'
 import type { BagTypeRecord } from '@/types'
@@ -28,8 +28,7 @@ export function BagTypesSection() {
 
   const rowActions = (item: BagTypeRecord) => (
     <>
-      <GenericModal
-        variant="bare"
+      <FormModal
         title={t('bag_type_edit')}
         contentClassName="sm:max-w-[420px]"
         trigger={
@@ -39,8 +38,8 @@ export function BagTypesSection() {
           </Button>
         }
       >
-        <BagTypeForm initialData={item} />
-      </GenericModal>
+        {(close) => <BagTypeForm initialData={item} onSuccess={close} onCancel={close} />}
+      </FormModal>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -92,8 +91,7 @@ export function BagTypesSection() {
             {t('bag_types_subtitle')}
           </CardDescription>
         </div>
-        <GenericModal
-          variant="bare"
+        <FormModal
           title={t('bag_type_add')}
           contentClassName="sm:max-w-[420px]"
           trigger={
@@ -103,8 +101,8 @@ export function BagTypesSection() {
             </Button>
           }
         >
-          <BagTypeForm />
-        </GenericModal>
+          {(close) => <BagTypeForm onSuccess={close} onCancel={close} />}
+        </FormModal>
       </CardHeader>
       <CardContent className="p-0">
         <ResponsiveList

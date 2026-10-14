@@ -31,7 +31,8 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const inviteCode = formData.get('inviteCode') as string | null
+  // Codes are generated uppercase; accept them however they were typed.
+  const inviteCode = (formData.get('inviteCode') as string | null)?.trim().toUpperCase() || null
 
   if (!email || !password) {
     return { error: 'Email and password are required' }
@@ -49,6 +50,9 @@ export async function signup(formData: FormData) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    // Kept on the user so the invite can still be claimed after email
+    // confirmation (see the dashboard layout).
+    options: inviteCode ? { data: { invite_code: inviteCode } } : undefined,
   })
 
   if (error) {
@@ -72,10 +76,13 @@ export async function signup(formData: FormData) {
       })
     }
 
-    if (inviteCode) {
+    if (inviteCode && data.session) {
       const { error: claimErr } = await dbClient.rpc('claim_invite', { p_code: inviteCode })
-      if (claimErr) console.error("Invite claim error:", claimErr)
-    } else {
+      if (claimErr) {
+        console.error("Invite claim error:", claimErr)
+        return { error: claimErr.message }
+      }
+    } else if (!inviteCode) {
       // Create roaster profile
       const { error: profileErr } = await dbClient.from('user_profiles').insert({
         user_id: user.id,

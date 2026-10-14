@@ -85,7 +85,7 @@ function JoinForm() {
                 name="inviteCode"
                 type="text" 
                 value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 placeholder="e.g. ABCDEF12" 
                 required 
                 className="border-warm-roast/20 bg-background/60 focus:bg-background focus-visible:ring-coffee-fruit rounded-2xl h-11 transition-all pl-4 text-expresso font-mono font-bold tracking-widest uppercase"

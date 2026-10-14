@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { UserSettingsRecord, UserSettingsUpdateParams } from '@/types'
+import { userAction } from '@/lib/action-result'
 
 const DEFAULT_SETTINGS: Omit<UserSettingsRecord, 'id' | 'user_id' | 'updated_at'> = {
   business_name: null,
@@ -52,7 +53,7 @@ export async function fetchSettings(): Promise<UserSettingsRecord> {
   return data as UserSettingsRecord
 }
 
-export async function updateSettings(params: UserSettingsUpdateParams) {
+export const updateSettings = userAction(async function updateSettings(params: UserSettingsUpdateParams) {
   const supabase = await createClient()
 
   const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -116,4 +117,4 @@ export async function updateSettings(params: UserSettingsUpdateParams) {
 
   revalidatePath('/', 'layout')
   return result as UserSettingsRecord
-}
+})

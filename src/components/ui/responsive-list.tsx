@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 /**
  * Where a column shows up on the mobile card.
@@ -116,6 +117,9 @@ export function ResponsiveList<T>({
 
   const cardValue = (c: ResponsiveListColumn<T>, row: T, i: number) =>
     (c.cardCell ?? c.cell)(row, i)
+  // Both layouts are in the DOM (CSS picks one), but actions often own modals
+  // and mutations, so render them in only the visible layout.
+  const isMobile = useIsMobile()
 
   return (
     <div className={cn("w-full", className)}>
@@ -135,8 +139,8 @@ export function ResponsiveList<T>({
         ) : (
           <div className="flex flex-col gap-4 p-4 bg-warm-roast/5 dark:bg-muted/10">
             {data.map((row, i) => {
-              const headerActions = (cardActions ?? actions)?.(row)
-              const footer = cardFooter?.(row)
+              const headerActions = isMobile ? (cardActions ?? actions)?.(row) : null
+              const footer = isMobile ? cardFooter?.(row) : null
               return (
                 <div
                   key={rowKey(row, i)}
@@ -280,7 +284,7 @@ export function ResponsiveList<T>({
                   ))}
                   {actions && (
                     <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end gap-1">{actions(row)}</div>
+                      <div className="flex justify-end gap-1">{!isMobile && actions(row)}</div>
                     </td>
                   )}
                 </tr>

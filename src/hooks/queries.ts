@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { unwrap } from '@/lib/action-result'
 import type {
   OrderWithCustomer,
   CustomerWithLastPurchase,
@@ -455,7 +456,7 @@ export function useDeleteInventoryItem() {
 export function useUpdateSettings() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (params: UserSettingsUpdateParams) => updateSettings(params),
+    mutationFn: async (params: UserSettingsUpdateParams) => unwrap(await updateSettings(params)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.settings })
     },
@@ -592,8 +593,8 @@ export function useDeleteGreenCoffeeLot(inventoryId: string) {
 export function useShipGreenCoffeeLot(inventoryId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, kgToShip }: { id: string; kgToShip: number }) =>
-      shipGreenCoffeeLot(id, kgToShip),
+    mutationFn: async ({ id, kgToShip }: { id: string; kgToShip: number }) =>
+      unwrap(await shipGreenCoffeeLot(id, kgToShip)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.greenCoffeeLots(inventoryId) })
       qc.invalidateQueries({ queryKey: queryKeys.allGreenCoffeeLots })
@@ -833,8 +834,8 @@ export function useWorkerTimeLogs() {
 export function useLogTime() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ startTime, endTime, notes }: { startTime: string, endTime: string, notes: string | null }) => 
-      logTime(startTime, endTime, notes),
+    mutationFn: async ({ startTime, endTime, notes }: { startTime: string, endTime: string, notes: string | null }) =>
+      unwrap(await logTime(startTime, endTime, notes)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workerTimeLogs })
     },
@@ -883,13 +884,13 @@ export function useUpdateTimeLogHours() {
 export function useUpdateWorkerTimeLog() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       logId,
       params,
     }: {
       logId: string
       params: { start_time: string; end_time: string; notes: string | null }
-    }) => updateWorkerTimeLog(logId, params),
+    }) => unwrap(await updateWorkerTimeLog(logId, params)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.workerTimeLogs })
     },

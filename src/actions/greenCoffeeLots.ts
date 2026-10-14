@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { GreenCoffeeLotRecord, GreenCoffeeLotInsertParams, GreenCoffeeLotUpdateParams } from '@/types'
+import { userAction } from '@/lib/action-result'
 
 export async function createGreenCoffeeLot(params: GreenCoffeeLotInsertParams): Promise<GreenCoffeeLotRecord> {
   const supabase = await createClient()
@@ -50,7 +51,7 @@ export async function updateGreenCoffeeLot(id: string, params: GreenCoffeeLotUpd
   return data as GreenCoffeeLotRecord
 }
 
-export async function shipGreenCoffeeLot(id: string, kgToShip: number): Promise<GreenCoffeeLotRecord> {
+export const shipGreenCoffeeLot = userAction(async function shipGreenCoffeeLot(id: string, kgToShip: number): Promise<GreenCoffeeLotRecord> {
   const supabase = await createClient()
 
   // Single conditional UPDATE in the database, so concurrent shipments can't
@@ -64,7 +65,7 @@ export async function shipGreenCoffeeLot(id: string, kgToShip: number): Promise<
 
   revalidatePath('/inventory')
   return data as GreenCoffeeLotRecord
-}
+})
 
 export async function deleteGreenCoffeeLot(id: string): Promise<void> {
   const supabase = await createClient()

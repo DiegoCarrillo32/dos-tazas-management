@@ -17,12 +17,11 @@ interface GreenCoffeeLotsDialogProps {
 }
 
 function LotAvailabilityBar({ lot }: { lot: GreenCoffeeLotRecord }) {
+  const { t } = useTranslation()
   if (!lot.quantity_kg) return null
   const pct = Math.min(100, ((lot.quantity_shipped_kg || 0) / lot.quantity_kg) * 100)
   const available = lot.quantity_kg - (lot.quantity_shipped_kg || 0)
   const isLow = available < lot.quantity_kg * 0.2
-
-  const { t } = useTranslation()
 
   return (
     <div className="mt-2">

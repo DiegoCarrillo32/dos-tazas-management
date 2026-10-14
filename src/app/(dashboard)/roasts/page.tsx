@@ -7,7 +7,7 @@ import { Plus, Flame, Edit, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { RoastBatchForm } from '@/components/RoastBatchForm'
 import { useRoastBatches } from '@/hooks/queries'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { GenericModal, FormModal } from '@/components/ui/GenericModal'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
 import type { RoastBatchRecord } from '@/types'
@@ -31,8 +31,7 @@ export default function RoastsPage() {
       : null
 
   const rowActions = (batch: RoastBatchRecord) => (
-    <GenericModal
-      variant="bare"
+    <FormModal
       title={t('roasts_edit')}
       contentClassName="sm:max-w-[600px]"
       trigger={
@@ -42,8 +41,8 @@ export default function RoastsPage() {
         </Button>
       }
     >
-      <RoastBatchForm initialData={batch} />
-    </GenericModal>
+      {(close) => <RoastBatchForm initialData={batch} onSuccess={close} onCancel={close} />}
+    </FormModal>
   )
 
   const columns: ResponsiveListColumn<RoastBatchRecord>[] = [

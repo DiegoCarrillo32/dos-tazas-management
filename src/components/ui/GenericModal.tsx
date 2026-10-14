@@ -108,3 +108,22 @@ export function GenericModal({
     </Dialog>
   )
 }
+
+/**
+ * A "bare" modal around a form that owns its open state, so the form can
+ * close it on save or cancel: `{(close) => <XForm onSuccess={close} onCancel={close} />}`.
+ */
+export function FormModal({
+  children,
+  ...props
+}: Omit<GenericModalProps, "isOpen" | "onOpenChange" | "variant" | "children"> & {
+  children: (close: () => void) => React.ReactNode
+}) {
+  const [open, setOpen] = React.useState(false)
+  const close = () => setOpen(false)
+  return (
+    <GenericModal {...props} variant="bare" isOpen={open} onOpenChange={setOpen}>
+      {children(close)}
+    </GenericModal>
+  )
+}

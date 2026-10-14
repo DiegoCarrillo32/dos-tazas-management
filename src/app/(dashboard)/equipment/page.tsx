@@ -10,7 +10,7 @@ import { EquipmentForm } from '@/components/EquipmentForm'
 import { MaintenanceLogsDialog } from '@/components/MaintenanceLogsDialog'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { FormModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
@@ -57,8 +57,7 @@ export default function EquipmentPage() {
   const rowActions = (item: EquipmentRecord) => (
     <>
       <MaintenanceLogsDialog equipmentId={item.id} equipmentName={item.name} />
-      <GenericModal
-        variant="bare"
+      <FormModal
         title={t('equipment_edit')}
         contentClassName="sm:max-w-[480px]"
         trigger={
@@ -68,8 +67,8 @@ export default function EquipmentPage() {
           </Button>
         }
       >
-        <EquipmentForm initialData={item} />
-      </GenericModal>
+        {(close) => <EquipmentForm initialData={item} onSuccess={close} onCancel={close} />}
+      </FormModal>
     </>
   )
 
@@ -126,8 +125,7 @@ export default function EquipmentPage() {
         title={t('equipment_title')}
         subtitle={t('equipment_subtitle')}
         action={
-          <GenericModal
-            variant="bare"
+          <FormModal
             title={t('equipment_add')}
             contentClassName="sm:max-w-[480px]"
             trigger={
@@ -137,8 +135,8 @@ export default function EquipmentPage() {
               </Button>
             }
           >
-            <EquipmentForm />
-          </GenericModal>
+            {(close) => <EquipmentForm onSuccess={close} onCancel={close} />}
+          </FormModal>
         }
       />
 

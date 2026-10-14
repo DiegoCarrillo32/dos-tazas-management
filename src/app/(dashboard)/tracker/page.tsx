@@ -219,68 +219,6 @@ export default function TrackerPage() {
     )
   }
 
-  // ── Shared time field layout ───────────────────────────────────
-  const TimeFields = ({
-    dateVal, onDate, startVal, onStart, endVal, onEnd, preview,
-  }: {
-    dateVal: string; onDate: (v: string) => void
-    startVal: string; onStart: (v: string) => void
-    endVal: string; onEnd: (v: string) => void
-    preview: number
-  }) => (
-    <>
-      <div>
-        <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_date')}</label>
-        <input
-          type="date"
-          required
-          value={dateVal}
-          onChange={e => onDate(e.target.value)}
-          className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_start')}</label>
-          <input
-            type="time"
-            required
-            value={startVal}
-            onChange={e => onStart(e.target.value)}
-            className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_end')}</label>
-          <input
-            type="time"
-            required
-            value={endVal}
-            onChange={e => onEnd(e.target.value)}
-            className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none"
-          />
-        </div>
-      </div>
-      {dateVal && startVal && endVal && (
-        <div className={`p-3 rounded-lg border text-center ${
-          preview > 0
-            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-        }`}>
-          {preview > 0 ? (
-            <p className="text-sm font-bold text-green-700 dark:text-green-400">
-              ⏱ {t('tracker_hours_logged').replace('{hours}', preview.toFixed(2))}
-            </p>
-          ) : (
-            <p className="text-sm font-bold text-red-600 dark:text-red-400">
-              {t('tracker_end_after_start')}
-            </p>
-          )}
-        </div>
-      )}
-    </>
-  )
-
   const logActions = (log: TimeLogRecord) =>
     log.status === 'pending' ? (
       <>
@@ -417,6 +355,7 @@ export default function TrackerPage() {
             </h2>
             <form onSubmit={handleLogTime} className="space-y-4">
               <TimeFields
+                idPrefix="log" t={t}
                 dateVal={date} onDate={setDate}
                 startVal={startTime} onStart={setStartTime}
                 endVal={endTime} onEnd={setEndTime}
@@ -527,6 +466,7 @@ export default function TrackerPage() {
         </h2>
         <form onSubmit={handleSaveEdit} className="space-y-4">
           <TimeFields
+            idPrefix="edit" t={t}
             dateVal={editDate} onDate={setEditDate}
             startVal={editStart} onStart={setEditStart}
             endVal={editEnd} onEnd={setEditEnd}
@@ -567,4 +507,75 @@ export default function TrackerPage() {
       </GenericModal>
     </div>
   )
+}
+
+// ── Shared time field layout ───────────────────────────────────
+// Module scope: defined inside the page it was a new component type on every
+// render, remounting the inputs (and dropping focus) on each keystroke.
+function TimeFields({
+  idPrefix, t, dateVal, onDate, startVal, onStart, endVal, onEnd, preview,
+}: {
+  idPrefix: string
+  t: ReturnType<typeof useTranslation>['t']
+  dateVal: string; onDate: (v: string) => void
+  startVal: string; onStart: (v: string) => void
+  endVal: string; onEnd: (v: string) => void
+  preview: number
+}) {
+  return (
+  <>
+    <div>
+      <label htmlFor={`${idPrefix}-date`} className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_date')}</label>
+      <input
+        id={`${idPrefix}-date`}
+        type="date"
+        required
+        value={dateVal}
+        onChange={e => onDate(e.target.value)}
+        className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none"
+      />
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <label htmlFor={`${idPrefix}-start`} className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_start')}</label>
+        <input
+          id={`${idPrefix}-start`}
+          type="time"
+          required
+          value={startVal}
+          onChange={e => onStart(e.target.value)}
+          className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none"
+        />
+      </div>
+      <div>
+        <label htmlFor={`${idPrefix}-end`} className="block text-sm font-medium text-expresso mb-1">{t('tracker_field_end')}</label>
+        <input
+          id={`${idPrefix}-end`}
+          type="time"
+          required
+          value={endVal}
+          onChange={e => onEnd(e.target.value)}
+          className="w-full p-2 border border-warm-roast/20 rounded-lg focus:ring-2 focus:ring-coffee-fruit/20 outline-none"
+        />
+      </div>
+    </div>
+    {dateVal && startVal && endVal && (
+      <div className={`p-3 rounded-lg border text-center ${
+        preview > 0
+          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+      }`}>
+        {preview > 0 ? (
+          <p className="text-sm font-bold text-green-700 dark:text-green-400">
+            ⏱ {t('tracker_hours_logged').replace('{hours}', preview.toFixed(2))}
+          </p>
+        ) : (
+          <p className="text-sm font-bold text-red-600 dark:text-red-400">
+            {t('tracker_end_after_start')}
+          </p>
+        )}
+      </div>
+    )}
+  </>
+)
 }

@@ -11,7 +11,7 @@ import { GreenCoffeeLotsDialog } from '@/components/GreenCoffeeLotsDialog'
 import { InventorySummaryHeader } from '@/components/InventorySummaryHeader'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { FormModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
@@ -77,8 +77,7 @@ export default function InventoryPage() {
       {isCoffeeItem(item) && (
         <GreenCoffeeLotsDialog inventoryId={item.id} inventoryName={item.item_name} />
       )}
-      <GenericModal
-        variant="bare"
+      <FormModal
         title={t('inv_form_edit') || "Edit Inventory"}
         contentClassName="sm:max-w-[480px]"
         trigger={
@@ -88,8 +87,8 @@ export default function InventoryPage() {
           </Button>
         }
       >
-        <InventoryForm initialData={item} settings={settings} />
-      </GenericModal>
+        {(close) => <InventoryForm initialData={item} settings={settings} onSuccess={close} onCancel={close} />}
+      </FormModal>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -195,8 +194,7 @@ export default function InventoryPage() {
         title={t('inventory_title')}
         subtitle={t('inventory_subtitle')}
         action={
-          <GenericModal
-            variant="bare"
+          <FormModal
             title={t('inventory_add_title') || "Add Inventory"}
             contentClassName="sm:max-w-[480px]"
             trigger={
@@ -206,8 +204,8 @@ export default function InventoryPage() {
               </Button>
             }
           >
-            <InventoryForm settings={settings} />
-          </GenericModal>
+            {(close) => <InventoryForm settings={settings} onSuccess={close} onCancel={close} />}
+          </FormModal>
         }
       />
 

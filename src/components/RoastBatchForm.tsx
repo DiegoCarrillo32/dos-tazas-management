@@ -75,7 +75,8 @@ export function RoastBatchForm({ initialData, onSuccess, onCancel, inline = fals
 
   const onSubmit = (data: RoastBatchFormValues) => {
     const payload = {
-      equipment_id: data.equipment_id || null,
+      // "none" is the Select's placeholder value, not a UUID
+      equipment_id: data.equipment_id && data.equipment_id !== 'none' ? data.equipment_id : null,
       green_lot_id: data.green_lot_id,
       weight_in_grams: data.weight_in_grams,
       weight_out_grams: data.weight_out_grams,

@@ -10,7 +10,7 @@ import { Plus, Users, Edit, Search, Trash2 } from 'lucide-react'
 import { CustomerForm } from '@/components/CustomerForm'
 import { TableSkeleton } from '@/components/Skeletons'
 import { useTranslation } from '@/i18n/LanguageProvider'
-import { GenericModal } from '@/components/ui/GenericModal'
+import { GenericModal, FormModal } from '@/components/ui/GenericModal'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/ui/pagination'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
@@ -45,8 +45,7 @@ export default function CustomersPage() {
 
   const rowActions = (customer: CustomerWithLastPurchase) => (
     <>
-      <GenericModal
-        variant="bare"
+      <FormModal
         title={t('cust_form_edit') || "Edit Customer"}
         contentClassName="sm:max-w-[480px]"
         trigger={
@@ -56,8 +55,8 @@ export default function CustomersPage() {
           </Button>
         }
       >
-        <CustomerForm initialData={customer} />
-      </GenericModal>
+        {(close) => <CustomerForm initialData={customer} onSuccess={close} onCancel={close} />}
+      </FormModal>
       <Button
         variant="ghost"
         size="icon-sm"
@@ -151,8 +150,7 @@ export default function CustomersPage() {
         title={t('customers_title')}
         subtitle={t('customers_subtitle')}
         action={
-          <GenericModal
-            variant="bare"
+          <FormModal
             title={t('customers_new_title') || "New Customer"}
             contentClassName="sm:max-w-[480px]"
             trigger={
@@ -162,8 +160,8 @@ export default function CustomersPage() {
               </Button>
             }
           >
-            <CustomerForm />
-          </GenericModal>
+            {(close) => <CustomerForm onSuccess={close} onCancel={close} />}
+          </FormModal>
         }
       />
 

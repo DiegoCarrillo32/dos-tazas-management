@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { updateSettings } from '@/actions/settings'
+import { useUpdateSettings } from '@/hooks/queries'
 import { updateMyWorkerName } from '@/actions/team'
 import type { UserSettingsRecord } from '@/types'
 import { Save, Building2, DollarSign, Globe, Coins, SunMoon, User, Scale, Clock } from 'lucide-react'
@@ -28,6 +28,7 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
   const [isPending, startTransition] = useTransition()
   const { theme, setTheme } = useTheme()
   const { language, setLanguage, t } = useTranslation()
+  const updateSettingsMutation = useUpdateSettings()
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -73,7 +74,7 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
     startTransition(async () => {
       try {
         if (userRole !== 'worker') {
-          await updateSettings({
+          await updateSettingsMutation.mutateAsync({
             business_name: data.business_name || null,
             currency_symbol: data.currency_symbol || '₡',
             cost_per_bag: data.cost_per_bag,

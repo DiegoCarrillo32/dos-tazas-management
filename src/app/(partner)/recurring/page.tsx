@@ -1,6 +1,6 @@
 'use client'
 
-import { usePartnerRecurringOrders, useInventory, usePartners, useDeleteRecurringOrder } from '@/hooks/queries'
+import { usePartnerRecurringOrders, usePartnerPricing, usePartners, useDeleteRecurringOrder } from '@/hooks/queries'
 import type { B2BPartnerRecord } from '@/types'
 import { PageHeader } from '@/components/PageHeader'
 import { ResponsiveList, type ResponsiveListColumn } from '@/components/ui/responsive-list'
@@ -20,7 +20,12 @@ export default function PartnerRecurringOrders() {
   const partnerDataArray = Array.isArray(partnerData) ? partnerData : []
   const partnerId = partnerDataArray[0]?.id || (partnerData as B2BPartnerRecord)?.id
   const { data: recurringOrders, isLoading } = usePartnerRecurringOrders(partnerId || '')
-  const { data: inventoryItems } = useInventory()
+  // Partners order from the roaster's coffees they have pricing for.
+  const { data: pricing } = usePartnerPricing(partnerId || '')
+  const orderableCoffees = (pricing ?? []).map((p) => ({
+    id: p.inventory_id,
+    item_name: p.inventory?.item_name ?? '',
+  }))
   const deleteMutation = useDeleteRecurringOrder(partnerId || '')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const rowActions = (order: B2BRecurringOrderRecord) => (
@@ -119,7 +124,7 @@ export default function PartnerRecurringOrders() {
             <div className="p-6">
               <RecurringOrderForm 
                 partnerId={partnerId} 
-                inventoryItems={(inventoryItems || []).filter(i => i.category === 'green_coffee')} 
+                inventoryItems={orderableCoffees} 
                 onSuccess={() => setIsDialogOpen(false)} 
                 onCancel={() => setIsDialogOpen(false)} 
               />
