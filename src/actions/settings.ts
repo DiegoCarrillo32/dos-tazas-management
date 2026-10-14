@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS: Omit<UserSettingsRecord, 'id' | 'user_id' | 'updated_at'
   green_input_per_roast_grams: 960,
   roasted_output_per_roast_grams: 760,
   labor_hourly_rate: 1600,
-  roasts_per_hour: 3
+  roasts_per_hour: 3,
+  usd_exchange_rate: null
 }
 
 export async function fetchSettings(): Promise<UserSettingsRecord> {
@@ -62,9 +63,16 @@ export async function updateSettings(params: UserSettingsUpdateParams) {
   // Check if settings exist
   const { data: existing } = await supabase
     .from('user_settings')
-    .select('id')
+    .select('id, green_input_per_roast_grams, roasted_output_per_roast_grams')
     .eq('user_id', user.id)
     .single()
+
+  // Roasting never adds weight; output > input would make roast loss negative.
+  const greenIn = params.green_input_per_roast_grams ?? existing?.green_input_per_roast_grams ?? DEFAULT_SETTINGS.green_input_per_roast_grams
+  const roastedOut = params.roasted_output_per_roast_grams ?? existing?.roasted_output_per_roast_grams ?? DEFAULT_SETTINGS.roasted_output_per_roast_grams
+  if (roastedOut > greenIn) {
+    throw new Error('Roasted output cannot exceed green input.')
+  }
 
   let result
 
@@ -79,7 +87,7 @@ export async function updateSettings(params: UserSettingsUpdateParams) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     result = data
   } else {
     const { data, error } = await supabase
@@ -96,12 +104,13 @@ export async function updateSettings(params: UserSettingsUpdateParams) {
         green_input_per_roast_grams: params.green_input_per_roast_grams ?? 960,
         roasted_output_per_roast_grams: params.roasted_output_per_roast_grams ?? 760,
         labor_hourly_rate: params.labor_hourly_rate ?? 1600,
-        roasts_per_hour: params.roasts_per_hour ?? 3
+        roasts_per_hour: params.roasts_per_hour ?? 3,
+        usd_exchange_rate: params.usd_exchange_rate ?? null
       }])
       .select()
       .single()
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     result = data
   }
 

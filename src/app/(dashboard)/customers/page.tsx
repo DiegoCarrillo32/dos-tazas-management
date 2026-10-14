@@ -1,5 +1,6 @@
 'use client'
 
+import { toast } from 'sonner'
 import { useState } from 'react'
 import { useCustomers, useDeleteCustomer } from '@/hooks/queries'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,7 +66,9 @@ export default function CustomersPage() {
           showConfirm(
             t('customers_delete_title'),
             t('customers_delete_confirm'),
-            () => deleteMutation.mutate(customer.id),
+            () => deleteMutation.mutate(customer.id, {
+              onError: () => toast.error(t('customers_delete_failed')),
+            }),
             "destructive"
           )
         }}

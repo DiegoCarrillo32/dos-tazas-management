@@ -204,6 +204,8 @@ export type UserSettingsRecord = {
   // Roasting labor — cost per unit is derived from these.
   labor_hourly_rate: number
   roasts_per_hour: number
+  /** Business-currency units per US dollar, for USD-priced inventory. */
+  usd_exchange_rate: number | null
   updated_at: string
 }
 
@@ -219,6 +221,7 @@ export type UserSettingsUpdateParams = {
   roasted_output_per_roast_grams?: number
   labor_hourly_rate?: number
   roasts_per_hour?: number
+  usd_exchange_rate?: number | null
 }
 
 // --- Bag Types ---

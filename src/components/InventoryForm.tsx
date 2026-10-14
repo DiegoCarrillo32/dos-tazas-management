@@ -94,8 +94,12 @@ export function InventoryForm({ initialData, settings, onSuccess, onCancel, inli
     }
 
     if (initialData?.id) {
+      // Unchanged stock is left out so a stale form value can't overwrite
+      // deductions made by orders while the form was open.
+      const { stock_grams, ...rest } = payload
+      const params = stock_grams === initialData.stock_grams ? rest : payload
       updateMutation.mutate(
-        { id: initialData.id, params: payload },
+        { id: initialData.id, params },
         { onSuccess: onMutationSuccess, onError: onMutationError }
       )
     } else {

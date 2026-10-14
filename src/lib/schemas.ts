@@ -108,15 +108,19 @@ export const settingsSchema = z.object({
   cost_per_sticker: z.number().min(0),
   cost_electricity: z.number().min(0),
   cost_fuel: z.number().min(0),
-  roaster_capacity_grams: z.number().min(1, 'Must be greater than 0'),
-  green_input_per_roast_grams: z.number().min(1, 'Must be greater than 0'),
-  roasted_output_per_roast_grams: z.number().min(1, 'Must be greater than 0'),
+  roaster_capacity_grams: z.number().int('Whole grams only').min(1, 'Must be greater than 0'),
+  green_input_per_roast_grams: z.number().int('Whole grams only').min(1, 'Must be greater than 0'),
+  roasted_output_per_roast_grams: z.number().int('Whole grams only').min(1, 'Must be greater than 0'),
   labor_hourly_rate: z.number().min(0),
   roasts_per_hour: z.number().min(0.01, 'Must be greater than 0'),
+  usd_exchange_rate: z.number().positive('Must be greater than 0').nullable().optional(),
   worker_name: z.string().optional(),
 }).refine((data) => data.green_input_per_roast_grams <= data.roaster_capacity_grams, {
   message: 'Cannot exceed roaster capacity',
   path: ['green_input_per_roast_grams'],
+}).refine((data) => data.roasted_output_per_roast_grams <= data.green_input_per_roast_grams, {
+  message: 'Roasted output cannot exceed green input',
+  path: ['roasted_output_per_roast_grams'],
 })
 
 export const bagTypeSchema = z.object({

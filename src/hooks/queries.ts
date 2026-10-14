@@ -619,6 +619,7 @@ export function useUpdateRoastBatch() {
       updateRoastBatch(id, params),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.roastBatches })
+      qc.invalidateQueries({ queryKey: queryKeys.inventory })
     },
   })
 }
@@ -629,6 +630,7 @@ export function useDeleteRoastBatch() {
     mutationFn: (id: string) => deleteRoastBatch(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.roastBatches })
+      qc.invalidateQueries({ queryKey: queryKeys.inventory })
     },
   })
 }

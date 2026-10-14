@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { partnerOrders, toOrderWithJoins } from '@/utils/supabase/partnerOrders'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -54,15 +55,20 @@ export async function GET(request: Request) {
     return NextResponse.json([])
   }
 
-  // Fetch orders with those partnerIds
   // Partners must not see the roaster's cost/margin columns.
-  const orderColumns = role === 'partner'
-    ? 'id, user_id, customer_id, preparation_method, roast_level, amount_grams, bag_count, total_price, fulfillment_status, payment_status, origin_notes, inventory_id, bag_type_id, order_date, company_name, partner_id'
-    : '*'
+  if (role === 'partner') {
+    const { data, error } = await partnerOrders(supabase)
+      .in('partner_id', partnerIds)
+      .order('order_date', { ascending: false })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    return NextResponse.json((data || []).map(toOrderWithJoins))
+  }
 
   const { data, error } = await supabase
     .from('orders')
-    .select(`${orderColumns}, customers(full_name, phone), inventory(item_name)`)
+    .select('*, customers(full_name, phone), inventory(item_name)')
     .in('partner_id', partnerIds)
     .order('order_date', { ascending: false })
 

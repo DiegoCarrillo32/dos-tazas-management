@@ -43,6 +43,7 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
       roasted_output_per_roast_grams: initialData.roasted_output_per_roast_grams ?? 760,
       labor_hourly_rate: initialData.labor_hourly_rate ?? 1600,
       roasts_per_hour: initialData.roasts_per_hour ?? 3,
+      usd_exchange_rate: initialData.usd_exchange_rate ?? null,
       worker_name: workerName,
     }
   })
@@ -83,7 +84,8 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
             green_input_per_roast_grams: data.green_input_per_roast_grams,
             roasted_output_per_roast_grams: data.roasted_output_per_roast_grams,
             labor_hourly_rate: data.labor_hourly_rate,
-            roasts_per_hour: data.roasts_per_hour
+            roasts_per_hour: data.roasts_per_hour,
+            usd_exchange_rate: data.usd_exchange_rate ?? null
           })
         }
 
@@ -161,6 +163,25 @@ export function SettingsForm({ initialData, userRole = 'roaster', workerName = '
                 <p className="text-xs text-expresso/60">
                   {t('settings_currency_hint')}
                 </p>
+              </div>
+            )}
+
+            {userRole !== 'worker' && (
+              <div className="space-y-2">
+                <Label htmlFor="usd_exchange_rate" className="text-expresso flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-warm-roast" />
+                  {t('settings_usd_rate')}
+                </Label>
+                <Input
+                  id="usd_exchange_rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('usd_exchange_rate', { setValueAs: (v) => v === '' || v === null ? null : Number(v) })}
+                  className="max-w-[150px]"
+                />
+                {errors.usd_exchange_rate && <p className="text-red-500 text-xs">{errors.usd_exchange_rate.message}</p>}
+                <p className="text-xs text-expresso/60">{t('settings_usd_rate_hint')}</p>
               </div>
             )}
             

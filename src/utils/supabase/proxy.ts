@@ -63,6 +63,10 @@ export async function updateSession(request: NextRequest) {
     !path.startsWith('/auth') &&
     !path.startsWith('/join')
   ) {
+    // API callers expect JSON, not the login page's HTML
+    if (path.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     // No user and trying to access a protected route — redirect to login
     const url = request.nextUrl.clone()
     url.pathname = '/login'

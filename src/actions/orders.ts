@@ -73,17 +73,19 @@ export const createOrder = authActionClient
   const bagCount = params.bag_count ?? 1
 
   let costPerKg: number | null = null
+  let costCurrency: string | null = null
   let rawGramsUsed: number | null = null
 
   if (params.inventory_id && params.amount_grams) {
     const { data: invItem } = await supabase
       .from('inventory')
-      .select('cost_per_kg')
+      .select('cost_per_kg, cost_currency')
       .eq('id', params.inventory_id)
       .single()
 
     if (invItem) {
       costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
+      costCurrency = invItem.cost_currency
       rawGramsUsed = Math.round(calculateRawGrams(params.amount_grams, roastLossPercentage(settings)))
     }
   }
@@ -103,6 +105,7 @@ export const createOrder = authActionClient
     bagCount,
     settings,
     costPerKg,
+    costCurrency,
     bagUnitCost
   })
 
@@ -208,50 +211,43 @@ export const updateOrder = authActionClient
   const finalInventoryId = params.inventory_id !== undefined ? params.inventory_id : oldOrder.inventory_id
   const finalAmountGrams = params.amount_grams !== undefined ? params.amount_grams : oldOrder.amount_grams
 
-  // 2. Reconcile inventory: give back what this order actually consumed (older
-  // rows predate raw_grams_used, so fall back to recomputing), then take the
-  // new amount.
-  const inventoryChanged = params.inventory_id !== undefined || params.amount_grams !== undefined
+  // 2. Only fields that actually changed count: the edit form always resends
+  // inventory/amount, and recalculating unchanged orders would move stock and
+  // rewrite historical costs with today's settings.
+  const inventoryChanged = finalInventoryId !== oldOrder.inventory_id ||
+    finalAmountGrams !== oldOrder.amount_grams
+  const finalBagCount = params.bag_count !== undefined ? params.bag_count : (oldOrder.bag_count ?? 1)
+  const finalBagTypeId = params.bag_type_id !== undefined ? params.bag_type_id : oldOrder.bag_type_id
+  const costRelevantChange = inventoryChanged ||
+    Number(finalBagCount) !== Number(oldOrder.bag_count ?? 1) ||
+    finalBagTypeId !== oldOrder.bag_type_id
+
+  // 3. Recompute cost breakdown if cost-relevant fields changed
   const oldRawGrams = oldOrder.inventory_id && oldOrder.amount_grams
     ? (oldOrder.raw_grams_used ?? Math.round(calculateRawGrams(oldOrder.amount_grams, lossPercentage)))
     : 0
   let newRawGrams = oldOrder.raw_grams_used ?? null
-
   if (inventoryChanged) {
     newRawGrams = finalInventoryId && finalAmountGrams
       ? Math.round(calculateRawGrams(finalAmountGrams, lossPercentage))
       : null
-
-    if (finalInventoryId === oldOrder.inventory_id) {
-      const diff = (newRawGrams ?? 0) - oldRawGrams
-      if (finalInventoryId && diff !== 0) await adjustStock(supabase, finalInventoryId, -diff)
-    } else {
-      if (oldOrder.inventory_id && oldRawGrams) await adjustStock(supabase, oldOrder.inventory_id, oldRawGrams)
-      if (finalInventoryId && newRawGrams) await adjustStock(supabase, finalInventoryId, -newRawGrams)
-    }
   }
-
-  // 3. Recompute cost breakdown if cost-relevant fields changed
-  const costRelevantChange = inventoryChanged ||
-    params.bag_count !== undefined ||
-    params.bag_type_id !== undefined
 
   let costUpdate: Record<string, unknown> = {}
 
   if (costRelevantChange) {
-    const finalBagCount = params.bag_count !== undefined ? params.bag_count : (oldOrder.bag_count ?? 1)
-    const finalBagTypeId = params.bag_type_id !== undefined ? params.bag_type_id : oldOrder.bag_type_id
-
     let costPerKg: number | null = null
+    let costCurrency: string | null = null
     if (finalInventoryId && finalAmountGrams) {
       const { data: invItem } = await supabase
         .from('inventory')
-        .select('cost_per_kg')
+        .select('cost_per_kg, cost_currency')
         .eq('id', finalInventoryId)
         .single()
 
       if (invItem) {
         costPerKg = invItem.cost_per_kg ? Number(invItem.cost_per_kg) : null
+        costCurrency = invItem.cost_currency
       }
     }
 
@@ -270,13 +266,45 @@ export const updateOrder = authActionClient
       bagCount: finalBagCount ?? 1,
       settings,
       costPerKg,
+      costCurrency,
       bagUnitCost
     })
 
     costUpdate = { total_cost: totalCost, cost_breakdown: costBreakdown, raw_grams_used: newRawGrams }
   }
 
-  // 4. Perform database update
+  // 4. Reconcile inventory: give back what this order actually consumed (older
+  // rows predate raw_grams_used, so fall back to recomputing), then take the
+  // new amount. Each step is recorded so a later failure can undo it.
+  const applied: Array<[string, number]> = []
+  const undoStock = async () => {
+    for (const [inventoryId, delta] of applied.reverse()) {
+      await adjustStock(supabase, inventoryId, -delta).catch((err) =>
+        console.error('Failed to undo stock adjustment:', err)
+      )
+    }
+  }
+  const apply = async (inventoryId: string, delta: number) => {
+    await adjustStock(supabase, inventoryId, delta)
+    applied.push([inventoryId, delta])
+  }
+
+  try {
+    if (inventoryChanged) {
+      if (finalInventoryId === oldOrder.inventory_id) {
+        const diff = (newRawGrams ?? 0) - oldRawGrams
+        if (finalInventoryId && diff !== 0) await apply(finalInventoryId, -diff)
+      } else {
+        if (oldOrder.inventory_id && oldRawGrams) await apply(oldOrder.inventory_id, oldRawGrams)
+        if (finalInventoryId && newRawGrams) await apply(finalInventoryId, -newRawGrams)
+      }
+    }
+  } catch (err) {
+    await undoStock()
+    throw err
+  }
+
+  // 5. Perform database update
   const { data, error } = await supabase
     .from('orders')
     .update({ ...params, ...costUpdate })
@@ -286,6 +314,7 @@ export const updateOrder = authActionClient
 
   if (error) {
     console.error('Error updating order:', error)
+    await undoStock()
     throw new Error(error.message)
   }
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isPartner, partnerOrders, toOrderWithJoins } from '@/utils/supabase/partnerOrders'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -11,6 +12,22 @@ export async function GET(request: NextRequest) {
   const q = (searchParams.get('q') || '').replace(/[%,()*\\]/g, ' ').trim()
   const from = (page - 1) * limit
   const to = from + limit - 1
+
+  if (await isPartner(supabase)) {
+    let partnerQuery = partnerOrders(supabase)
+      .eq('fulfillment_status', 'delivered')
+      .eq('payment_status', 'paid')
+    if (q) {
+      partnerQuery = partnerQuery.or(`customer_name.ilike.%${q}%,customer_phone.ilike.%${q}%`)
+    }
+    const { data, count, error } = await partnerQuery
+      .order('order_date', { ascending: false })
+      .range(from, to)
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    return NextResponse.json({ data: (data || []).map(toOrderWithJoins), total: count || 0 })
+  }
 
   // Searching filters on the joined customer, so it must be an inner join.
   const customerJoin = q ? 'customers!inner' : 'customers'

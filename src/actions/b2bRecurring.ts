@@ -184,11 +184,12 @@ export const confirmOrderFromTemplate = authActionClient
 
   const { data: invItem } = await supabase
     .from('inventory')
-    .select('cost_per_kg')
+    .select('cost_per_kg, cost_currency')
     .eq('id', recurringOrder.inventory_id)
     .single()
 
   const costPerKg = invItem?.cost_per_kg ? Number(invItem.cost_per_kg) : null
+  const costCurrency = invItem?.cost_currency ?? null
   const rawGramsUsed = invItem
     ? calculateRawGrams(recurringOrder.amount_grams, roastLossPercentage(settings))
     : null
@@ -208,6 +209,7 @@ export const confirmOrderFromTemplate = authActionClient
     bagCount,
     settings,
     costPerKg,
+    costCurrency,
     bagUnitCost,
   })
 

@@ -525,7 +525,7 @@ export function PartnerManagementModal({ partner, fullWidthTrigger = false }: Pa
                               toast.success(t('pm_deleted'))
                               setIsOpen(false)
                             },
-                            onError: (err) => toast.error(err.message)
+                            onError: () => toast.error(t('pm_delete_failed'))
                           })
                         },
                         "destructive"

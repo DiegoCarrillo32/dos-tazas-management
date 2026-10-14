@@ -2,7 +2,7 @@
 
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { NetworkOnly, Serwist } from "serwist";
 
 // This declares the value of `injectionPoint` to TypeScript.
 // `injectionPoint` is the string that will be replaced by the
@@ -24,7 +24,19 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  // API responses are per-user and must never be served from cache.
+  runtimeCaching: [
+    {
+      matcher: ({ sameOrigin, url }) => sameOrigin && url.pathname.startsWith("/api/"),
+      handler: new NetworkOnly(),
+    },
+    ...defaultCache,
+  ],
+});
+
+// Drop API responses cached by earlier service worker versions.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(caches.delete("apis"));
 });
 
 serwist.addEventListeners();

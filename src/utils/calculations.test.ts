@@ -8,6 +8,7 @@ import {
   laborCostPerRoast,
   laborCostPerGram,
   aggregatePendingB2BOrders,
+  costPerKgInBusinessCurrency,
 } from './calculations'
 import type { UserSettingsRecord } from '@/types'
 
@@ -28,6 +29,7 @@ describe('calculations', () => {
     roasted_output_per_roast_grams: 800,
     labor_hourly_rate: 1600,
     roasts_per_hour: 4, // -> 400/roast, 0.5/g
+    usd_exchange_rate: null,
     updated_at: new Date().toISOString()
   }
 
@@ -277,5 +279,36 @@ describe('calculations', () => {
         'inv-2': 500
       })
     })
+  })
+
+  describe('costPerKgInBusinessCurrency', () => {
+    const colones = { currency_symbol: '₡', usd_exchange_rate: 500 }
+
+    it('passes through cost already in the business currency', () => {
+      expect(costPerKgInBusinessCurrency(6000, null, colones)).toBe(6000)
+      expect(costPerKgInBusinessCurrency(6000, '₡', colones)).toBe(6000)
+    })
+
+    it('converts USD cost with the exchange rate', () => {
+      expect(costPerKgInBusinessCurrency(6, '$', colones)).toBe(3000)
+    })
+
+    it('throws when USD cost has no exchange rate', () => {
+      expect(() => costPerKgInBusinessCurrency(6, '$', { currency_symbol: '₡', usd_exchange_rate: null }))
+        .toThrow(/exchange rate/)
+    })
+
+    it('feeds the converted cost into calculateOrderCosts', () => {
+      const settings = { ...mockSettings, currency_symbol: '₡', usd_exchange_rate: 500 }
+      // 800g roasted -> 1000g green at US$6/kg -> ₡3000
+      const { coffeeCost } = calculateOrderCosts({
+        amountGrams: 800, bagCount: 1, settings, costPerKg: 6, costCurrency: '$',
+      })
+      expect(coffeeCost).toBe(3000)
+    })
+  })
+
+  it('calculateRawGrams never returns less than the roasted amount', () => {
+    expect(calculateRawGrams(250, -26)).toBe(250)
   })
 })

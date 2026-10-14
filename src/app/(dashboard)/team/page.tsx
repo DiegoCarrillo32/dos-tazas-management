@@ -224,7 +224,7 @@ export default function TeamPage() {
           setManagingMember(null)
         } catch (err) {
           console.error(err)
-          showAlert("Error", "Failed to delete worker")
+          showAlert("Error", t('team_delete_failed'))
         }
       },
       "destructive"

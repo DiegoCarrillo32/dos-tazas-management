@@ -53,28 +53,9 @@ export async function updateGreenCoffeeLot(id: string, params: GreenCoffeeLotUpd
 export async function shipGreenCoffeeLot(id: string, kgToShip: number): Promise<GreenCoffeeLotRecord> {
   const supabase = await createClient()
 
-  // Read current shipped amount then increment — avoids a race on concurrent updates
-  const { data: current, error: readError } = await supabase
-    .from('green_coffee_lots')
-    .select('quantity_shipped_kg, quantity_kg')
-    .eq('id', id)
-    .single()
-
-  if (readError || !current) {
-    throw new Error(readError?.message || 'Lot not found')
-  }
-
-  const newShipped = (current.quantity_shipped_kg || 0) + kgToShip
-  if (current.quantity_kg !== null && newShipped > current.quantity_kg) {
-    throw new Error(`Cannot ship ${kgToShip} kg — only ${(current.quantity_kg - (current.quantity_shipped_kg || 0)).toFixed(2)} kg available`)
-  }
-
-  const { data, error } = await supabase
-    .from('green_coffee_lots')
-    .update({ quantity_shipped_kg: newShipped })
-    .eq('id', id)
-    .select()
-    .single()
+  // Single conditional UPDATE in the database, so concurrent shipments can't
+  // overshoot the lot's quantity.
+  const { data, error } = await supabase.rpc('ship_lot', { p_id: id, p_kg: kgToShip })
 
   if (error) {
     console.error('Error shipping lot:', error)

@@ -339,6 +339,8 @@ export const dictionaries = {
       "Optional. Used for invoices and UI personalization.",
     settings_currency: "Currency Symbol",
     settings_currency_hint: "Default: ₡. Used across the dashboard for prices.",
+    settings_usd_rate: "USD Exchange Rate",
+    settings_usd_rate_hint: "Your currency per US$1. Used to cost coffee priced in USD.",
     settings_language: "Language",
     settings_language_hint: "Choose your preferred language.",
     settings_theme: "Display Theme",
@@ -617,6 +619,7 @@ export const dictionaries = {
     // Customers (extra)
     customers_delete_title: "Delete Customer",
     customers_delete_confirm: "Are you sure you want to delete this customer?",
+    customers_delete_failed: "Couldn't delete this customer. Customers with orders can't be deleted.",
 
     // Shared / common labels
     common_date: "Date",
@@ -719,6 +722,7 @@ export const dictionaries = {
     team_add_log: "Add Log",
     team_add_log_title: "Add Time Log for Worker",
     team_add_log_worker: "Worker",
+    team_delete_failed: "Couldn't delete this worker. Workers with logged hours can't be deleted.",
     team_add_log_worker_placeholder: "Select worker",
     team_add_log_save: "Add Log",
     team_mark_paid: "Mark Paid",
@@ -838,6 +842,7 @@ export const dictionaries = {
     pm_delete_btn: "Delete Partner",
     pm_delete_msg: "Are you SURE? This will delete all custom pricing and standing orders for this partner. This cannot be undone.",
     pm_deleted: "Partner deleted successfully",
+    pm_delete_failed: "Couldn't delete this partner. Partners with roasting orders can't be deleted.",
 
     // Add partner dialog
     inv_add_partner: "Add Partner",
@@ -1220,6 +1225,8 @@ export const dictionaries = {
     settings_currency: "Símbolo de Moneda",
     settings_currency_hint:
       "Predeterminado: ₡. Se utiliza en todo el tablero para los precios.",
+    settings_usd_rate: "Tipo de Cambio USD",
+    settings_usd_rate_hint: "Tu moneda por cada US$1. Se usa para costear café con precio en USD.",
     settings_language: "Idioma",
     settings_language_hint: "Elige tu idioma preferido.",
     settings_theme: "Tema de Pantalla",
@@ -1498,6 +1505,7 @@ export const dictionaries = {
     // Customers (extra)
     customers_delete_title: "Eliminar Cliente",
     customers_delete_confirm: "¿Está seguro de que desea eliminar este cliente?",
+    customers_delete_failed: "No se pudo eliminar el cliente. Los clientes con pedidos no se pueden eliminar.",
 
     // Shared / common labels
     common_date: "Fecha",
@@ -1600,6 +1608,7 @@ export const dictionaries = {
     team_add_log: "Agregar Registro",
     team_add_log_title: "Agregar Registro para Trabajador",
     team_add_log_worker: "Trabajador",
+    team_delete_failed: "No se pudo eliminar al trabajador. Los trabajadores con horas registradas no se pueden eliminar.",
     team_add_log_worker_placeholder: "Seleccionar trabajador",
     team_add_log_save: "Agregar Registro",
     team_mark_paid: "Marcar Pagado",
@@ -1719,6 +1728,7 @@ export const dictionaries = {
     pm_delete_btn: "Eliminar Socio",
     pm_delete_msg: "¿Estás SEGURO? Se eliminarán todos los precios personalizados y pedidos fijos de este socio. Esto no se puede deshacer.",
     pm_deleted: "Socio eliminado con éxito",
+    pm_delete_failed: "No se pudo eliminar el socio. Los socios con pedidos de tueste no se pueden eliminar.",
 
     // Add partner dialog
     inv_add_partner: "Agregar Socio",

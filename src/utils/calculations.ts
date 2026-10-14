@@ -5,6 +5,8 @@ export interface CostCalculationParams {
   bagCount: number
   settings: UserSettingsRecord
   costPerKg?: number | null
+  /** Currency symbol `costPerKg` is in; null means the business currency. */
+  costCurrency?: string | null
   /** Cost of the bag type used for this order. Falls back to `settings.cost_per_bag` when not given. */
   bagUnitCost?: number | null
 }
@@ -56,8 +58,29 @@ export function laborCostPerGram(settings: LaborSpec): number {
 
 export function calculateRawGrams(amountGrams: number, roastLossPercentage: number): number {
   if (roastLossPercentage >= 100) return 0
+  // Roasting never adds weight; a negative loss means misconfigured settings.
+  if (roastLossPercentage < 0) roastLossPercentage = 0
   const lossRatio = 1 - (roastLossPercentage / 100)
   return Math.ceil(amountGrams / lossRatio)
+}
+
+export const USD_SYMBOL = '$'
+
+/**
+ * Green coffee cost per kg in the business currency. Inventory can be priced
+ * in USD (see InventoryForm), which is converted with the settings' rate.
+ */
+export function costPerKgInBusinessCurrency(
+  costPerKg: number,
+  costCurrency: string | null | undefined,
+  settings: Pick<UserSettingsRecord, 'currency_symbol' | 'usd_exchange_rate'>
+): number {
+  if (!costCurrency || costCurrency === settings.currency_symbol) return costPerKg
+  const rate = Number(settings.usd_exchange_rate)
+  if (costCurrency === USD_SYMBOL && rate > 0) return costPerKg * rate
+  throw new Error(
+    `This coffee's cost is in ${costCurrency}. Set the USD exchange rate in Settings so order costs can be calculated.`
+  )
 }
 
 export function calculateOrderCosts({
@@ -65,12 +88,13 @@ export function calculateOrderCosts({
   bagCount,
   settings,
   costPerKg,
+  costCurrency,
   bagUnitCost
 }: CostCalculationParams): CostCalculationResult {
   const rawGramsUsed = calculateRawGrams(amountGrams, roastLossPercentage(settings))
 
   const coffeeCost = costPerKg
-    ? Math.round((rawGramsUsed / 1000) * Number(costPerKg) * 100) / 100
+    ? Math.round((rawGramsUsed / 1000) * costPerKgInBusinessCurrency(Number(costPerKg), costCurrency, settings) * 100) / 100
     : 0
 
   const bagUnitPrice = bagUnitCost ?? Number(settings.cost_per_bag)
